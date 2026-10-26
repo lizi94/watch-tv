@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 优先级：焦点框 > activated > 选中态底色。
+         state_activated 分支为历史遗留：早期为了 marquee 滚动把焦点委托给行内 TextView，导致行容器
+         失去 state_focused，只能靠 activated 补焦点框；该写法已废弃（会破坏遥控器按键分发），
+         现在焦点始终留在行容器上，state_focused 正常生效。分支保留仅为兼容，当前无调用方。 -->
+    <item android:drawable="@drawable/shape_live_focused" android:state_focused="true" />
+    <item android:drawable="@drawable/shape_live_focused" android:state_activated="true" />
+    <item android:drawable="@drawable/shape_live_selected" android:state_selected="true" />
+</selector>

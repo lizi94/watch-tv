@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 2026-10-26 规格归一化：viewBox 48 → 24，并修正「图案占画布比例」。
+     原文件坐标范围 6.00~42.00（跨度 36.00），占画布 75%，与全站标准的 83% 不一致，
+     其中坐标出现负值的还会绘制到画布外（被裁）。
+     现等比缩放到 20/24 安全区并居中：scale=0.5556，平移=-12.00。**图标形态不变**，只是大小与位置对齐。 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <group
+        android:pivotX="24.00"
+        android:pivotY="24.00"
+        android:scaleX="0.5556"
+        android:scaleY="0.5556"
+        android:translateX="-12.00"
+        android:translateY="-12.00">
+        <path
+                android:fillColor="@color/ag_text"
+                android:pathData="M6,22.5V6H22.5V22.5ZM9,19.5H19.5V9H9ZM6,42V25.5H22.5V42ZM9,39H19.5V28.5H9ZM25.5,22.5V6H42V22.5ZM28.5,19.5H39V9H28.5ZM37.9,42V37.9H42V42ZM25.5,29.65V25.5H29.6V29.65ZM29.6,33.75V29.65H33.75V33.75ZM25.5,37.9V33.75H29.6V37.9ZM29.6,42V37.9H33.75V42ZM33.75,37.9V33.75H37.9V37.9ZM33.75,29.65V25.5H37.9V29.65ZM37.9,33.75V29.65H42V33.75Z" />
+    </group>
+</vector>

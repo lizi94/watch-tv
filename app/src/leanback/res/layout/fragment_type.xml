@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <!-- 本布局现在只由搜索结果页（CollectFragment）复用；电视端分类页（VodActivity 那条链）已于
+         2026-10-12 整体移除。顶部的结果标题与站源行位于 CollectActivity，且「始终显示、不随焦点收起」
+         （定案见 CustomVerticalGridView）；下方的 swipeLayout / progressLayout 保留原有容器结构，
+         搜索结果页当前不使用下拉刷新与进度浮层。
+         另：网格 paddingTop 已归 0 —— 「站源行 ↔ 封面第一行」的间距改由 activity_collect.xml 的
+         @id/pager marginTop 提供（挂在本网格上会被 leanback 对齐引擎跨过而失效，详见该文件注释）。 -->
+
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipeLayout"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <com.fongmi.android.tv.ui.custom.ProgressLayout
+            android:id="@+id/progressLayout"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <com.fongmi.android.tv.ui.custom.CustomVerticalGridView
+                android:id="@+id/recycler"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:paddingStart="@dimen/ag_space_6"
+                android:paddingTop="0dp"
+                android:paddingEnd="@dimen/ag_space_6"
+                android:paddingBottom="@dimen/ag_space_6"
+                app:focusOutEnd="true"
+                app:focusOutFront="true" />
+
+        </com.fongmi.android.tv.ui.custom.ProgressLayout>
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+</androidx.appcompat.widget.LinearLayoutCompat>

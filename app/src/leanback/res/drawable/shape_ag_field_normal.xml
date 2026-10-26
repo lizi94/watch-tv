@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 弹窗输入框（配置地址 / UA / mpv 配置）的常态底。
+     弹窗本身是白底（colorSurface = ag_card），所以输入框不能用白色填充 ——
+     否则边框和底色都看不见，老人不知道「这里可以打字」。
+     这里用米色底 + 暖灰描边，在白弹窗上边界清晰。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+
+    <solid android:color="@color/ag_bg" />
+
+    <corners android:radius="@dimen/ag_radius_m" />
+
+    <stroke
+        android:width="@dimen/ag_stroke_normal"
+        android:color="@color/ag_btn_stroke" />
+
+    <padding
+        android:bottom="@dimen/ag_space_2"
+        android:left="@dimen/ag_space_3"
+        android:right="@dimen/ag_space_3"
+        android:top="@dimen/ag_space_2" />
+
+</shape>

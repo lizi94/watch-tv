@@ -1,0 +1,122 @@
+<resources xmlns:xliff="http://schemas.android.com/apk/res-auto">
+
+    <!-- App -->
+    <string name="app_keep">Keep</string>
+    <string name="app_history">History</string>
+
+    <!-- Nav -->
+    <string name="nav_vod">Vod</string>
+    <string name="nav_live">Live</string>
+    <string name="nav_setting">Setting</string>
+
+    <!-- Menu -->
+    <string name="menu_sync">Sync</string>
+    <string name="menu_delete">Delete</string>
+    <string name="menu_search">Search</string>
+    <string name="menu_reset">Reset</string>
+
+    <!-- Vod -->
+    <string name="vod_home">Home</string>
+
+    <!-- Detail -->
+    <string name="detail_flag">Flag</string>
+    <string name="detail_episode">Episode</string>
+    <string name="detail_quality">Quality</string>
+    <string name="detail_content">Summary</string>
+    <string name="detail_search">Searching <xliff:g name="name">%s</xliff:g></string>
+
+    <!-- Device -->
+    <string name="device_select">Select devices</string>
+    <string name="device_offline">Device is offline</string>
+    <string name="device_scan">Please scan QR Code to bind</string>
+
+    <!-- Control -->
+    <string name="control_speed">Speed</string>
+    <string name="control_scale">Scale</string>
+    <string name="control_track">Track</string>
+    <string name="control_other">Other</string>
+
+    <!-- Dialog -->
+    <string name="dialog_delete_record">Delete all records?</string>
+
+    <!-- Timer -->
+    <string name="timer_5">5 minutes</string>
+    <string name="timer_15">15 minutes</string>
+    <string name="timer_30">30 minutes</string>
+    <string name="timer_60">1 hour</string>
+    <string name="timer_delay">Add 5 minutes</string>
+    <string name="timer_cancel">Cancel timer</string>
+
+    <!-- Hint -->
+    <string name="shortcut">Shortcut has been added.</string>
+
+    <string-array name="select_background">
+        <item>Off</item>
+        <item>On</item>
+        <item>PiP</item>
+    </string-array>
+
+
+    <string name="menu_select_all">Select all</string>
+    <string name="menu_select_none">Deselect all</string>
+    <string name="dialog_delete_selected_history">Delete the selected %1$d history items?</string>
+    <string name="dialog_delete_selected_keep">Delete the selected %1$d favorite items?</string>
+
+    <!-- Elder lock: live source -->
+    <string name="elder_lock_live">Lock live source</string>
+    <string name="elder_lock_live_none">Not imported</string>
+    <string name="elder_live_need_config">No live source yet. Add one in Settings - Live first.</string>
+    <string name="elder_live_on">Live source locked.</string>
+    <string name="elder_live_off">Live source unlocked.</string>
+    <string name="elder_live_blocked">Live source is locked. Unlock it first to change.</string>
+    <string name="elder_site_blocked">Data source is locked. Unlock it before switching.</string>
+
+    <!-- Elder lock: one-tap lock -->
+    <string name="elder_lock_title">One-tap lock</string>
+    <string name="elder_lock_source">Main source</string>
+    <string name="elder_lock_route">Playback line</string>
+    <string name="elder_lock_route_auto">Prefer main, auto switch</string>
+    <string name="elder_lock_route_manual">Pick line manually</string>
+    <string name="elder_lock_search">Search priority source</string>
+    <string name="elder_lock_search_on">On</string>
+    <string name="elder_lock_search_off">Off</string>
+    <string name="elder_lock_search_need_lock">Lock a source first, then this works</string>
+    <string name="elder_detail_empty_search">This source has nothing playable. Searching for “%1$s”</string>
+    <string name="elder_search_no_source">No source available to search</string>
+    <string name="elder_lock_apply">Lock now</string>
+    <string name="elder_lock_unlock_entry">Unlock</string>
+    <string name="elder_lock_none">Not selected</string>
+    <string name="elder_lock_hint_off">Pick the items above, then press Lock now. After that the elder only needs Play.</string>
+    <string name="elder_lock_hint_on">Locked. To change the source or live source, unlock first. Playback route and search priority can be toggled anytime.</string>
+    <string name="elder_lock_need_unlock_first">Locked. Unlock it before switching.</string>
+    <string name="elder_lock_need_source">Please pick an available source first</string>
+    <string name="elder_lock_on">Locked: %1$s</string>
+    <string name="elder_lock_off">Unlocked</string>
+
+    <!-- Elder: exit hint -->
+    <string name="elder_exit_hint">Press back again to exit</string>
+
+    <string name="setting_exit_resume">Auto-resume after exit</string>
+    <string name="elder_setting_entry">Elder settings</string>
+    <string name="elder_setting_title">Elder settings</string>
+    <string name="elder_setting_group_lock">Lock</string>
+    <string name="elder_setting_group_play">Playback</string>
+    <string name="elder_setting_group_display">Display</string>
+    <string name="elder_setting_group_data">Data</string>
+    <string name="elder_setting_lock_entry">One-tap lock</string>
+    <string name="elder_setting_full_entry">Auto fullscreen on play</string>
+    <string name="elder_setting_resume_entry">Auto-resume after exit</string>
+    <string name="elder_setting_index_search_entry">Quick search on home</string>
+    <string name="elder_setting_size_entry">Image size</string>
+    <string name="elder_setting_restore_entry">Restore default settings</string>
+    <string name="elder_setting_restore_confirm">Restore all settings to default? Sources, favorites and cache are kept.</string>
+    <string name="elder_setting_restore_done">Default settings restored</string>
+    <string name="elder_setting_nav_live_entry">Live tab in bottom bar</string>
+
+    <!-- Home empty state (mobile): shown when the category list can't be fetched.
+         Wording kept identical to the TV side (home_empty_source / home_empty_retry). -->
+    <string name="empty_source">Can\'t connect right now</string>
+    <string name="empty_retry">Reload</string>
+    <string name="elder_confirm_restore_backup">Restoring overwrites all current data (favorites, history, sources). Continue?</string>
+    <string name="elder_confirm_delete_backup">Delete this backup file?</string>
+</resources>

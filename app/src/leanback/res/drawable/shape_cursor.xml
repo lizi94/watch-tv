@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 电视版（浅色主题）输入光标：使用主色，替换 main 中的白色光标 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+
+    <size android:width="2dp" />
+
+    <solid android:color="@color/ag_primary" />
+
+</shape>

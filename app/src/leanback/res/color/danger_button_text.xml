@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 危险按钮文字：聚焦态白字（红底），常态红字（淡红底） -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="@color/white" android:state_focused="true" />
+    <item android:color="@color/white" android:state_pressed="true" />
+    <item android:color="@color/ag_danger" />
+</selector>

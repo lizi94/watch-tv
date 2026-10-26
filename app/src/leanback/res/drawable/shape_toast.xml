@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 全局浮层提示背景（电视版覆盖）：圆角接 ag_radius_s 令牌（8dp，与全站小圆角控件一致），
+     深色半透明底保持浮层惯例（浅色页面上唯一允许的深色浮层，与弹窗遮罩同族）。
+     main 同名文件为硬编码 8dp 的手机版，电视包以本文件为准。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+
+    <solid android:color="#E6000000" />
+
+    <corners android:radius="@dimen/ag_radius_s" />
+
+</shape>

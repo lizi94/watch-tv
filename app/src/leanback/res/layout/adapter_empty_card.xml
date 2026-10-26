@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 首页空态占位区（内容流中的固定占位行）：
+     无底色无圆角，直接露出页面主体背景，仅保留一块固定高度的空白区域承接文案；
+     宽度撑满内容区、高度固定为屏幕可视高度的一定比例（不延伸屏底），
+     随内容流自然滚动（占位效果，不漂移），内容在区域内水平+垂直居中。
+     高度由 EmptyCardPresenter.onCreateViewHolder 按 ResUtil.getScreenHeight() 计算。
+
+     2026-10-17：**「重新加载」按钮已整体移除，只剩文案**。
+     原因（按真实场景核对）：
+       · 电视端只有「首次安装 / 手动清空数据源」才会出现未配置态，此时按「重新加载」
+         仍然没有数据源可拉 —— 按钮按了必然无效；
+       · 有数据源但源服务器挂 / 断网时，网络恢复会自动重载（见 HomeActivity#getCallback().error
+         里补挂的 awaitConfigNetwork），从设置页返回也会刷新 —— 按钮是冗余；
+       · 对老人而言，「按了没反应」的按钮比没有按钮更糟：会反复按、以为软件坏了。
+     ⇒ 现在只保留一句**指路文案**（文案由 EmptyCardPresenter.Item 传入：
+       无数据源 → 「还没有导入数据源，请到 设置 → 数据源 导入」；
+       有源连不上 → 「暂时连接不上，网络恢复后会自动重试」）。
+     卡片不可聚焦、不可点击（没有可执行动作就不该抢焦点），焦点只在功能区 / 分类 / 内容之间流转。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center"
+    android:orientation="vertical">
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:paddingStart="@dimen/ag_space_8"
+        android:paddingEnd="@dimen/ag_space_8"
+        android:textColor="@color/ag_text"
+        android:textSize="@dimen/ag_text_headline"
+        tools:text="@string/home_empty_source" />
+
+</LinearLayout>

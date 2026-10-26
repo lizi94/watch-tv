@@ -1,0 +1,124 @@
+<resources xmlns:xliff="http://schemas.android.com/apk/res-auto">
+
+    <!-- Home -->
+    <string name="home_recommend">推荐</string>
+    <string name="home_filter_title">筛选</string>
+    <string name="home_filter_title_of">筛选 · %1$s</string>
+    <string name="home_filter_reset">重置</string>
+    <string name="home_filter_hint">上下键切换条件 · 左右键选值 · 选中立即生效</string>
+    <string name="home_filter_none">当前分类没有筛选条件</string>
+    <string name="home_empty_category">该分类暂无数据</string>
+    <string name="home_empty_recommend">暂无推荐内容</string>
+    <!-- home_empty_offline「网络未连接」已于 2026-10-13 删除：
+         无网时首页根本进不来（停在启动画面显示 home_connect_hint），该文案属重复提示。 -->
+    <string name="home_empty_source">暂时连接不上，网络好了会自动重试</string>
+    <string name="home_empty_no_source">还没有设置数据源，请按上面的「设置」按钮添加</string>
+    <string name="home_connect_hint">正在连接网络…</string>
+    <string name="home_live">直播</string>
+    <string name="home_push">推送</string>
+    <string name="home_search">搜索</string>
+    <string name="home_keep">收藏</string>
+    <string name="home_setting">设置</string>
+    <string name="home_history">最近观看</string>
+    <string name="home_history_entry">历史</string>
+    <string name="history_title">历史记录</string>
+    <string name="history_batch">批量删除</string>
+    <string name="history_batch_on">退出删除</string>
+    <string name="history_select_all">全选</string>
+    <string name="history_select_none">取消全选</string>
+    <string name="history_delete_selected">删除所选</string>
+    <string name="history_delete_selected_n">删除所选（%1$d）</string>
+    <string name="history_confirm_batch">确定要删除所选的 %1$d 条观看记录吗？</string>
+    <string name="history_batch_hint">进入删除模式：点选要删除的记录，选好后按「删除所选」。</string>
+    <string name="history_none_selected">请先点选要删除的记录</string>
+    <string name="keep_title">收藏</string>
+    <string name="keep_confirm_batch">确定要删除所选的 %1$d 条收藏吗？</string>
+    <string name="keep_batch_hint">进入删除模式：点选要删除的收藏，选好后按「删除所选」。</string>
+    <string name="detail_group_flag">线路</string>
+    <string name="detail_group_episode">选集</string>
+    <string name="detail_group_sort">排序</string>
+
+    <!-- Collect -->
+    <string name="collect_result">“<xliff:g name="name">%s</xliff:g>”的搜索结果</string>
+
+    <!-- Push -->
+    <string name="push_clip">推送剪贴板内容</string>
+    <string name="push_info">使用手机扫描二维码，或于浏览器访问地址\n<xliff:g name="name">%s</xliff:g></string>
+
+    <!-- 老人友好 -->
+    <string name="elder_exit_hint">再按一次「返回」键退出</string>
+    <string name="elder_confirm_delete_history">确定要删除这条观看记录吗？</string>
+    <string name="elder_confirm_clear_history">确定要清空全部观看记录吗？</string>
+    <string name="elder_confirm_delete_config">确定要删除这个配置吗？</string>
+    <string name="elder_confirm_delete_backup">确定要删除这个备份文件吗？</string>
+
+    <!-- 播放行为 -->
+
+    <!-- 设置页分组 -->
+    <string name="elder_group_common">常用设置</string>
+
+    <!-- 一键锁定 -->
+    <string name="elder_lock_title">一键锁定</string>
+    <string name="elder_lock_desc">锁定后只用这里选的数据源，首页、搜索、播放都跟着它，放不出来会自动换线路。</string>
+    <string name="elder_lock_source">主数据源</string>
+    <string name="elder_lock_route">播放线路</string>
+    <string name="elder_lock_route_auto">主源优先，不行自动换源</string>
+    <string name="elder_lock_route_manual">只用手动选的线路</string>
+    <string name="elder_lock_search">搜索优先源</string>
+    <string name="elder_lock_search_on">已开启</string>
+    <string name="elder_lock_search_off">未开启</string>
+    <string name="elder_lock_search_need_lock">请先锁定一个数据源</string>
+    <string name="elder_lock_apply">一键锁定</string>
+    <string name="elder_lock_unlock_entry">解锁</string>
+    <string name="elder_lock_none">未选择</string>
+    <string name="elder_lock_hint_off">选好上面几项后按「一键锁定」，之后老人只需按「播放」。</string>
+    <string name="elder_lock_hint_on">已锁定。要换数据源或直播源请先「解锁」；「播放线路」和「搜索优先源」可随时切换。</string>
+    <string name="elder_lock_need_unlock_first">已锁定，如需更换请先解锁</string>
+    <string name="elder_lock_need_source">请先选择一个可用的数据源</string>
+    <string name="elder_lock_on">已锁定：%1$s</string>
+    <string name="elder_lock_off">已解锁</string>
+
+    <!-- 分类页遥控器刷新 -->
+
+
+    <string name="elder_lock_live">直播源</string>
+    <string name="elder_lock_live_none">未导入</string>
+    <string name="elder_live_need_config">请先在设置里添加直播源</string>
+    <string name="elder_live_on">已锁定直播源</string>
+    <string name="elder_live_off">已解锁直播源</string>
+    <string name="elder_live_blocked">直播源已锁定，如需更换请先解锁</string>
+    <string name="keep_none_selected">请先点选要删除的收藏</string>
+
+    <string name="elder_setting_entry">长辈设置</string>
+    <string name="elder_setting_title">长辈设置</string>
+    <string name="elder_setting_group_lock">锁定</string>
+    <string name="elder_setting_group_play">播放</string>
+    <string name="elder_setting_group_display">显示</string>
+    <string name="elder_setting_group_data">数据</string>
+    <string name="elder_setting_lock_entry">一键锁定</string>
+    <string name="elder_setting_full_entry">点播自动全屏</string>
+    <string name="elder_setting_resume_entry">退出自动续播</string>
+    <string name="elder_setting_sound_entry">按键音</string>
+    <string name="elder_setting_index_search_entry">首页快速搜索</string>
+    <string name="elder_setting_font_entry">字号大小</string>
+    <string name="elder_setting_font_standard">标准</string>
+    <string name="elder_setting_font_large">大</string>
+    <string name="elder_setting_font_extra">特大</string>
+    <string name="elder_setting_font_extra_large">超大</string>
+    <string name="elder_setting_font_huge">极大</string>
+    <string name="elder_setting_size_entry">图片尺寸</string>
+    <string name="elder_setting_restore_entry">恢复默认设置</string>
+    <string name="elder_setting_restore_confirm">确定把本页设置恢复为默认吗？数据源、收藏、观看记录都会保留。</string>
+    <string name="elder_setting_restore_done">已恢复默认设置</string>
+
+    <string name="elder_search_empty">请先输入要搜索的内容</string>
+    <string name="elder_search_no_source">没有可用的搜索源，请先导入数据源</string>
+    <string name="elder_detail_empty_search">这个源没有可播放的内容，正在为你搜索「%1$s」</string>
+    <string name="detail_meta_placeholder">空</string>
+    <string name="elder_search_source_locked">搜索源已锁定，不能在搜索页更换</string>
+    <string name="setting_cache_confirm">确定清空缓存吗？清空后看片和图片都要重新加载</string>
+    <string name="elder_site_blocked">数据源已锁定，如需更换请先解锁</string>
+    <string name="elder_site_locked_hint">已锁定 · 如需更换请先解锁</string>
+    <string name="elder_live_locked_hint">已锁定 · 如需更换请先解锁</string>
+    <string name="elder_confirm_restore_backup">恢复会覆盖当前全部数据（收藏、历史、数据源配置），确定继续吗？</string>
+</resources>

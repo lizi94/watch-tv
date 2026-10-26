@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 全局空态浮层（由共享 ProgressLayout 在 EMPTY 态时居中显示；电视版无 Lottie，统一只留文字提示）。
+     注意：此文件同时为共享代码 ProgressLayout 提供 ViewEmptyBinding，不可删除。 -->
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:gravity="center"
+    android:orientation="vertical">
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/error_empty"
+        android:textColor="@color/ag_text_sub"
+        android:textSize="@dimen/ag_text_headline" />
+
+</androidx.appcompat.widget.LinearLayoutCompat>

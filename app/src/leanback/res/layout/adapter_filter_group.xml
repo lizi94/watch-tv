@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 筛选条件组（一组 = 组名 + 一排可选值），如「地区 / 全部 大陆 香港 美国」。
+     组名不可聚焦（只是标签），值胶囊才可聚焦 —— 遥控器在一行内左右移动、跨行上下
+     （跨行由 HomeFilterDialog 显式桥接，不依赖 FocusFinder 的几何猜测）。
+     横向 RecyclerView 自身 focusable=false：否则它会吃掉焦点、把值胶囊挡住。 -->
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingBottom="@dimen/ag_space_3">
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/ag_space_2"
+        android:layout_marginBottom="@dimen/ag_space_2"
+        android:singleLine="true"
+        android:textColor="@color/ag_text_sub"
+        android:textSize="@dimen/ag_text_caption"
+        tools:text="地区" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:focusable="false"
+        android:orientation="horizontal"
+        android:overScrollMode="never"
+        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+
+</androidx.appcompat.widget.LinearLayoutCompat>

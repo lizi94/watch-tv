@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 全局浮层提示背景：圆角深色半透明，与系统 Toast 观感一致 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+
+    <solid android:color="#E6000000" />
+
+    <corners android:radius="8dp" />
+
+</shape>

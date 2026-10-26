@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 筛选值胶囊（一个可选值，如「动作」「2024」）。
+     高度走 ag_filter_value_h(48dp) 令牌（随字号档位缩放）；
+     背景/文字色走四态 selector，选中与焦点可同时表达（详见 selector_filter_value 的说明）。 -->
+<com.google.android.material.textview.MaterialTextView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/text"
+    android:layout_width="wrap_content"
+    android:layout_height="@dimen/ag_filter_value_h"
+    android:layout_marginEnd="@dimen/ag_space_2"
+    android:background="@drawable/selector_filter_value"
+    android:ellipsize="end"
+    android:focusable="true"
+    android:focusableInTouchMode="true"
+    android:gravity="center"
+    android:minWidth="@dimen/ag_space_16"
+    android:paddingStart="@dimen/ag_space_5"
+    android:paddingEnd="@dimen/ag_space_5"
+    android:singleLine="true"
+    android:textColor="@color/selector_filter_value_text"
+    android:textSize="@dimen/ag_text_body"
+    tools:text="动作" />

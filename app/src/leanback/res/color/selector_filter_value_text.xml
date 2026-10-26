@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 筛选值胶囊 · 四态文字色（与 selector_filter_value 的背景配对，必须同步维护）：
+     选中或选中+焦点 → 主色实底上白字；只有焦点 → 浅底上用主色深字；普通 → 深灰字。 -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="@color/white" android:state_focused="true" android:state_selected="true" />
+    <item android:color="@color/white" android:state_selected="true" />
+    <item android:color="@color/ag_primary_text" android:state_focused="true" />
+    <item android:color="@color/ag_text" />
+</selector>

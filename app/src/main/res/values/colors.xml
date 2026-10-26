@@ -1,0 +1,28 @@
+<resources>
+
+    <color name="transparent">#00000000</color>
+    <color name="black">#000000</color>
+    <color name="black_05">#0D000000</color>
+    <color name="black_10">#1A000000</color>
+    <color name="black_20">#33000000</color>
+    <color name="black_30">#4D000000</color>
+    <color name="black_40">#66000000</color>
+    <color name="black_50">#80000000</color>
+    <color name="black_80">#CC000000</color>
+    <color name="black_90">#E6000000</color>
+    <color name="white">#FFFFFF</color>
+    <!-- 桌面图标背景：与 ag_primary 同值，但**必须定义在 main** —— launcher 资源在 main 资源集，
+         引用 flavor（leanback/mobile）里的 ag_primary 会导致 resource linking failed。
+         图标属品牌资产，不随主题变色，独立一个名字更准确。 -->
+    <color name="ic_launcher_background">#0B57D0</color>
+    <!-- 壁纸可读性遮罩：main 默认全透明（mobile 行为不变），leanback 覆盖为 88% 冷灰 -->
+    <color name="wall_scrim">#00000000</color>
+    <color name="white_30">#4DFFFFFF</color>
+    <color name="white_60">#99FFFFFF</color>
+    <color name="white_80">#CCFFFFFF</color>
+    <color name="white_90">#E6FFFFFF</color>
+
+    <!-- 注意：电视版（leanback）的 ag_* 设计令牌已迁至
+         app/src/leanback/res/values/colors.xml，本文件仅保留全端共用色值。 -->
+
+</resources>

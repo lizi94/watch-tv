@@ -1,0 +1,15 @@
+plugins {
+    id 'groovy'
+}
+
+repositories {
+    maven { url = "https://maven.aliyun.com/repository/public" }
+    mavenCentral()
+    google()
+}
+
+dependencies {
+    implementation gradleApi()
+    implementation localGroovy()
+    implementation libs.commons.compress
+}

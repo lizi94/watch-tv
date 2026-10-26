@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 首页「筛选」弹窗（电视版）：复刻手机端首页的筛选能力（类型 / 地区 / 年份…），
+     但改成遥控器友好 —— 每组一排可聚焦胶囊，组间用上下键切换、组内用左右键选值。
+
+     · 令牌化：内边距 ag_space_6(24dp)、组名 ag_text_caption(20sp)、值 ag_text_body(24sp)、
+       值行高 ag_filter_value_h(48dp)、列表上限 ag_dialog_list_max(352dp)。
+     · 字号档位：全部是 dp/sp 令牌 + Activity 作为 Context（BaseAlertDialog#builder 用
+       requireActivity()），所以随「字号大小」档与大屏补偿等比放大，与页面主体一致。
+     · 高度上限用 CustomRecyclerView 的 app:maxHeight（接受 dimen 引用，同样随档位缩放），
+       分类条件组再多也不会把弹窗撑出屏幕。 -->
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="@dimen/ag_space_6">
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingBottom="@dimen/ag_space_4">
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="@dimen/ag_space_4"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:singleLine="true"
+            android:text="@string/home_filter_title"
+            android:textColor="@color/ag_text"
+            android:textSize="@dimen/ag_text_title" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/reset"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/ag_filter_value_h"
+            android:background="@drawable/selector_filter_value"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:gravity="center"
+            android:minWidth="@dimen/ag_space_16"
+            android:paddingStart="@dimen/ag_space_5"
+            android:paddingEnd="@dimen/ag_space_5"
+            android:singleLine="true"
+            android:text="@string/home_filter_reset"
+            android:textColor="@color/selector_filter_value_text"
+            android:textSize="@dimen/ag_text_body" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+    <com.fongmi.android.tv.ui.custom.CustomRecyclerView
+        android:id="@+id/recycler"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:overScrollMode="never"
+        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+        app:maxHeight="@dimen/ag_dialog_list_max"
+        tools:itemCount="3"
+        tools:listitem="@layout/adapter_filter_group" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/ag_space_3"
+        android:gravity="center"
+        android:text="@string/home_filter_hint"
+        android:textColor="@color/ag_text_hint"
+        android:textSize="@dimen/ag_text_caption" />
+
+</androidx.appcompat.widget.LinearLayoutCompat>

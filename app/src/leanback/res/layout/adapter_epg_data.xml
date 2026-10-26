@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.fongmi.android.tv.ui.custom.CustomLeftRightLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:background="@drawable/selector_live"
+    android:focusable="true"
+    android:focusableInTouchMode="true"
+    android:orientation="vertical">
+
+    <!-- 节目单列（title=节目名 / time=播出时间）字号一律走 ag_live_epg_title / ag_live_epg_time 令牌：
+         LiveActivity.setWidth(Epg) 用 Resources.getDimension() 读同一批令牌换像素量列宽，
+         「显示字号」与「列宽测量」同源。**不要把这里的令牌换成别的字号令牌** ——
+         曾经套成 ag_text_label(22sp)/ag_text_caption(20sp) 而 Java 仍按 16/14 测量，
+         列宽少算 37.5%，节目名与时间两行全被裁。 -->
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:duplicateParentState="true"
+        android:ellipsize="marquee"
+        android:singleLine="true"
+        android:textColor="@color/text_on_dark"
+        android:textSize="@dimen/ag_live_epg_title"
+        tools:text="七龍珠" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:duplicateParentState="true"
+        android:ellipsize="marquee"
+        android:singleLine="true"
+        android:textColor="@color/text_on_dark"
+        android:textSize="@dimen/ag_live_epg_time"
+        tools:text="18:00 ~ 19:00" />
+
+</com.fongmi.android.tv.ui.custom.CustomLeftRightLayout>

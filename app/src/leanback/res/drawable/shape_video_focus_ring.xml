@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 详情页海报的「焦点环」：单层 6~10dp（随字号档位）亮红描边，**无填充**。
+     2026-10-26：从「画在海报 container 的 foreground 上」改为「独立 View 外扩」。
+     原因：海报里是视频渲染层（surface），会盖住同区域的 View 内容 —— 内嵌的描边会被吃掉；
+     而且为了让描边露出来还得给海报留内边距，导致画面被裁。
+     现在这个环由 VideoActivity 叠在海报外侧（负 margin 外扩），既不遮画面，也不会被 surface 盖住。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <stroke
+        android:width="@dimen/ag_stroke_focus"
+        android:color="@color/ag_focus_video" />
+</shape>

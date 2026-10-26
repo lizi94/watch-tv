@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- adapter_vod_list（选集 / 演员）与 adapter_file（文件）的焦点框。
+     与 selector_vod 的区别只在圆角：这两类卡片的常态背景是 shape_vod_list(ag_radius_m 12dp)，
+     而 adapter_vod / adapter_vod_rect 的卡片轮廓是 8dp（封面图上圆角 + 标题条下圆角）。
+     同一个 selector_vod 无法同时贴合两种主体，故拆成两支，各随其主。 -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/shape_vod_list_focused" android:state_focused="true" />
+</selector>

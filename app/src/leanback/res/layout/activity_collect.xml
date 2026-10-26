@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/result"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/ag_space_6"
+        android:layout_marginTop="@dimen/ag_space_6"
+        android:layout_marginEnd="@dimen/ag_space_6"
+        android:layout_marginBottom="@dimen/ag_space_4"
+        android:singleLine="true"
+        android:textColor="@color/ag_text"
+        android:textSize="@dimen/ag_text_title"
+        tools:text="@string/collect_result" />
+
+    <androidx.leanback.widget.HorizontalGridView
+        android:id="@+id/recycler"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:paddingStart="@dimen/ag_space_6"
+        android:paddingEnd="@dimen/ag_space_6"
+        app:focusOutEnd="false"
+        app:focusOutFront="false" />
+
+    <!-- 2026-10-12：站源行与「封面第一行」之间的间距改由本节点的 marginTop 提供。
+         原先该间距挂在网格（fragment_type.xml 的 @id/recycler）的 paddingTop 上，会被 leanback
+         的对齐引擎跨过而"吃掉"（对齐把选中行贴到网格顶边）→ 表现为切换站源时间距时有时无、
+         大字号档位下最明显。margin 属于父级布局，网格内部无论对齐还是滚动都无法缩小它
+         —— 越过 pager 顶边的内容会被 ViewPager 裁剪，所以间距恒为 marginTop。 -->
+    <com.fongmi.android.tv.ui.custom.CustomViewPager
+        android:id="@+id/pager"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="@dimen/ag_space_4" />
+
+</androidx.appcompat.widget.LinearLayoutCompat>
+

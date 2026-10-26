@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 收藏页：网格展示全部收藏，支持批量删除（与历史记录页同一交互模式）。
+     全部尺寸与配色走 ag_* 设计令牌，按钮走 Ag.* 组件样式。 -->
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="@dimen/ag_space_6">
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/title"
+        style="@style/Ag.Text.Title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/keep_title" />
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/ag_space_4"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/batch"
+            style="@style/Ag.Button.Secondary"
+            android:layout_width="wrap_content"
+            android:singleLine="true"
+            android:text="@string/history_batch" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/all"
+            style="@style/Ag.Button.Secondary"
+            android:layout_width="wrap_content"
+            android:layout_marginStart="@dimen/ag_space_4"
+            android:singleLine="true"
+            android:text="@string/history_select_all"
+            android:visibility="gone" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/delete"
+            style="@style/Ag.Button.Danger"
+            android:layout_width="wrap_content"
+            android:layout_marginStart="@dimen/ag_space_4"
+            android:singleLine="true"
+            android:text="@string/history_delete_selected"
+            android:visibility="gone" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/hint"
+            style="@style/Ag.Text.Caption"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/ag_space_5"
+            android:layout_weight="1"
+            android:text="@string/keep_batch_hint"
+            android:visibility="gone" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+    <com.fongmi.android.tv.ui.custom.ProgressLayout
+        android:id="@+id/progressLayout"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="@dimen/ag_space_4"
+        android:layout_weight="1">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recycler"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:overScrollMode="never" />
+
+    </com.fongmi.android.tv.ui.custom.ProgressLayout>
+
+</androidx.appcompat.widget.LinearLayoutCompat>

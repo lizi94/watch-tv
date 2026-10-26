@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 内置壁纸 5（红）：2026-10-26 全站重做。
+     为什么要「中深色」而不是浅色：电视端壁纸之上有 wall_scrim(#E0F1F3F6，88% 浅灰) 遮罩，
+     只透出 12% —— 浅色壁纸（如 #F6E3C8）叠加后与遮罩底色差不到 6/255，八张看起来是同一个灰。
+     中深色透出 12% 后仍有明确色相（本张约 #D7E2EF 一类的淡色），八张彼此可辨；
+     同时不透明度够高，不会把电视端的深色文字压得看不见。
+     手机端遮罩是 60% 黑（wall_scrim=#99000000），同一张壁纸会呈现为对应的暗色调，两端都不糊。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <gradient
+        android:angle="270"
+        android:endColor="#8E0000"
+        android:startColor="#C62828"
+        android:type="linear" />
+</shape>

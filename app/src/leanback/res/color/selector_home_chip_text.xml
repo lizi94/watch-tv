@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 首页分类 chip 文字颜色：选中 / 聚焦 = 白字，默认 = 主题文字色 -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_selected="true" android:color="@color/white" />
+    <item android:state_focused="true" android:color="@color/white" />
+    <item android:color="@color/ag_text" />
+</selector>

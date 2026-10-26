@@ -1,0 +1,74 @@
+<resources>
+
+    <!-- ================================================================
+         长辈友好设计令牌 · 颜色（唯一来源，仅电视版）
+         方案：冷灰高对比（用户已确认）。
+         原则：色相只有主色一种，其余全是中性灰阶；
+              先定组件类型，再给这个类型固定一组「面 / 描边 / 文字」。
+         对比度均按 WCAG 2.1 相对亮度公式实测，正文 ≥13:1，次文字 ≥5:1。
+         ================================================================ -->
+
+    <!-- ==== 中性层（页面结构） ====
+         层次关系（由深到浅）：页面 ag_bg < 按钮/输入框描边 ag_btn_stroke < 卡片 ag_card。
+         ag_bg 从暖米色 #EFEDE6 改为冷灰 #F1F3F6：电视距离远、环境光复杂，
+         冷灰底对比更高，海报封面也不会与底色互相抢色。 -->
+    <color name="ag_bg">#F1F3F6</color>
+    <color name="ag_card">#FFFFFF</color>
+    <color name="ag_group_bg">#FFFFFF</color>
+    <color name="ag_stroke">#DFE3EA</color>
+    <color name="ag_divider">#E6EAF0</color>
+    <color name="ag_btn_bg">#E7EBF2</color>
+    <color name="ag_btn_stroke">#C4CDD9</color>
+
+    <!-- ==== 文字 ==== -->
+    <color name="ag_text">#22252A</color>
+    <color name="ag_text_sub">#5A616C</color>
+    <!-- 提示字 #646C78：对 ag_bg 4.77:1、对 ag_card 5.31:1 -->
+    <color name="ag_text_hint">#646C78</color>
+
+    <!-- ==== 主色（操作 / 选中 / 焦点） ====
+         ag_focus_ring 同时充当「全局唯一焦点态」的描边色：
+         焦点态 = 主色淡底 + 6dp 主色描边，全站不允许第二种焦点样式。 -->
+    <color name="ag_primary">#0B57D0</color>
+    <color name="ag_primary_bg">#E4EDFC</color>
+    <color name="ag_primary_text">#0842A0</color>
+    <color name="ag_focus_ring">#0B57D0</color>
+    <!-- 媒体封面焦点的整片蒙版：30% 主色的半透明蓝（alpha 0x4D = 77/255 ≈ 30.2%）。
+         按钮 / chip 这类「块状组件」获焦时靠 <solid ag_primary_bg> 整块变色，一眼可辨；
+         而封面焦点框过去只有一圈细蓝边**贴在照片上**，照片本身明暗杂，老人看不出「选中了哪张」。
+         加这层蒙版 = 用与按钮同源的「整块变色」语言表达封面焦点，视觉强度拉齐。
+         只用于 shape_vod_focused / shape_vod_list_focused / shape_vod_oval_focused：
+         <solid> 不参与测量，**零尺寸、零间距影响**。 -->
+    <color name="ag_focus_overlay">#4D0B57D0</color>
+
+    <!-- ==== 危险色（删除 / 清空 / 还原默认等不可逆操作） ====
+         颜色即警告：危险按钮用淡红面 + 红描边 + 红字，与普通按钮一眼区分。 -->
+    <color name="ag_danger">#B3261E</color>
+    <color name="ag_danger_bg">#FCE8E6</color>
+    <color name="ag_danger_stroke">#F0BCB9</color>
+
+    <!-- ==== 状态色 ====
+         2026-10-13 死资源清理：ag_disabled / ag_ok_bg / ag_warn_bg 全站零引用已删除。
+         ag_ok_text 仅被已废弃的 Ag.Text.Safe 样式引用（属 B 级「传递死」，按授权本轮保留）；
+         ag_warn_text 是活的 —— Theme 的 colorError 在用。 -->
+    <color name="ag_ok_text">#166B3E</color>
+    <color name="ag_warn_text">#A35A00</color>
+
+    <!-- ==== 视频层（深色浮层专用，功能性要求，非风格混搭） ==== -->
+    <color name="ag_focus_on_dark">#7FB8E8</color>
+    <!-- 详情页海报框专用焦点色：海报里是**视频画面**（常常是黑场/暗景），
+         全站主色 #0B57D0 深蓝压在黑底上几乎看不见 ⇒ 这里单独用高饱和红。
+         仅 shape_video_focused 引用，不影响其它控件的焦点态。 -->
+    <color name="ag_focus_video">#FF5252</color>
+    <color name="ag_controller">#F01A1A18</color>
+    <color name="ag_caption">#B3000000</color>
+    <!-- 播放器控制条按钮：深色面板上的统一芯片。普通态深灰面（白字对它 ≥12:1），
+         聚焦态主色面（白字 6.39:1），描边只作状态区分，不再用浅色面配白字。 -->
+    <color name="ag_chip_dark_bg">#3A3D44</color>
+    <color name="ag_chip_dark_stroke">#5A5F6A</color>
+
+    <!-- 壁纸可读性遮罩（覆盖 main 的透明默认值）：88% 冷灰铺在壁纸上，
+         壁纸退为隐约纹理，所有页面的次级文字对比恢复到 ≥4.5:1。 -->
+    <color name="wall_scrim">#E0F1F3F6</color>
+
+</resources>

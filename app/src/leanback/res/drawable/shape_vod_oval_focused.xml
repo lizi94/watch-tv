@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 圆形封面（adapter_vod_oval 的 @id/frame，对齐 Vod.Circle 的 @id/image）焦点框。
+     圆角 = oval，**已跟随主体**（主体是正圆）。
+     加 <solid ag_focus_overlay> 30% 主色蒙版，与方形封面卡的焦点强度拉齐；
+     oval 的 <solid> 填充区域是内切椭圆（这里是正圆），不会溢出成方块，也不会盖住相邻封面。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+
+    <solid android:color="@color/ag_focus_overlay" />
+
+    <stroke
+        android:width="@dimen/ag_stroke_focus"
+        android:color="@color/ag_primary" />
+
+</shape>

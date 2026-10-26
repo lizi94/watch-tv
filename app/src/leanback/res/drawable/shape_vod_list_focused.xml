@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 带独立圆角背景的列表卡焦点框（adapter_vod_list 选集 / adapter_file 文件）。
+     圆角 = ag_radius_m(12dp)，**跟随主体**：这两类卡片的常态背景是 shape_vod_list(12dp)，
+     内容（缩略图 / 文字）都带 16dp 内边距、不贴边，所以卡片轮廓就是那圈 12dp 圆角。
+     此前它们与「图 + 标题条」卡片共用 shape_vod_focused(12dp) —— 那时恰好对得上，
+     但当封面卡片的焦点框按主体收敛到 8dp 后，两者必须拆开，否则这里会变成「内 12 外 8」。
+     蒙版与圆角理由同 shape_vod_focused。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+
+    <solid android:color="@color/ag_focus_overlay" />
+
+    <corners android:radius="@dimen/ag_radius_m" />
+
+    <stroke
+        android:width="@dimen/ag_stroke_focus"
+        android:color="@color/ag_primary" />
+
+</shape>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 按钮聚焦态：与未选中态（shape_button_normal）同为 ag_radius_l 圆角，
+     仅改底色与描边 —— 修复「选中后圆角突变」的不协调问题。
+     胶囊形（ag_radius_full）只保留给真正的芯片组件（selector_chip_round）。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+
+    <solid android:color="@color/ag_primary_bg" />
+
+    <corners android:radius="@dimen/ag_radius_l" />
+
+    <stroke
+        android:width="@dimen/ag_stroke_focus"
+        android:color="@color/ag_primary" />
+
+</shape>

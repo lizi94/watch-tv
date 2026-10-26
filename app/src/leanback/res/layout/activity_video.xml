@@ -1,0 +1,337 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 详情页（点播）。原布局把「简介 / 收藏 / 换源」这一行用 layout_alignBottom 贴到封面底边，
+     而右侧信息列（片名 → 备注 → 站源年份 → 导演 → 演员）同样从上往下排到同一高度区间，
+     两个区域 x 与 y 双重重叠 —— 简介按钮直接压在演员信息上。
+     现改为：信息列收敛在封面高度内并统一用 toEndOf+alignParentEnd 定宽（原写法 match_parent
+     配 alignStart 会让文本溢出屏幕右缘）；操作按钮行移到封面正下方独立成行；下方选集区接在按钮行之下。
+     所有 id 与 ViewBinding 契约保持不变。 -->
+<com.fongmi.android.tv.ui.custom.ProgressLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/progressLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- ⛔ 2026-10-26 改「焦点环外扩」：焦点框不再画在本容器上（容器里是视频渲染层，
+         foreground 会被 surface 吃掉的），也不再靠内边距给描边腾地方（那样画面会被裁）。
+         现在焦点框由下面的 @id/videoFocusRing 独立承担，向外扩一圈，画面保持满尺寸。
+         本容器不再需要 padding / foreground。 -->
+    <FrameLayout
+        android:id="@+id/video"
+        android:layout_width="@dimen/ag_vod_poster_w"
+        android:layout_height="@dimen/ag_vod_poster_h"
+        android:layout_margin="@dimen/ag_vod_poster_gap"
+        android:background="@color/black"
+        android:defaultFocusHighlightEnabled="false"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:nextFocusLeft="@id/video"
+        android:nextFocusRight="@id/content"
+        android:nextFocusUp="@id/video"
+        android:nextFocusDown="@id/content">
+
+        <androidx.media3.ui.PlayerView
+            android:id="@+id/player"
+            style="@style/Player.Vod"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:surface_type="none" />
+
+        <include
+            android:id="@+id/widget"
+            layout="@layout/view_widget_vod"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <include
+            android:id="@+id/control"
+            layout="@layout/view_control_vod"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:visibility="gone" />
+
+        <include
+            android:id="@+id/progress"
+            layout="@layout/view_progress"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+    </FrameLayout>
+
+    <!-- 海报焦点环：与 @id/video 四边对齐，再用负边距向外扩出「描边宽度」。
+         负边距由 VideoActivity 按 @dimen/ag_stroke_focus 动态设置（随字号档位 6~10dp），
+         所以这里不写死数值。不聚焦时 GONE，全屏时也强制 GONE。 -->
+    <View
+        android:id="@+id/videoFocusRing"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_alignStart="@id/video"
+        android:layout_alignTop="@id/video"
+        android:layout_alignEnd="@id/video"
+        android:layout_alignBottom="@id/video"
+        android:background="@drawable/shape_video_focus_ring"
+        android:clickable="false"
+        android:focusable="false"
+        android:importantForAccessibility="no"
+        android:visibility="gone" />
+
+    <!-- 片名：元数据列的第一行，**上边必须与海报框上边对齐**。
+         ⚠ 2026-10-22：原来这里是 marginTop=0dp —— 那是「贴着父容器顶」（y=0），
+         而海报自身有 ag_vod_poster_gap(24dp) 的上边距（y=24dp），于是片名比海报高一截，
+         视觉上整块元数据「没有和海报顶对齐」。现在让片名沿用同一个间距令牌，
+         与海报的上边距严格相等；includeFontPadding=false 去掉文字行内部的额外上留白，
+         让文字的实际顶边（而不是 View 的顶边）贴着海报顶边。 -->
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_marginStart="@dimen/ag_vod_meta_start"
+        android:layout_marginTop="@dimen/ag_vod_poster_gap"
+        android:layout_marginEnd="@dimen/ag_space_6"
+        android:ellipsize="end"
+        android:includeFontPadding="false"
+        android:singleLine="true"
+        android:textColor="@color/ag_text"
+        android:textSize="@dimen/ag_text_title"
+        tools:text="慶餘年第二季" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/remark"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/name"
+        android:layout_alignParentStart="true"
+        android:layout_marginStart="@dimen/ag_vod_meta_start"
+        android:layout_marginTop="@dimen/ag_space_2"
+        android:layout_marginEnd="@dimen/ag_space_6"
+        android:ellipsize="end"
+        android:singleLine="true"
+        android:textColor="@color/ag_text"
+        android:textSize="@dimen/ag_text_label"
+        tools:text="更新到第二季" />
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/row1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/remark"
+        android:layout_alignParentStart="true"
+        android:layout_marginStart="@dimen/ag_vod_meta_start"
+        android:layout_marginTop="@dimen/ag_space_2"
+        android:layout_marginEnd="@dimen/ag_space_6"
+        android:orientation="horizontal">
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/site"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="@dimen/ag_space_3"
+            android:singleLine="true"
+            android:textColor="@color/ag_text"
+            android:textSize="@dimen/ag_text_caption"
+            tools:text="站源：泥巴" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/year"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="@dimen/ag_space_3"
+            android:singleLine="true"
+            android:textColor="@color/ag_text"
+            android:textSize="@dimen/ag_text_caption"
+            tools:text="年份：2022" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/area"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="@dimen/ag_space_3"
+            android:singleLine="true"
+            android:textColor="@color/ag_text"
+            android:textSize="@dimen/ag_text_caption"
+            tools:text="地區：台灣" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/type"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:singleLine="true"
+            android:textColor="@color/ag_text"
+            android:textSize="@dimen/ag_text_caption"
+            tools:text="類型：科幻" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/director"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:layout_below="@+id/row1"
+        android:layout_alignParentStart="true"
+        android:layout_marginStart="@dimen/ag_vod_meta_start"
+        android:layout_marginTop="@dimen/ag_space_2"
+        android:layout_marginEnd="@dimen/ag_space_6"
+        android:nextFocusDown="@id/actor"
+        android:singleLine="true"
+        android:textColor="@color/ag_text"
+        android:textSize="@dimen/ag_text_label"
+        tools:text="導演：FongMi" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/actor"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/director"
+        android:layout_alignParentStart="true"
+        android:layout_marginStart="@dimen/ag_vod_meta_start"
+        android:layout_marginTop="@dimen/ag_space_2"
+        android:layout_marginEnd="@dimen/ag_space_6"
+        android:ellipsize="end"
+        android:maxLines="2"
+        android:nextFocusDown="@id/content"
+        android:textColor="@color/ag_text"
+        android:textSize="@dimen/ag_text_label"
+        tools:text="演員：FongMi" />
+
+    <!-- 操作按钮行：移到封面正下方独立成行，与右侧信息列彻底分离，不再重叠 -->
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/row2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/video"
+        android:layout_alignStart="@+id/video"
+        android:layout_marginTop="0dp"
+        android:orientation="horizontal">
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/content"
+            style="@style/Ag.Button.Secondary"
+            android:layout_width="wrap_content"
+            android:layout_marginEnd="@dimen/ag_space_4"
+            android:drawablePadding="@dimen/ag_space_2"
+            android:nextFocusUp="@id/video"
+            android:nextFocusDown="@id/flag"
+            android:singleLine="true"
+            android:text="@string/detail_desc"
+            app:drawableStartCompat="@drawable/ic_detail_desc" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/keep"
+            style="@style/Ag.Button.Secondary"
+            android:layout_width="wrap_content"
+            android:layout_marginEnd="@dimen/ag_space_4"
+            android:drawablePadding="@dimen/ag_space_2"
+            android:nextFocusUp="@id/video"
+            android:nextFocusDown="@id/flag"
+            android:singleLine="true"
+            android:text="@string/keep"
+            app:drawableStartCompat="@drawable/ic_detail_keep_off" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/change"
+            style="@style/Ag.Button.Secondary"
+            android:layout_width="wrap_content"
+            android:drawablePadding="@dimen/ag_space_2"
+            android:nextFocusRight="@id/change"
+            android:nextFocusUp="@id/video"
+            android:nextFocusDown="@id/flag"
+            android:singleLine="true"
+            android:text="@string/play_change"
+            app:drawableStartCompat="@drawable/ic_detail_change" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/scroll"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@+id/row2"
+        android:layout_alignParentBottom="true"
+        android:overScrollMode="never"
+        android:paddingTop="@dimen/ag_space_3">
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:paddingBottom="@dimen/ag_space_2">
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/flagTitle"
+                style="@style/Ag.GroupTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/detail_group_flag"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <androidx.leanback.widget.HorizontalGridView
+                android:id="@+id/flag"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/ag_space_4"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:paddingStart="@dimen/ag_space_6"
+                android:paddingEnd="@dimen/ag_space_6"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <androidx.leanback.widget.HorizontalGridView
+                android:id="@+id/quality"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/ag_space_4"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:paddingStart="@dimen/ag_space_6"
+                android:paddingEnd="@dimen/ag_space_6"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/episodeTitle"
+                style="@style/Ag.GroupTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/detail_group_episode"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <androidx.leanback.widget.HorizontalGridView
+                android:id="@+id/episode"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/ag_space_4"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:paddingStart="@dimen/ag_space_6"
+                android:paddingEnd="@dimen/ag_space_6"
+                android:visibility="gone" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/arrayTitle"
+                style="@style/Ag.GroupTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/detail_group_sort"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <androidx.leanback.widget.HorizontalGridView
+                android:id="@+id/array"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/ag_space_4"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:paddingStart="@dimen/ag_space_6"
+                android:paddingEnd="@dimen/ag_space_6"
+                android:visibility="gone" />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+    </androidx.core.widget.NestedScrollView>
+</com.fongmi.android.tv.ui.custom.ProgressLayout>

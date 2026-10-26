@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 缓冲浮层（老人化设计，**不按上游、也不同于旧版**）。
+     用途：视频缓冲、列表加载、进度提示，被 Notify 进度框与 ProgressLayout 复用。
+
+     设计要求：背后可能是明亮视频画面、深色海报，也可能是浅色页面（首页/历史/收藏/文件/分类），
+     必须在这三类背景上都清晰可读 —— 所以取「近黑卡片 + 纯白内容」单一形态：
+       白字 vs 最亮画面(合成后 #2D2D2D) = 13.77:1；vs 浅底页 ag_bg = 14.14:1。
+     上游的「白字直接压画面」在浅底页只有 1.11:1（不可见），故必须带底板。
+
+     尺寸刻意收敛到「详情页海报框与全屏播放都能用」的折中值：
+       进度环 ag_progress_ring(48dp) + 上下内边距 ag_space_4(16dp) → 卡片高约 80dp，
+       在 400×225dp 的详情页海报里只占约 36%（原 72dp 环 + 上下 40dp 内边距 = 152dp，占 68%，
+       带速度文字时约 85%，会整块盖住海报 —— 这就是「加载卡片过大」的根因）。
+       全屏播放时 48dp 环 × density 仍是 3 米外可辨的大小，不需要为两个宿主做两套布局。
+
+     **居中约定（重要，别改回 wrap_content 根节点）**：
+     本布局被 <include layout_width/height="match_parent"> 引入时，include 上的尺寸会**覆盖**根节点
+     自己声明的尺寸，根节点实际被拉成整屏。此时若把卡片背景放在根节点上、内容又不做居中，卡片就会
+     铺满全屏、内容贴在左上角（曾出现的「没水平垂直居中」现象）。
+     正确做法：根节点自己 match_parent + gravity=center 负责「在任意父容器里都居中」，
+     内层 LinearLayout 才承载卡片背景与内边距、尺寸随内容自适应。
+     这样无论宿主是 FrameLayout、RelativeLayout，还是被 include 拉伸，结果都是屏幕正中一张卡片。
+
+     契约：@id/traffic 被 Traffic.setSpeed() 引用（CastActivity:276 / LiveActivity:674 /
+     VideoActivity:1125），**不要删改这个 id**，否则 ViewProgressBinding 编译失败。 -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:background="@drawable/shape_progress_card"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:paddingStart="@dimen/ag_space_6"
+        android:paddingTop="@dimen/ag_space_4"
+        android:paddingEnd="@dimen/ag_space_6"
+        android:paddingBottom="@dimen/ag_space_4">
+
+        <com.google.android.material.progressindicator.CircularProgressIndicator
+            android:layout_width="@dimen/ag_progress_ring"
+            android:layout_height="@dimen/ag_progress_ring"
+            android:indeterminate="true"
+            app:indicatorColor="@color/white"
+            app:indicatorSize="@dimen/ag_progress_ring"
+            app:trackThickness="@dimen/ag_progress_ring_stroke" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/traffic"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ag_space_2"
+            android:ellipsize="marquee"
+            android:singleLine="true"
+            android:textColor="@color/white"
+            android:textSize="@dimen/ag_text_body"
+            android:visibility="gone"
+            tools:text="120 KB/s"
+            tools:visibility="visible" />
+
+    </LinearLayout>
+
+</FrameLayout>

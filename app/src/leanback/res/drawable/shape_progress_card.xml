@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 缓冲浮层底板（老人化设计，非上游方案）。
+     上游的做法是「纯白进度环 + 白字直接压在视频上」——在浅色主题与明亮画面上几乎不可见；
+     老人版曾改成主色蓝 #0B57D0 无底板，实测在中等亮度画面上只有 1.62:1，同样看不清。
+
+     本方案把缓冲浮层做成一张「近黑卡片」，文字与进度环统一用纯白：
+     底板 #101010 @88% → 合成到最亮的纯白画面后约 #2D2D2D，白字对它的对比度 13.77:1，
+     与老人版其余正文（≥13:1）同一量级；合成到浅灰页面 ag_bg 上为 14.14:1。
+     即「无论背后是视频画面、海报还是浅色页面，白字始终 ≥13.7:1」。
+
+     alpha 取 88% 而非 100%：保留一点背景透出，让老人仍能感知「背后是画面，不是在等黑屏」。
+     注意：不要改成浅色底板 + 深字 —— 视频画面亮暗不定，只有「白 on 近黑」能在全场景成立。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+
+    <solid android:color="#E0101010" />
+
+    <corners android:radius="@dimen/ag_radius_l" />
+
+    <stroke
+        android:width="@dimen/ag_stroke_hairline"
+        android:color="#33FFFFFF" />
+
+</shape>

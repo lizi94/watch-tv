@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 首页站源分类 chips（推荐 + 各分类），横向一行、可滚动，不换行不溢出 -->
+<com.google.android.material.textview.MaterialTextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/text"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:background="@drawable/selector_home_chip"
+    android:focusable="true"
+    android:focusableInTouchMode="true"
+    android:gravity="center"
+    android:minHeight="@dimen/ag_touch_min"
+    android:paddingStart="@dimen/ag_space_5"
+    android:paddingEnd="@dimen/ag_space_5"
+    android:textColor="@color/selector_home_chip_text"
+    android:textSize="@dimen/ag_text_label" />

@@ -1,0 +1,81 @@
+<resources>
+
+    <!-- ================================================================
+         长辈友好设计令牌 · 文字样式
+         目的：消除「每个 TextView 重复写 textColor + textSize」的问题。
+         用法：style="@style/Ag.Text.Body"
+         ================================================================ -->
+
+    <!-- 页面标题 / 顶栏品牌 -->
+    <style name="Ag.Text.Title" parent="android:Widget.TextView">
+        <item name="android:textSize">@dimen/ag_text_title</item>
+        <item name="android:textColor">@color/ag_text</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <!-- 区块标题（分组小标题） -->
+    <style name="Ag.Text.Headline" parent="android:Widget.TextView">
+        <item name="android:textSize">@dimen/ag_text_headline</item>
+        <item name="android:textColor">@color/ag_text</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- 正文 / 列表项文案（主力，出现最多） -->
+    <style name="Ag.Text.Body" parent="android:Widget.TextView">
+        <item name="android:textSize">@dimen/ag_text_body</item>
+        <item name="android:textColor">@color/ag_text</item>
+    </style>
+
+    <!-- 详情页正文行（备注 / 元信息 / 导演 / 演员）：24sp + 次文字色，
+         与 Ag.Text.Body 同字号但更弱，用于信息列的多行元数据。 -->
+    <style name="Ag.Text.Body.Sub" parent="Ag.Text.Body">
+        <item name="android:textColor">@color/ag_text_sub</item>
+    </style>
+
+    <!-- 次要标签 / 次级按钮文字 -->
+    <style name="Ag.Text.Label" parent="android:Widget.TextView">
+        <item name="android:textSize">@dimen/ag_text_label</item>
+        <item name="android:textColor">@color/ag_text_sub</item>
+    </style>
+
+    <!-- 说明文字 / 状态值（字号下限） -->
+    <style name="Ag.Text.Caption" parent="android:Widget.TextView">
+        <item name="android:textSize">@dimen/ag_text_caption</item>
+        <item name="android:textColor">@color/ag_text_hint</item>
+    </style>
+
+    <!-- 提示性说明（更浅） -->
+    <style name="Ag.Text.Hint" parent="Ag.Text.Caption">
+        <item name="android:textColor">@color/ag_text_hint</item>
+    </style>
+
+    <!-- 危险 / 警告文字 -->
+    <style name="Ag.Text.Danger" parent="Ag.Text.Body">
+        <item name="android:textColor">@color/ag_warn_text</item>
+    </style>
+
+    <!-- 成功 / 安全提示文字 -->
+    <style name="Ag.Text.Safe" parent="Ag.Text.Caption">
+        <item name="android:textColor">@color/ag_ok_text</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- 主色强调文字（当前选中的值） -->
+    <style name="Ag.Text.Primary" parent="Ag.Text.Body">
+        <item name="android:textColor">@color/ag_primary</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- ====== 视频层专用（位于播放/直播画面上，必须浅色） ====== -->
+    <style name="Ag.Text.OnDark" parent="android:Widget.TextView">
+        <item name="android:textSize">@dimen/ag_text_body</item>
+        <item name="android:textColor">@color/white</item>
+    </style>
+
+    <style name="Ag.Text.OnDark.Sub" parent="android:Widget.TextView">
+        <item name="android:textSize">@dimen/ag_text_label</item>
+        <item name="android:textColor">@color/white_80</item>
+    </style>
+
+</resources>

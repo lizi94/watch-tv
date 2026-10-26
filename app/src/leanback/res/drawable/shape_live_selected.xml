@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+
+    <!-- 直播浮层列表项「选中态」（当前播放条目）高亮底色：35% 透明白，
+         与手机版 selector_live 的 colorSecondaryContainer(alpha 0.7) 同级语义，
+         深色背景上清晰可辨，又不遮住文字。圆角与焦点框一致(4dp)。 -->
+    <solid android:color="#59FFFFFF" />
+
+    <corners android:radius="4dp" />
+
+</shape>

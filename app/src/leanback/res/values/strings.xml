@@ -1,0 +1,125 @@
+<resources xmlns:xliff="http://schemas.android.com/apk/res-auto">
+
+    <!-- Home -->
+    <string name="home_recommend">Recommend</string>
+    <string name="home_filter_title">Filter</string>
+    <string name="home_filter_title_of">Filter · %1$s</string>
+    <string name="home_filter_reset">Reset</string>
+    <string name="home_filter_hint">Up / down: switch condition · Left / right: pick value · Select applies at once</string>
+    <string name="home_filter_none">No filters for this category</string>
+    <string name="home_empty_category">No data in this category</string>
+    <string name="home_empty_recommend">No recommendations yet</string>
+    <!-- home_empty_offline "Not connected to the internet" was removed on 2026-10-13:
+         the home page is unreachable when offline (the launcher stays on the boot screen and
+         shows home_connect_hint), so that copy was a duplicate. -->
+    <string name="home_empty_source">Can\'t connect right now. It retries automatically.</string>
+    <string name="home_empty_no_source">No data source yet. Press the Set button above to add one.</string>
+    <string name="home_connect_hint">Connecting to the network…</string>
+    <string name="home_live">Live</string>
+    <string name="home_push">Push</string>
+    <string name="home_search">Search</string>
+    <string name="home_keep">Keep</string>
+    <string name="home_setting">Setting</string>
+    <string name="home_history">History</string>
+    <string name="home_history_entry">History</string>
+    <string name="history_title">History</string>
+    <string name="history_batch">Batch delete</string>
+    <string name="history_batch_on">Exit delete</string>
+    <string name="history_select_all">Select all</string>
+    <string name="history_select_none">Deselect all</string>
+    <string name="history_delete_selected">Delete selected</string>
+    <string name="history_delete_selected_n">Delete selected (%1$d)</string>
+    <string name="history_confirm_batch">Delete the selected %1$d history items?</string>
+    <string name="history_batch_hint">Delete mode: select items to remove, then press Delete selected.</string>
+    <string name="history_none_selected">Select items to delete first</string>
+    <string name="keep_title">Favorites</string>
+    <string name="keep_confirm_batch">Delete the selected %1$d favorite items?</string>
+    <string name="keep_batch_hint">Delete mode: select favorites to remove, then press Delete selected.</string>
+    <string name="detail_group_flag">Lines</string>
+    <string name="detail_group_episode">Episodes</string>
+    <string name="detail_group_sort">Sort</string>
+
+    <!-- Collect -->
+    <string name="collect_result">Search results for <xliff:g name="name">%s</xliff:g></string>
+
+    <!-- Push -->
+    <string name="push_clip">Push clipboard content</string>
+    <string name="push_info">Scan QR Code or enter the URL in browser\n<xliff:g name="name">%s</xliff:g></string>
+
+    <!-- Elder friendly -->
+    <string name="elder_exit_hint">Press Back again to exit</string>
+    <string name="elder_confirm_delete_history">Delete this record?</string>
+    <string name="elder_confirm_clear_history">Clear all watch records?</string>
+    <string name="elder_confirm_delete_config">Delete this configuration?</string>
+    <string name="elder_confirm_delete_backup">Delete this backup file?</string>
+
+    <!-- Playback behaviour -->
+
+    <!-- Settings groups -->
+    <string name="elder_group_common">General settings</string>
+
+    <!-- One-tap lock -->
+    <string name="elder_lock_title">One-tap lock</string>
+    <string name="elder_lock_desc">After locking, only the source picked here is used — home, search and playback all follow it; if it fails, lines switch automatically.</string>
+    <string name="elder_lock_source">Main source</string>
+    <string name="elder_lock_route">Playback line</string>
+    <string name="elder_lock_route_auto">Prefer main, auto switch</string>
+    <string name="elder_lock_route_manual">Only manually picked lines</string>
+    <string name="elder_lock_search">Search priority source</string>
+    <string name="elder_lock_search_on">On</string>
+    <string name="elder_lock_search_off">Off</string>
+    <string name="elder_lock_search_need_lock">Lock a source first, then this works</string>
+    <string name="elder_lock_apply">Lock now</string>
+    <string name="elder_lock_unlock_entry">Unlock</string>
+    <string name="elder_lock_none">Not selected</string>
+    <string name="elder_lock_hint_off">Pick the items above, then press Lock now. After that the elder only needs Play.</string>
+    <string name="elder_lock_hint_on">Locked. To change the source or live source, unlock first. Playback route and search priority can be toggled anytime.</string>
+    <string name="elder_lock_need_unlock_first">Locked. Unlock it before switching.</string>
+    <string name="elder_lock_need_source">Please pick an available source first</string>
+    <string name="elder_lock_on">Locked: %1$s</string>
+    <string name="elder_lock_off">Unlocked</string>
+
+    <!-- Category page refresh for remote control -->
+
+
+    <string name="elder_lock_live">Live source</string>
+    <string name="elder_lock_live_none">Not imported</string>
+    <string name="elder_live_need_config">Add a live source in Settings first</string>
+    <string name="elder_live_on">Live source locked</string>
+    <string name="elder_live_off">Live source unlocked</string>
+    <string name="elder_live_blocked">Live source is locked. Unlock it before switching.</string>
+    <string name="keep_none_selected">Select favorites to delete first</string>
+
+    <string name="elder_setting_entry">Elder settings</string>
+    <string name="elder_setting_title">Elder settings</string>
+    <string name="elder_setting_group_lock">Lock</string>
+    <string name="elder_setting_group_play">Playback</string>
+    <string name="elder_setting_group_display">Display</string>
+    <string name="elder_setting_group_data">Data</string>
+    <string name="elder_setting_lock_entry">One-tap lock</string>
+    <string name="elder_setting_full_entry">Auto fullscreen on play</string>
+    <string name="elder_setting_resume_entry">Auto-resume after exit</string>
+    <string name="elder_setting_sound_entry">Remote key sound</string>
+    <string name="elder_setting_index_search_entry">Quick search on home</string>
+    <string name="elder_setting_font_entry">Font size</string>
+    <string name="elder_setting_font_standard">Standard</string>
+    <string name="elder_setting_font_large">Large</string>
+    <string name="elder_setting_font_extra">Extra large</string>
+    <string name="elder_setting_font_extra_large">Extra large +</string>
+    <string name="elder_setting_font_huge">Maximum</string>
+    <string name="elder_setting_size_entry">Image size</string>
+    <string name="elder_setting_restore_entry">Restore default settings</string>
+    <string name="elder_setting_restore_confirm">Restore the settings on this page to default? Your sources, favorites and watch history will be kept.</string>
+    <string name="elder_setting_restore_done">Default settings restored</string>
+
+    <string name="elder_search_empty">Please enter a keyword first</string>
+    <string name="elder_search_no_source">No source available to search</string>
+    <string name="elder_detail_empty_search">This source has nothing playable. Searching for “%1$s”</string>
+    <string name="detail_meta_placeholder">None</string>
+    <string name="elder_search_source_locked">Search source is locked</string>
+    <string name="setting_cache_confirm">Clear cache? Videos and images will need to reload.</string>
+    <string name="elder_site_blocked">Data source is locked. Unlock it before switching.</string>
+    <string name="elder_site_locked_hint">Locked · unlock first to change</string>
+    <string name="elder_live_locked_hint">Locked · unlock first to change</string>
+    <string name="elder_confirm_restore_backup">Restoring overwrites all current data (favorites, history, sources). Continue?</string>
+</resources>

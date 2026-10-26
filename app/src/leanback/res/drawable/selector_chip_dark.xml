@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 播放器/直播深色面板按钮统一选择器（替代浅色页面用的 selector_chip） -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/shape_chip_dark_focused" android:state_focused="true" />
+    <item android:drawable="@drawable/shape_chip_dark_activated" android:state_selected="true" />
+    <item android:drawable="@drawable/shape_chip_dark_normal" />
+</selector>

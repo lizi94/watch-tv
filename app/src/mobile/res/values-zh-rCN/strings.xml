@@ -1,0 +1,122 @@
+<resources xmlns:xliff="http://schemas.android.com/apk/res-auto">
+
+    <!-- App -->
+    <string name="app_keep">我的收藏</string>
+    <string name="app_history">最近观看</string>
+
+    <!-- Nav -->
+    <string name="nav_vod">点播</string>
+    <string name="nav_live">直播</string>
+    <string name="nav_setting">设置</string>
+
+    <!-- Menu -->
+    <string name="menu_sync">同步</string>
+    <string name="menu_delete">删除</string>
+    <string name="menu_search">搜索</string>
+    <string name="menu_reset">重置</string>
+
+    <!-- Vod -->
+    <string name="vod_home">推荐</string>
+
+    <!-- Detail -->
+    <string name="detail_flag">线路</string>
+    <string name="detail_episode">选集</string>
+    <string name="detail_quality">画质</string>
+    <string name="detail_content">简介</string>
+    <string name="detail_search">快搜“<xliff:g name="name">%s</xliff:g>”</string>
+
+    <!-- Device -->
+    <string name="device_select">选择装置</string>
+    <string name="device_offline">装置已离线</string>
+    <string name="device_scan">请扫描影视 QRCode 进行绑定</string>
+
+    <!-- Control -->
+    <string name="control_speed">倍速</string>
+    <string name="control_scale">缩放</string>
+    <string name="control_track">轨道</string>
+    <string name="control_other">其它</string>
+
+    <!-- Dialog -->
+    <string name="dialog_delete_record">删除全部纪录？</string>
+
+    <!-- Timer -->
+    <string name="timer_5">5 分钟</string>
+    <string name="timer_15">15 分钟</string>
+    <string name="timer_30">30 分钟</string>
+    <string name="timer_60">1 小时</string>
+    <string name="timer_delay">延长 5 分钟</string>
+    <string name="timer_cancel">取消定时器</string>
+
+    <!-- Hint -->
+    <string name="shortcut"> 已于主萤幕新增捷径。</string>
+
+    <string-array name="select_background">
+        <item>关</item>
+        <item>开</item>
+        <item>画中画</item>
+    </string-array>
+
+
+    <string name="menu_select_all">全选</string>
+    <string name="menu_select_none">取消全选</string>
+    <string name="dialog_delete_selected_history">确定要删除所选的 %1$d 条观看记录吗？</string>
+    <string name="dialog_delete_selected_keep">确定要删除所选的 %1$d 条收藏吗？</string>
+
+    <!-- 长辈锁：直播源 -->
+    <string name="elder_lock_live">锁定直播源</string>
+    <string name="elder_lock_live_none">未导入</string>
+    <string name="elder_live_need_config">还没有直播源，请先在 设置 › 直播 中添加</string>
+    <string name="elder_live_on">直播源已锁定</string>
+    <string name="elder_live_off">直播源已解锁</string>
+    <string name="elder_live_blocked">直播源已锁定，如需更换请先解锁</string>
+    <string name="elder_site_blocked">数据源已锁定，如需更换请先解锁</string>
+
+    <!-- 长辈锁：一键锁定 -->
+    <string name="elder_lock_title">一键锁定</string>
+    <string name="elder_lock_source">主数据源</string>
+    <string name="elder_lock_route">播放线路</string>
+    <string name="elder_lock_route_auto">主源优先，不行自动换源</string>
+    <string name="elder_lock_route_manual">手动选线路</string>
+    <string name="elder_lock_search">搜索优先源</string>
+    <string name="elder_lock_search_on">已开启</string>
+    <string name="elder_lock_search_off">未开启</string>
+    <string name="elder_lock_search_need_lock">请先锁定一个数据源</string>
+    <string name="elder_detail_empty_search">这个源没有可播放的内容，正在为你搜索「%1$s」</string>
+    <string name="elder_search_no_source">没有可用的搜索源，请先导入数据源</string>
+    <string name="elder_lock_apply">一键锁定</string>
+    <string name="elder_lock_unlock_entry">解锁</string>
+    <string name="elder_lock_none">未选择</string>
+    <string name="elder_lock_hint_off">选好上面几项后按「一键锁定」，之后老人只需按「播放」。</string>
+    <string name="elder_lock_hint_on">已锁定。要换数据源或直播源请先「解锁」；「播放线路」和「搜索优先源」可随时切换。</string>
+    <string name="elder_lock_need_unlock_first">已锁定，如需更换请先解锁</string>
+    <string name="elder_lock_need_source">请先选择一个可用的数据源</string>
+    <string name="elder_lock_on">已锁定：%1$s</string>
+    <string name="elder_lock_off">已解锁</string>
+
+    <!-- 长辈：退出提示 -->
+    <string name="elder_exit_hint">再按一次返回键退出</string>
+
+    <string name="setting_exit_resume">退出自动续播</string>
+    <string name="elder_setting_entry">长辈设置</string>
+    <string name="elder_setting_title">长辈设置</string>
+    <string name="elder_setting_group_lock">锁定</string>
+    <string name="elder_setting_group_play">播放</string>
+    <string name="elder_setting_group_display">显示</string>
+    <string name="elder_setting_group_data">数据</string>
+    <string name="elder_setting_lock_entry">一键锁定</string>
+    <string name="elder_setting_full_entry">点播自动全屏</string>
+    <string name="elder_setting_resume_entry">退出自动续播</string>
+    <string name="elder_setting_index_search_entry">首页快速搜索</string>
+    <string name="elder_setting_size_entry">图片尺寸</string>
+    <string name="elder_setting_restore_entry">恢复默认设置</string>
+    <string name="elder_setting_restore_confirm">确定恢复全部设置为默认吗？数据源、收藏与缓存都会保留。</string>
+    <string name="elder_setting_restore_done">已恢复默认设置</string>
+    <string name="elder_setting_nav_live_entry">底部导航直播入口</string>
+
+    <!-- 首页空态（手机版）：分类列表拿不到时的提示 + 一键重新加载。
+         文案与电视版（home_empty_source / home_empty_retry）保持完全一致。 -->
+    <string name="empty_source">暂时连接不上</string>
+    <string name="empty_retry">重新加载</string>
+    <string name="elder_confirm_restore_backup">恢复会覆盖当前全部数据（收藏、历史、数据源配置），确定继续吗？</string>
+    <string name="elder_confirm_delete_backup">确定要删除这个备份文件吗？</string>
+</resources>

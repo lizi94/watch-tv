@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 视频/直播画面浮层专用文字色：深色底上保持高对比。
+     聚焦/选中一律纯白 —— 聚焦面已是主色蓝（白 6.39:1），
+     直播面板聚焦态是白描边深底（白 ≥12:1）。 -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="@color/white" android:state_selected="true" />
+    <item android:color="@color/white" android:state_checked="true" />
+    <item android:color="@color/white" android:state_focused="true" />
+    <item android:color="@color/white" />
+</selector>

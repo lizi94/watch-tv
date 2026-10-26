@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 2026-10-26 规格归一化：viewBox 960 → 24。
+     只包一层 <group scale="0.025">（960 × 0.025 = 24，坐标 80~880 → 2~22，正好落在 20/24 安全区）。
+     ⚠ 路径数据一个字符都没改，渲染结果与改造前**像素级一致**，只是坐标系与全站统一。 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <group
+        android:scaleX="0.025"
+        android:scaleY="0.025">
+        <path
+                android:fillColor="@android:color/white"
+                android:pathData="M160,800Q127,800 103.5,776.5Q80,753 80,720L80,240Q80,207 103.5,183.5Q127,160 160,160L400,160L480,240L800,240Q833,240 856.5,263.5Q880,287 880,320L880,720Q880,753 856.5,776.5Q833,800 800,800L160,800Z" />
+    </group>
+</vector>

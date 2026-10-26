@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 一键锁定页（全站唯一换源入口）：主数据源 / 播放线路 / 搜索优先源 / 直播源 + 锁定解锁合一按钮。全部尺寸与配色走 ag_* 设计令牌，样式走 Ag.* 组件样式。 -->
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="@dimen/ag_space_6">
+
+        <com.google.android.material.textview.MaterialTextView
+            style="@style/Ag.Text.Title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/elder_lock_title" />
+
+        <com.google.android.material.textview.MaterialTextView
+            style="@style/Ag.Text.Caption"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ag_space_2"
+            android:text="@string/elder_lock_desc" />
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/site"
+            style="@style/Ag.ListItem"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ag_space_6"
+            android:nextFocusDown="@id/route"
+            android:orientation="horizontal">
+
+            <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Body"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/ag_space_4"
+                android:text="@string/elder_lock_source" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/siteText"
+                style="@style/Ag.Text.Value"
+                android:layout_height="wrap_content"
+                tools:text="饭太硬" />
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/route"
+            style="@style/Ag.ListItem"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ag_space_3"
+            android:nextFocusDown="@id/search"
+            android:orientation="horizontal">
+
+            <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Body"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/ag_space_4"
+                android:text="@string/elder_lock_route" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/routeText"
+                style="@style/Ag.Text.Value"
+                android:layout_height="wrap_content"
+                tools:text="源内自动择优" />
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/search"
+            style="@style/Ag.ListItem"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ag_space_3"
+            android:nextFocusDown="@id/live"
+            android:orientation="horizontal">
+
+            <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Body"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/ag_space_4"
+                android:text="@string/elder_lock_search" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/searchText"
+                style="@style/Ag.Text.Value"
+                android:layout_height="wrap_content"
+                tools:text="已开启" />
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/live"
+            style="@style/Ag.ListItem"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ag_space_3"
+            android:nextFocusDown="@id/apply"
+            android:orientation="horizontal">
+
+            <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Body"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/ag_space_4"
+                android:text="@string/elder_lock_live" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/liveText"
+                style="@style/Ag.Text.Value"
+                android:layout_height="wrap_content"
+                tools:text="未导入" />
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/hint"
+            style="@style/Ag.Text.Label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ag_space_4"
+            android:background="@drawable/shape_ag_group"
+            android:paddingStart="@dimen/ag_space_4"
+            android:paddingTop="@dimen/ag_space_3"
+            android:paddingEnd="@dimen/ag_space_4"
+            android:paddingBottom="@dimen/ag_space_3"
+            android:textColor="@color/ag_primary_text"
+            tools:text="锁定后点击同一按钮即可解锁。" />
+
+        <!-- 锁定/解锁合一按钮：未锁时「一键锁定」，已锁时变「解锁」，点击即切换 -->
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/apply"
+            style="@style/Ag.Button.Primary"
+            android:layout_width="match_parent"
+            android:layout_marginTop="@dimen/ag_space_5"
+            android:singleLine="true"
+            tools:text="一键锁定" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+</androidx.core.widget.NestedScrollView>

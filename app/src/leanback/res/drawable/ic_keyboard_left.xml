@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 2026-10-26 规格归一化：viewBox 48 → 24，并修正「图案占画布比例」。
+     原文件坐标范围 -9.90~36.00（跨度 45.90），占画布 96%，与全站标准的 83% 不一致，
+     其中坐标出现负值的还会绘制到画布外（被裁）。
+     现等比缩放到 20/24 安全区并居中：scale=0.4357，平移=-1.05。**图标形态不变**，只是大小与位置对齐。 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <group
+        android:pivotX="13.05"
+        android:pivotY="13.05"
+        android:scaleX="0.4357"
+        android:scaleY="0.4357"
+        android:translateX="-1.05"
+        android:translateY="-1.05">
+        <path
+                android:fillColor="@color/ag_text"
+                android:pathData="M28.05,36 L16,23.95 28.05,11.9l2.15,2.15 -9.9,9.9 9.9,9.9Z" />
+    </group>
+</vector>

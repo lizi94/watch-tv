@@ -1,0 +1,413 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    tools:ignore="NestedWeights">
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="@dimen/ag_space_6">
+
+        <!-- ============ 常用设置 ============ -->
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ag_space_6"
+            android:layout_marginBottom="@dimen/ag_space_3"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <View
+                android:layout_width="@dimen/ag_space_1"
+                android:layout_height="@dimen/ag_space_6"
+                android:background="@drawable/shape_ag_bar" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/ag_space_3"
+                android:text="@string/elder_group_common"
+                android:textColor="@color/ag_text_sub"
+                android:textSize="@dimen/ag_text_headline" />
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/elderSettings"
+            style="@style/Ag.ListItem"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ag_space_4"
+            android:nextFocusDown="@id/vod"
+            android:orientation="horizontal">
+
+            <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Body"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/ag_space_4"
+                android:text="@string/elder_setting_entry" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/elderSettingsText"
+                style="@style/Ag.Text.Value"
+                android:layout_height="wrap_content"
+                tools:text="未锁定" />
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ag_space_4"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:id="@+id/vod"
+                style="@style/Ag.ListItem"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/ag_space_4"
+                android:layout_weight="1"
+                android:nextFocusDown="@id/live"
+                android:orientation="horizontal">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="@dimen/ag_space_4"
+                    android:layout_weight="0.3"
+                    android:text="@string/setting_vod"
+                    android:textColor="@color/ag_text"
+                    android:textSize="@dimen/ag_text_body" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/vodUrl"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="0.7"
+                    android:ellipsize="middle"
+                    android:gravity="end"
+                    android:singleLine="true"
+                    android:textColor="@color/ag_text"
+                    android:textSize="@dimen/ag_text_body"
+                    tools:ignore="NestedWeights"
+                    tools:text="https://" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/vodHistory"
+                style="@style/Ag.IconButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_setting_history" />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ag_space_4"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:id="@+id/live"
+                style="@style/Ag.ListItem"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/ag_space_4"
+                android:layout_weight="1"
+                android:orientation="horizontal">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="@dimen/ag_space_4"
+                    android:layout_weight="0.3"
+                    android:text="@string/setting_live"
+                    android:textColor="@color/ag_text"
+                    android:textSize="@dimen/ag_text_body" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/liveUrl"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="0.7"
+                    android:ellipsize="middle"
+                    android:gravity="end"
+                    android:singleLine="true"
+                    android:textColor="@color/ag_text"
+                    android:textSize="@dimen/ag_text_body"
+                    tools:ignore="NestedWeights"
+                    tools:text="https://" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/liveHistory"
+                style="@style/Ag.IconButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_setting_history" />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ag_space_4"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:id="@+id/wall"
+                style="@style/Ag.ListItem"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/ag_space_4"
+                android:layout_weight="1"
+                android:orientation="horizontal">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="@dimen/ag_space_4"
+                    android:layout_weight="0.3"
+                    android:text="@string/setting_wall"
+                    android:textColor="@color/ag_text"
+                    android:textSize="@dimen/ag_text_body" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/wallUrl"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="0.7"
+                    android:ellipsize="middle"
+                    android:gravity="end"
+                    android:singleLine="true"
+                    android:textColor="@color/ag_text"
+                    android:textSize="@dimen/ag_text_body"
+                    tools:ignore="NestedWeights"
+                    tools:text="https://" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+            <!-- 图标语义对齐动作（2026-10-24 交换）：
+                 wallDefault 的动作是「换下一张内置壁纸」⇒ 用刷新图标；
+                 wallRefresh 的动作是「恢复默认壁纸 putWall(0)」⇒ 用房子图标。
+                 老人只能靠图标理解，原来两个是反的。 -->
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/wallDefault"
+                style="@style/Ag.IconButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/ag_space_4"
+                android:src="@drawable/ic_setting_refresh" />
+
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/wallRefresh"
+                style="@style/Ag.IconButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_setting_home" />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/player"
+            style="@style/Ag.ListItem"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ag_space_4"
+            android:orientation="horizontal">
+
+            <com.google.android.material.textview.MaterialTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/setting_player"
+                android:textColor="@color/ag_text"
+                android:textSize="@dimen/ag_text_body" />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/danmaku"
+            style="@style/Ag.ListItem"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ag_space_4"
+            android:orientation="horizontal">
+
+            <com.google.android.material.textview.MaterialTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/setting_danmaku"
+                android:textColor="@color/ag_text"
+                android:textSize="@dimen/ag_text_body" />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/incognito"
+            style="@style/Ag.ListItem"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ag_space_4"
+            android:orientation="horizontal">
+
+            <com.google.android.material.textview.MaterialTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/ag_space_4"
+                android:text="@string/setting_incognito"
+                android:textColor="@color/ag_text"
+                android:textSize="@dimen/ag_text_body" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/incognitoText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="end"
+                android:textColor="@color/ag_text"
+                android:textSize="@dimen/ag_text_body"
+                tools:text="Off" />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/doh"
+            style="@style/Ag.ListItem"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ag_space_4"
+            android:orientation="horizontal">
+
+            <com.google.android.material.textview.MaterialTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/ag_space_4"
+                android:text="@string/setting_doh"
+                android:textColor="@color/ag_text"
+                android:textSize="@dimen/ag_text_body" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/dohText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="end"
+                android:textColor="@color/ag_text"
+                android:textSize="@dimen/ag_text_body"
+                tools:text="Google" />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ag_space_4"
+            android:orientation="horizontal">
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:id="@+id/backup"
+                style="@style/Ag.ListItem"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/ag_space_4"
+                android:layout_weight="1"
+                android:orientation="horizontal">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/setting_backup"
+                    android:textColor="@color/ag_text"
+                    android:textSize="@dimen/ag_text_body" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:id="@+id/restore"
+                style="@style/Ag.ListItem"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="horizontal">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/setting_restore"
+                    android:textColor="@color/ag_text"
+                    android:textSize="@dimen/ag_text_body" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ag_space_4"
+            android:orientation="horizontal">
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:id="@+id/cache"
+                style="@style/Ag.ListItem"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/ag_space_4"
+                android:layout_weight="1"
+                android:orientation="horizontal">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="@dimen/ag_space_4"
+                    android:text="@string/setting_cache"
+                    android:textColor="@color/ag_text"
+                    android:textSize="@dimen/ag_text_body" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/cacheText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="end"
+                    android:textColor="@color/ag_text"
+                    android:textSize="@dimen/ag_text_body"
+                    tools:text="1.0 MB" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:id="@+id/version"
+                style="@style/Ag.ListItem"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="horizontal">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="@dimen/ag_space_4"
+                    android:text="@string/setting_version"
+                    android:textColor="@color/ag_text"
+                    android:textSize="@dimen/ag_text_body" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/versionText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="end"
+                    android:textColor="@color/ag_text"
+                    android:textSize="@dimen/ag_text_body"
+                    tools:text="1.2.1" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+        </androidx.appcompat.widget.LinearLayoutCompat>
+    </androidx.appcompat.widget.LinearLayoutCompat>
+</androidx.core.widget.NestedScrollView>

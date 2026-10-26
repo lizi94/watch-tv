@@ -1,0 +1,145 @@
+<resources>
+
+    <!-- ================================================================
+         长辈友好设计令牌 · 尺寸（唯一来源）
+         规则：布局中禁止出现裸 dp / sp 数值，一律引用本文件令牌。
+         间距一律落在 4dp 栅格上。
+         ================================================================ -->
+
+    <!-- ==== 间距（4dp 栅格） ==== -->
+    <dimen name="ag_space_1">4dp</dimen>
+    <dimen name="ag_space_2">8dp</dimen>
+    <dimen name="ag_space_3">12dp</dimen>
+    <dimen name="ag_space_4">16dp</dimen>
+    <dimen name="ag_space_5">20dp</dimen>
+    <dimen name="ag_space_6">24dp</dimen>
+    <dimen name="ag_space_7">28dp</dimen>
+    <dimen name="ag_space_8">32dp</dimen>
+    <dimen name="ag_space_12">48dp</dimen>
+    <dimen name="ag_space_16">64dp</dimen>
+
+    <!-- 负向外扩：用于抵消子项的外边距，让首个芯片与标题左边缘光学对齐。
+         原版写死 -6dp，与子项 6dp 外边距配对；两者同步归到 4dp 栅格后为 -8dp / 8dp。 -->
+    <dimen name="ag_space_neg_2">-8dp</dimen>
+
+    <!-- ==== 圆角（4 级）
+         ag_radius_xl(28dp) 已于 2026-10-13 死资源清理中删除：全站零引用。 ==== -->
+    <dimen name="ag_radius_s">8dp</dimen>
+    <dimen name="ag_radius_m">12dp</dimen>
+    <dimen name="ag_radius_l">20dp</dimen>
+    <dimen name="ag_radius_full">100dp</dimen>
+
+    <!-- ==== 描边（3 级） ====
+         ag_stroke_focus = **5dp**（演进：3dp → 4dp → 6dp → 5dp）。
+         焦点框是老人唯一能依赖的「我现在在哪」信号，必须醒目；但 6dp 时档位 4 会被放大到
+         **12dp**，太粗、还会把画面/卡片边缘吃掉一大圈 ⇒ 2026-10-26 下调到 5dp。
+         shape 的 <stroke> **向图形内部绘制**：不改变 View 的测量尺寸、也不影响任何外边距
+         —— 加粗前后布局、网格间距、字号/图片档位全部不受影响。
+
+         ⚠️ 本值是 dp，会随「字号档位」被 BaseActivity#hackResources 的全局 density
+         等比放大（刻意的：跟随字号档位），5dp 的实际曲线为：
+             档位 0（×1.2）→ 6.0dp
+             档位 1（×1.4）→ 7.0dp
+             档位 2（×1.6）→ 8.0dp
+             档位 3（×1.8）→ 9.0dp
+             档位 4（×2.0）→ 10.0dp
+         即「每档 +1dp」的等距递进：低档位细、高档位粗，但高档位不再失控（原 6dp 是 +1.2/档、顶到 12dp）。
+         dp 按设备真实 density 换算 ⇒ 720p / 1080p / 4K 电视在同一档位下视觉粗细一致。
+
+         「图片尺寸档位」（PlayerSetting.getSize → 列数 4~7）只改每行列数、**不改 density**，
+         故不参与本值缩放 —— 用户 2026-10-12 裁定：所有焦点框固定同宽，封面不随图片档位变化。
+         唯一例外：shape_live_focused（直播浮层）用自己的 1.5dp 白 + 4dp，不套本令牌。 -->
+    <dimen name="ag_stroke_hairline">1dp</dimen>
+    <dimen name="ag_stroke_normal">2dp</dimen>
+    <dimen name="ag_stroke_focus">5dp</dimen>
+
+    <!-- ==== 字号（6 级语义 + 1 级展示数字，下限 20sp） ==== -->
+    <dimen name="ag_text_title">32sp</dimen>
+    <dimen name="ag_text_headline">28sp</dimen>
+    <dimen name="ag_text_body">24sp</dimen>
+    <dimen name="ag_text_label">22sp</dimen>
+    <dimen name="ag_text_caption">20sp</dimen>
+
+    <!-- ==== 直播浮层三列（分组 / 频道 / 节目单）文本字号 ====
+         LiveActivity.setWidth(...) 用 Resources.getDimension() 读这里的值换成像素去量列宽，
+         与 adapter_group / adapter_channel / adapter_epg_data 里的 android:textSize 引用<b>同一批令牌</b>：
+         改字号只需改这一处，列宽会自动跟随，绝不会再出现「字号放大、列宽还按旧字号算 → 文字被裁」。
+         分组 / 频道 = 老人档 22sp（上游是 16sp）；节目单保持上游 16sp / 时间 14sp。 ==== -->
+    <dimen name="ag_live_group_text">22sp</dimen>
+    <dimen name="ag_live_channel_text">22sp</dimen>
+    <dimen name="ag_live_epg_title">16sp</dimen>
+    <dimen name="ag_live_epg_time">14sp</dimen>
+
+    <!-- ==== 控件尺寸（老人友好下限） ==== -->
+    <dimen name="ag_touch_min">64dp</dimen>
+    <dimen name="ag_button_h">72dp</dimen>
+    <!-- ==== 图标 / 缩略图尺寸 ====
+         按数值命名，取值与改造前逐一相同 —— 本次只做令牌化，未改动任何图标实际大小，
+         以规避「改尺寸导致图文错位 / 图片拉伸」的风险。
+         后续若要上调，只需改本文件一处。 ==== -->
+    <dimen name="ag_icon_36">36dp</dimen>
+    <dimen name="ag_icon_40">40dp</dimen>
+    <dimen name="ag_icon_48">48dp</dimen>
+    <dimen name="ag_icon_56">56dp</dimen>
+    <dimen name="ag_icon_80">80dp</dimen>
+
+    <!-- ==== 详情页封面（固定 16:9，不随内容变化） ==== -->
+    <dimen name="ag_vod_poster_w">400dp</dimen>
+    <dimen name="ag_vod_poster_h">225dp</dimen>
+
+    <!-- ==== 详情页行高（API 24 起统一生效，不走 XML lineHeight）==== -->
+    <dimen name="ag_line_display">46dp</dimen>
+    <dimen name="ag_line_body">28dp</dimen>
+
+    <!-- ==== 详情页网格栅格间距 ====
+         ⚠ 必须用 **Activity 侧** Resources 读取（getResources().getDimensionPixelSize）。
+         历史写法是 ResUtil.dp2px(8) —— 走 Application 侧的 density，
+         既不随字号档位、也不随大屏补偿缩放；而项的内边距（shape_item_normal/focused 的
+         上下 8dp / 左右 12dp）随档位缩放 → 档位越高，格与格之间越挤、内边距越阔。
+         改走 Activity 侧后，间距与内边距同比缩放，栅格才自洽。 -->
+    <dimen name="ag_grid_gap">8dp</dimen>
+
+    <!-- ==== 加载/缓冲浮层（view_progress） ====
+         本浮层同时出现在两个差异极大的宿主里：
+           ① 详情页海报框 @id/video（400×225dp）；
+           ② 全屏播放（@id/video 变 MATCH_PARENT）。
+         原尺寸（72dp 环 + 上下各 40dp 内边距）算出的卡片高约 152dp，直接占掉海报高度的 68%、
+         带速度文字时约 85% —— 在海报里就是「一整块黑卡片盖住画面」。
+         收敛到 48dp 环 + 上下 16dp 内边距后卡片约 80dp（占海报 36%），全屏下仍是 3 米外可读的大小。 -->
+    <dimen name="ag_progress_ring">48dp</dimen>
+    <dimen name="ag_progress_ring_stroke">4dp</dimen>
+
+    <!-- ==== 弹窗（三段式：标题 / 内容 / 按钮行） ====
+         列表项 64dp：24sp 文字 + 上下 8dp 内边距需要 48dp，写死 40dp 会把文字上下裁掉；
+         列表上限 352dp：24sp 字号下一屏放得下 4~5 项，超出滚动，按钮行不会被顶出屏幕。 -->
+    <dimen name="ag_dialog_item_h">64dp</dimen>
+    <dimen name="ag_dialog_list_max">352dp</dimen>
+    <dimen name="ag_key_size">80dp</dimen>
+    <dimen name="ag_func_size">120dp</dimen>
+
+    <!-- ==== 弹窗内二维码（扫码上传配置用，正方形） ==== -->
+    <dimen name="ag_qr_size">180dp</dimen>
+
+    <!-- ==== 首页「筛选」弹窗的值胶囊高度 ====
+         48dp = 24sp 文字 + 上下各 12dp 内边距，够老人看清也够遥控器聚焦；
+         比 ag_button_h(72dp) 矮一档，因为筛选面板里同一屏要放 3 组条件（组名 + 值行），
+         值行若也 72dp，三组就会撑破 ag_dialog_list_max 的高度上限、只剩一组可见。
+         复用 ag_dialog_list_max(352dp) 作列表上限：3 组 ×（20sp 组名 + 48dp 值行 + 间距）≈ 270dp，
+         留出滚动余量；随字号档位等比放大（dp 令牌 → hackResources 缩放）。 -->
+    <dimen name="ag_filter_value_h">48dp</dimen>
+    <!-- ==== 详情页海报四周统一留白 ====
+         2026-10-17：此前四周并不相等 —— 上是 ag_space_6(24dp)、左是 24dp，
+         但右边是「海报自身右边距 24dp + 信息列 marginStart 24dp = **48dp**」（两个 margin 叠加），
+         下边是 row2 的 ag_space_4(16dp)。老人观感就是"海报偏左上、右边和下边空得不一样多"。
+         现在四边统一引用本令牌（一个数控制全部），随字号档位与大屏补偿等比放大。 -->
+    <dimen name="ag_vod_poster_gap">24dp</dimen>
+
+    <!-- 详情页「元数据列」的左起点 = 海报左留白 24 + 海报宽 400 + 海报与文字间距 24 = 448dp。
+         ⚠ 派生值：若调整 ag_vod_poster_w 或 ag_vod_poster_gap，**必须同步改这里**。
+         为什么需要它：RelativeLayout 里 wrap_content + alignParentEnd 是「右对齐」——
+         元数据各行文字长度不同 ⇒ 左边缘参差不齐，看起来没有和海报框对齐；
+         而 match_parent 配 layout_toEndOf 会被 RelativeLayout 忽略（宽度按整个父宽算，
+         文字会压到海报上）。所以改用「左起点固定 + match_parent 填满剩余」的写法。 -->
+    <dimen name="ag_vod_meta_start">448dp</dimen>
+
+</resources>

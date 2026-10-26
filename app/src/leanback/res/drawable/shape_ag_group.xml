@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 设置页「长辈设置」分组容器：淡蓝底 + 浅蓝描边，与内部白底列表项形成层次，
+     让老人在长列表里一眼锁定最常改的三项。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+
+    <solid android:color="@color/ag_group_bg" />
+
+    <corners android:radius="@dimen/ag_radius_l" />
+
+    <stroke
+        android:width="@dimen/ag_stroke_normal"
+        android:color="@color/ag_stroke" />
+
+    <padding
+        android:bottom="@dimen/ag_space_3"
+        android:left="@dimen/ag_space_3"
+        android:right="@dimen/ag_space_3"
+        android:top="@dimen/ag_space_3" />
+
+</shape>

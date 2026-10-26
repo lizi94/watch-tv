@@ -1,0 +1,124 @@
+<resources xmlns:xliff="http://schemas.android.com/apk/res-auto">
+
+    <!-- Home -->
+    <string name="home_recommend">推薦</string>
+    <string name="home_filter_title">篩選</string>
+    <string name="home_filter_title_of">篩選 · %1$s</string>
+    <string name="home_filter_reset">重設</string>
+    <string name="home_filter_hint">上下鍵切換條件 · 左右鍵選值 · 選中立即生效</string>
+    <string name="home_filter_none">目前分類沒有篩選條件</string>
+    <string name="home_empty_category">此分類暫無資料</string>
+    <string name="home_empty_recommend">暫無推薦內容</string>
+    <!-- home_empty_offline「網路未連線」已於 2026-10-13 刪除：
+         無網時首頁根本進不來（停在啟動畫面顯示 home_connect_hint），該文案屬重複提示。 -->
+    <string name="home_empty_source">暫時連接不上，網路好了會自動重試</string>
+    <string name="home_empty_no_source">還沒有設定資料來源，請按上面的「設定」按鈕新增</string>
+    <string name="home_connect_hint">正在連線網路…</string>
+    <string name="home_live">直播</string>
+    <string name="home_push">推送</string>
+    <string name="home_search">搜尋</string>
+    <string name="home_keep">收藏</string>
+    <string name="home_setting">設定</string>
+    <string name="home_history">最近觀看</string>
+    <string name="home_history_entry">歷史</string>
+    <string name="history_title">歷史記錄</string>
+    <string name="history_batch">批次刪除</string>
+    <string name="history_batch_on">退出刪除</string>
+    <string name="history_select_all">全選</string>
+    <string name="history_select_none">取消全選</string>
+    <string name="history_delete_selected">刪除所選</string>
+    <string name="history_delete_selected_n">刪除所選（%1$d）</string>
+    <string name="history_confirm_batch">確定要刪除所選的 %1$d 條觀看記錄嗎？</string>
+    <string name="history_batch_hint">進入刪除模式：點選要刪除的記錄，選好後按「刪除所選」。</string>
+    <string name="history_none_selected">請先點選要刪除的記錄</string>
+    <string name="keep_title">收藏</string>
+    <string name="keep_confirm_batch">確定要刪除所選的 %1$d 條收藏嗎？</string>
+    <string name="keep_batch_hint">進入刪除模式：點選要刪除的收藏，選好後按「刪除所選」。</string>
+    <string name="detail_group_flag">線路</string>
+    <string name="detail_group_episode">選集</string>
+    <string name="detail_group_sort">排序</string>
+
+    <!-- Collect -->
+    <string name="collect_result">「<xliff:g name="name">%s</xliff:g>」的搜尋結果</string>
+
+    <!-- Push -->
+    <string name="push_clip">推送剪貼簿內容</string>
+    <string name="push_info">使用手機掃描 QR Code，或於瀏覽器輸入網址\n<xliff:g name="name">%s</xliff:g></string>
+
+    <!-- 老人友善 -->
+    <string name="elder_exit_hint">再按一次「返回」鍵結束</string>
+    <string name="elder_confirm_delete_history">確定要刪除這筆觀看紀錄嗎？</string>
+    <string name="elder_confirm_clear_history">確定要清空全部觀看紀錄嗎？</string>
+    <string name="elder_confirm_delete_config">確定要刪除這個設定嗎？</string>
+    <string name="elder_confirm_delete_backup">確定要刪除這個備份檔嗎？</string>
+
+    <!-- 播放行為 -->
+
+    <!-- 設定頁分組 -->
+    <string name="elder_group_common">常用設定</string>
+
+    <!-- 一鍵鎖定 -->
+    <string name="elder_lock_title">一鍵鎖定</string>
+    <string name="elder_lock_desc">鎖定後只用這裡選的資料來源，首頁、搜尋、播放都跟著它，放不出來會自動換線路。</string>
+    <string name="elder_lock_source">主資料源</string>
+    <string name="elder_lock_route">播放線路</string>
+    <string name="elder_lock_route_auto">主源優先，不行自動換源</string>
+    <string name="elder_lock_route_manual">只用手動選的線路</string>
+    <string name="elder_lock_search">搜尋優先源</string>
+    <string name="elder_lock_search_on">已開啟</string>
+    <string name="elder_lock_search_off">未開啟</string>
+    <string name="elder_lock_search_need_lock">請先鎖定一個資料源</string>
+    <string name="elder_lock_apply">一鍵鎖定</string>
+    <string name="elder_lock_unlock_entry">解鎖</string>
+    <string name="elder_lock_none">未選擇</string>
+    <string name="elder_lock_hint_off">選好上面幾項後按「一鍵鎖定」，之後長輩只需按「播放」。</string>
+    <string name="elder_lock_hint_on">已鎖定。要換資料源或直播源請先「解鎖」；「播放線路」和「搜尋優先源」可隨時切換。</string>
+    <string name="elder_lock_need_unlock_first">已鎖定，如需更換請先解鎖</string>
+    <string name="elder_lock_need_source">請先選擇一個可用的資料源</string>
+    <string name="elder_lock_on">已鎖定：%1$s</string>
+    <string name="elder_lock_off">已解鎖</string>
+
+    <!-- 分類頁遙控器重新整理 -->
+
+
+    <string name="elder_lock_live">直播源</string>
+    <string name="elder_lock_live_none">未匯入</string>
+    <string name="elder_live_need_config">請先在設定裡新增直播源</string>
+    <string name="elder_live_on">已鎖定直播源</string>
+    <string name="elder_live_off">已解鎖直播源</string>
+    <string name="elder_live_blocked">直播源已鎖定，如需更換請先解鎖</string>
+    <string name="keep_none_selected">請先點選要刪除的收藏</string>
+
+    <string name="elder_setting_entry">長輩設定</string>
+    <string name="elder_setting_title">長輩設定</string>
+    <string name="elder_setting_group_lock">鎖定</string>
+    <string name="elder_setting_group_play">播放</string>
+    <string name="elder_setting_group_display">顯示</string>
+    <string name="elder_setting_group_data">資料</string>
+    <string name="elder_setting_lock_entry">一鍵鎖定</string>
+    <string name="elder_setting_full_entry">隨選自動全螢幕</string>
+    <string name="elder_setting_resume_entry">退出自動續播</string>
+    <string name="elder_setting_sound_entry">按鍵音</string>
+    <string name="elder_setting_index_search_entry">首頁快速搜尋</string>
+    <string name="elder_setting_font_entry">字號大小</string>
+    <string name="elder_setting_font_standard">標準</string>
+    <string name="elder_setting_font_large">大</string>
+    <string name="elder_setting_font_extra">特大</string>
+    <string name="elder_setting_font_extra_large">超大</string>
+    <string name="elder_setting_font_huge">極大</string>
+    <string name="elder_setting_size_entry">圖片尺寸</string>
+    <string name="elder_setting_restore_entry">恢復預設設定</string>
+    <string name="elder_setting_restore_confirm">確定把本頁設定恢復為預設嗎？資料源、收藏、觀看記錄都會保留。</string>
+    <string name="elder_setting_restore_done">已恢復預設設定</string>
+
+    <string name="elder_search_empty">請先輸入要搜尋的內容</string>
+    <string name="elder_search_no_source">沒有可用的搜尋源，請先匯入資料源</string>
+    <string name="elder_detail_empty_search">這個源沒有可播放的內容，正在為你搜尋「%1$s」</string>
+    <string name="detail_meta_placeholder">空</string>
+    <string name="elder_search_source_locked">搜尋源已鎖定，不能在搜尋頁更換</string>
+    <string name="setting_cache_confirm">確定清空快取嗎？清空後看片和圖片都要重新載入</string>
+    <string name="elder_site_blocked">資料來源已鎖定，如需更換請先解鎖</string>
+    <string name="elder_site_locked_hint">已鎖定 · 如需更換請先解鎖</string>
+    <string name="elder_live_locked_hint">已鎖定 · 如需更換請先解鎖</string>
+    <string name="elder_confirm_restore_backup">恢復會覆蓋目前全部資料（收藏、歷史、資料來源設定），確定繼續嗎？</string>
+</resources>

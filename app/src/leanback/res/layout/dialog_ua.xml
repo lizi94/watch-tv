@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 自定义 UA 弹窗。与 dialog_config 同构：原 RelativeLayout 把 match_parent
+     叠在 layout_alignStart/toEndOf 上，右边缘越出窗口被裁；提示写死 3 行会顶到输入框。
+     现改为自上而下三行，宽度全部由父容器唯一确定。 -->
+<com.fongmi.android.tv.ui.custom.DialogPanel xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="@dimen/ag_space_6">
+
+    <!-- ============ 内容区（二维码 + 提示 + 输入框）：超高时滚动，按钮行始终可见 ============
+         根容器是 DialogPanel：它在测量阶段按弹窗真实可用高度给本滚动区限高，把按钮行需要的高度
+         留出来（详见该类注释）。id 供 DialogPanel 定位本滚动区。 -->
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/dialog_scroll"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:overScrollMode="never">
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- 上区：二维码 + 扫码提示 -->
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/code"
+                android:layout_width="@dimen/ag_qr_size"
+                android:layout_height="@dimen/ag_qr_size"
+                android:scaleType="centerCrop" />
+
+                <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/info"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/ag_space_4"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:focusable="true"
+                android:lineSpacingExtra="@dimen/ag_space_1"
+                android:maxLines="5"
+                android:nextFocusDown="@id/text"
+                android:textColor="@color/ag_text"
+                android:textSize="@dimen/ag_text_body"
+                tools:text="@string/push_info" />
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+            <!-- 中区：UA 输入框（整行宽度） -->
+            <com.fongmi.android.tv.ui.custom.CustomEditText
+                android:id="@+id/text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/ag_space_4"
+                android:background="@drawable/selector_ag_field"
+                android:gravity="center_vertical"
+                android:hint="@string/player_ua"
+                android:imeOptions="actionDone"
+                android:importantForAutofill="no"
+                android:inputType="text"
+                android:minHeight="@dimen/ag_touch_min"
+                android:nextFocusDown="@id/positive"
+                android:nextFocusUp="@id/info"
+                android:singleLine="true"
+                android:textSize="@dimen/ag_text_body" />
+        </androidx.appcompat.widget.LinearLayoutCompat>
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- ============ 下区：确定 / 取消（固定于弹窗底部，不随内容滚动） ============ -->
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/bottom"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/ag_space_4"
+        android:orientation="horizontal">
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/positive"
+            style="@style/Ag.Button.Primary"
+            android:layout_width="0dp"
+            android:layout_marginEnd="@dimen/ag_space_4"
+            android:layout_weight="1"
+            android:nextFocusRight="@id/negative"
+            android:nextFocusUp="@id/text"
+            android:text="@string/dialog_positive" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/negative"
+            style="@style/Ag.Button.Secondary"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:nextFocusLeft="@id/positive"
+            android:nextFocusUp="@id/text"
+            android:text="@string/dialog_negative" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+</com.fongmi.android.tv.ui.custom.DialogPanel>

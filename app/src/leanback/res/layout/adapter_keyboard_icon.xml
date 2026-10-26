@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.AppCompatImageView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/icon"
+    android:layout_width="@dimen/ag_key_size"
+    android:layout_height="@dimen/ag_key_size"
+    android:background="@drawable/selector_keyboard"
+    android:focusable="true"
+    android:scaleType="fitCenter"
+    android:focusableInTouchMode="true"
+    tools:src="@drawable/ic_keyboard_back" />

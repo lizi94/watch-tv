@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 「图片 + 标题条」型封面卡片的焦点框（adapter_vod / adapter_vod_rect）。
+     ① 圆角 = ag_radius_s(8dp)，**跟随主体**：卡片轮廓由上半的封面图（Vod.Grid，上圆角 8dp）
+        与下半的标题条（shape_vod_name，下圆角 8dp）拼成，四角都是 8dp。
+        此前这里用 ag_radius_m(12dp)，比主体更圆 —— 描边在四角处离开画面边缘，
+        正是用户说的「里面是方的外面是圆的那种」。
+     ② 加 <solid ag_focus_overlay> 整片 30% 主色蒙版：只有一圈细蓝边贴在照片上，
+        照片本身明暗杂乱，老人分辨不出选中的是哪张；加蒙版后与按钮 / chip 的焦点语言一致。
+        <solid> 不参与测量，零尺寸、零间距影响。
+     ⚠️ 只服务「图 + 标题条」卡片。带独立圆角背景的列表卡（adapter_vod_list / adapter_file，
+        背景是 shape_vod_list 的 12dp）改用 shape_vod_list_focused，两者的圆角必须各随其主。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+
+    <solid android:color="@color/ag_focus_overlay" />
+
+    <corners android:radius="@dimen/ag_radius_s" />
+
+    <stroke
+        android:width="@dimen/ag_stroke_focus"
+        android:color="@color/ag_primary" />
+
+</shape>

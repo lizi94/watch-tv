@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- 顶部信息条（台名 / 时钟）：2026-10-24 起统一走 ag_text_headline(28sp)。
+         ⚠ 原来这里是硬编码 26sp —— 既不在令牌体系里、也不随字号档位统一管理；
+         而 view_widget_vod / view_widget_cast 两个同构浮层一直用 headline(28sp)，
+         三者结构完全相同（台名 + label(22sp) 分辨率 + 时钟），字号必须一致，
+         否则老人在「点播 / 直播 / 投屏」之间切换时会觉得浮层忽大忽小。 -->
+    <RelativeLayout
+        android:id="@+id/top"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="@dimen/ag_space_4"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/title"
+            style="@style/Shadow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="@dimen/ag_space_4"
+            android:layout_toStartOf="@+id/clock"
+            android:ellipsize="marquee"
+            android:singleLine="true"
+            android:textColor="@color/white"
+            android:textSize="@dimen/ag_text_headline"
+            tools:text="民視" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/size"
+            style="@style/Shadow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/title"
+            android:layout_alignStart="@+id/title"
+            android:textColor="@color/white"
+            android:textSize="@dimen/ag_text_label"
+            tools:text="1920 x 1080" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/clock"
+            style="@style/Shadow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:fontFeatureSettings="tnum"
+            android:textColor="@color/white"
+            android:textSize="@dimen/ag_text_headline"
+            tools:text="09:20:00" />
+
+    </RelativeLayout>
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/error"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:background="@drawable/shape_widget"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:layout_width="@dimen/ag_icon_56"
+            android:layout_height="@dimen/ag_icon_56"
+            android:src="@drawable/ic_widget_error" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ag_space_2"
+            android:gravity="center"
+            android:textColor="@color/white"
+            android:textSize="@dimen/ag_text_label"
+            tools:text="@string/error_play_url" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/message"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:background="@drawable/shape_widget"
+        android:fontFeatureSettings="tnum"
+        android:gravity="center"
+        android:textColor="@color/white"
+        android:textSize="@dimen/ag_text_label"
+        android:visibility="gone"
+        tools:text="Speed 3.0x"
+        tools:visibility="visible" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/digital"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:background="@drawable/shape_widget"
+        android:includeFontPadding="false"
+        android:letterSpacing="0.05"
+        android:textColor="@color/white"
+        android:textSize="@dimen/ag_text_title"
+        android:visibility="gone"
+        tools:text="05"
+        tools:visibility="visible" />
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/center"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:background="@drawable/shape_widget"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/action"
+            android:layout_width="@dimen/ag_icon_56"
+            android:layout_height="@dimen/ag_icon_56"
+            android:src="@drawable/ic_widget_play" />
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/position"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFeatureSettings="tnum"
+                android:textColor="@color/white"
+                android:textSize="@dimen/ag_text_label"
+                tools:text="00:00:00" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/ag_space_1"
+                android:layout_marginEnd="@dimen/ag_space_1"
+                android:text="/"
+                android:textColor="@color/white"
+                android:textSize="@dimen/ag_text_label" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/duration"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFeatureSettings="tnum"
+                android:textColor="@color/white"
+                android:textSize="@dimen/ag_text_label"
+                tools:text="00:00:00" />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/bottom"
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:layout_gravity="bottom"
+        android:background="@drawable/shape_live_info"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingStart="@dimen/ag_space_4"
+        android:paddingEnd="@dimen/ag_space_4"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/number"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="@dimen/ag_space_3"
+            android:textColor="@color/white"
+            android:textSize="@dimen/ag_text_body"
+            tools:text="005" />
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/logo"
+            android:layout_width="@dimen/ag_icon_48"
+            android:layout_height="@dimen/ag_icon_36"
+            android:layout_marginEnd="@dimen/ag_space_3"
+            android:visibility="gone" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:layout_marginEnd="@dimen/ag_space_3"
+            android:maxEms="48"
+            android:singleLine="true"
+            android:textColor="@color/white"
+            android:textSize="@dimen/ag_text_body"
+            tools:text="民視" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/play"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:layout_marginEnd="@dimen/ag_space_3"
+            android:layout_weight="1"
+            android:singleLine="true"
+            android:textColor="@color/white"
+            android:textSize="@dimen/ag_text_body"
+            tools:text="正在播放：食神" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/line"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/white"
+            android:textSize="@dimen/ag_text_body"
+            tools:text="來源 1" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+</FrameLayout>

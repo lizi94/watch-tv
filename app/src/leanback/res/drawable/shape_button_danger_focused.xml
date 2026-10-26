@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 危险按钮 · 聚焦态：红实底 + 白字（4.9:1），一眼识别「这是不可逆操作」 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+
+    <solid android:color="@color/ag_danger" />
+
+    <corners android:radius="@dimen/ag_radius_s" />
+
+    <stroke
+        android:width="@dimen/ag_stroke_focus"
+        android:color="@color/ag_danger_stroke" />
+
+</shape>
