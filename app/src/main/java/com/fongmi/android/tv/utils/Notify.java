@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Window;
@@ -63,6 +64,25 @@ public class Notify {
         if (!TextUtils.isEmpty(text)) get().makeText(text);
     }
 
+    /**
+     * 居中提示：只给「退出确认」这类<b>必须让老人看见</b>的场合用。
+     *
+     * <p>系统 Toast 默认停在屏幕最底部，大屏电视上离视线远、3.5 秒就没了，
+     * 老人往往根本没看到；居中后与视线同高。其它提示仍走 {@link #show}，位置不变。</p>
+     */
+    public static void center(int resId) {
+        if (resId != 0) center(ResUtil.getString(resId));
+    }
+
+    public static void center(String text) {
+        if (TextUtils.isEmpty(text)) return;
+        try {
+            get().makeTextInternal(text, true);
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
+    }
+
     public static void progress(Context context) {
         dismiss();
         get().create(context);
@@ -105,13 +125,13 @@ public class Notify {
         // ⚠ 2026-10-16 加固：提示是老人获取信息的唯一渠道，任何异常都不能让它「静默消失」——
         // 整体兜底，出问题只打日志，绝不让异常冒到调用方（调用方多在事件回调/播放链路里）。
         try {
-            makeTextInternal(text);
+            makeTextInternal(text, false);
         } catch (Throwable e) {
             e.printStackTrace();
         }
     }
 
-    private void makeTextInternal(String text) {
+    private void makeTextInternal(String text, boolean center) {
         if (mToast != null) mToast.cancel();
         // 电视版：app 自绘浮层（view_toast.xml 用 sp 字号），用当前 Activity 的 Resources 加载 ——
         // 只有 Activity 的 Resources 应用了「字号档位 × 屏幕补偿」的密度缩放，
@@ -138,10 +158,20 @@ public class Notify {
             View view = LayoutInflater.from(context).inflate(R.layout.view_toast, null);
             TextView tv = view.findViewById(R.id.text);
             tv.setText(text);
-            if (App.activity() == null) tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, scaledTextPx(context));
+            if (App.activity() == null) {
+                // ⚠ 显式 setTextSize 会【关闭】XML 里的 autoSize，必须按同一比例把区间补回来，
+                // 否则这条「无 Activity」路径上的长文案仍会在高字号档位下折行。
+                float px = scaledTextPx(context);
+                tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, px);
+                float ratio = px / 24f;
+                androidx.core.widget.TextViewCompat.setAutoSizeTextTypeUniformWithConfiguration(
+                        tv, Math.round(20 * ratio), Math.round(32 * ratio), 1,
+                        android.util.TypedValue.COMPLEX_UNIT_PX);
+            }
             mToast = new Toast(context);
             mToast.setDuration(Toast.LENGTH_LONG);
             mToast.setView(view);
+            if (center) mToast.setGravity(Gravity.CENTER, 0, 0);
             mToast.show();
         } else {
             mToast = Toast.makeText(App.get(), text, Toast.LENGTH_LONG);

@@ -60,10 +60,10 @@
     <!-- 一键锁定 -->
     <string name="elder_lock_title">一键锁定</string>
     <string name="elder_lock_desc">锁定后只用这里选的数据源，首页、搜索、播放都跟着它，放不出来会自动换线路。</string>
-    <string name="elder_lock_source">主数据源</string>
-    <string name="elder_lock_route">播放线路</string>
-    <string name="elder_lock_route_auto">主源优先，不行自动换源</string>
-    <string name="elder_lock_route_manual">只用手动选的线路</string>
+    <string name="elder_lock_source">数据源</string>
+    <string name="elder_lock_route">自动换源</string>
+    <string name="elder_lock_route_auto">开启</string>
+    <string name="elder_lock_route_manual">关闭</string>
     <string name="elder_lock_search">搜索优先源</string>
     <string name="elder_lock_search_on">已开启</string>
     <string name="elder_lock_search_off">未开启</string>
@@ -91,10 +91,6 @@
 
     <string name="elder_setting_entry">长辈设置</string>
     <string name="elder_setting_title">长辈设置</string>
-    <string name="elder_setting_group_lock">锁定</string>
-    <string name="elder_setting_group_play">播放</string>
-    <string name="elder_setting_group_display">显示</string>
-    <string name="elder_setting_group_data">数据</string>
     <string name="elder_setting_lock_entry">一键锁定</string>
     <string name="elder_setting_full_entry">点播自动全屏</string>
     <string name="elder_setting_resume_entry">退出自动续播</string>
@@ -121,4 +117,29 @@
     <string name="elder_site_locked_hint">已锁定 · 如需更换请先解锁</string>
     <string name="elder_live_locked_hint">已锁定 · 如需更换请先解锁</string>
     <string name="elder_confirm_restore_backup">恢复会覆盖当前全部数据（收藏、历史、数据源配置），确定继续吗？</string>
+    <string name="site_manage_title">站源管理</string>
+    <string name="site_manage_desc">停用后不显示在首页和搜索中</string>
+    <string name="site_manage_count">已启用 %1$d / 共 %2$d</string>
+    <string name="site_manage_all_on">全部启用</string>
+    <string name="site_manage_all_off">全部停用</string>
+    <string name="site_manage_on">启用</string>
+    <string name="site_manage_off">停用</string>
+    <string name="home_empty_no_site">未启用任何站源，请在长辈设置中启用</string>
+    <string name="elder_exit_count">再按两次返回键退出</string>
+    <string name="site_manage_filter">只看停用</string>
+    <string name="site_manage_filter_on">只看停用 · %1$d</string>
+    <string name="site_manage_empty_no_config">暂无站源，请先导入配置</string>
+    <string name="site_manage_empty_all_on">没有已停用的站源</string>
+    <string name="site_pick_title">选择数据源</string>
+    <string name="site_pick_empty">没有可用的站源</string>
+    <string name="site_pick_in_use">使用中</string>
+    <string name="error_no_matching_source">未找到同一影片的其他站源</string>
+    <string name="error_no_playable_line">该站源没有可播放的线路</string>
+    <string name="site_manage_disable_confirm">停用全部站源？停用后将无法观看任何内容。</string>
+    <string name="site_manage_count_short">%1$d / %2$d</string>
+    <string name="detail_change">换源</string>
+    <string name="detail_switch_searching">正在查找其它站源……</string>
+    <string name="error_retry_hint">点击重试</string>
+    <string name="error_exit_hint">按「返回」键退出</string>
+    <string name="site_pick_close_hint">按「返回」键关闭</string>
 </resources>

@@ -250,7 +250,8 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         return getKey().concat(AppDatabase.SYMBOL).concat(getId()).concat(AppDatabase.SYMBOL) + VodConfig.getCid();
     }
 
-    private Site getSite() {
+    @Override
+    public Site getSite() {
         return VodConfig.get().getSite(getKey());
     }
 
@@ -473,18 +474,6 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     }
 
     @Override
-    public boolean isSiteChangeable() {
-        // ⚠ 2026-10-16 审计修复（P7）：原实现 `getSite().isChangeable()` 对**已下架/不存在的站点**
-        // 会误判成「可切换」—— getSite() 对未知 key 返回 new Site()，而 Site#getChangeable()
-        // 在字段为 null 时默认返回 1 ⇒ isChangeable()==true。于是原生那道
-        // 「站源不可切换时不做跨源回退」的护栏，在「History 记的源已被换掉」这种最常见场景下失效。
-        // 现在：站点为空（key 与 name 都空 = 该源已不在当前配置里）一律视为**不可切换**，
-        // 让上游按「这条记录已失效」处理，而不是拿它去跨源回退。
-        Site site = getSite();
-        return site != null && !site.isEmpty() && site.isChangeable();
-    }
-
-    @Override
     public boolean isHostFinishing() {
         return isFinishing() || isDestroyed();
     }
@@ -541,13 +530,16 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
 
     @Override
     public void prepareSource(Vod item) {
-        if (service() == null) return;
+        // ⚠ key/id 的更新必须排在 service() 判空之前：原来判空就整段 return，
+        // key/id 不落地，紧随其后的 requestDetail() 会拿**旧 key 旧 id** 再去请求同一个源
+        // ⇒ 详情回来还是那个播不了的源 ⇒ 又失败又换源，一直原地打转。
         getIntent().putExtra("key", item.getSiteKey());
         getIntent().putExtra("id", item.getId());
         putPic(getIntent(), item.getPic());
         mBinding.scroll.scrollTo(0, 0);
         mClock.setCallback(null);
         updateNavigationKey();
+        if (service() == null) return;
         player().reset();
         player().stop();
     }
@@ -754,12 +746,6 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     }
 
     @Override
-    public void onSearchResult() {
-        App.removeCallbacks(mR4);
-        App.removeCallbacks(mR5);
-    }
-
-    @Override
     public void showDetailMessage(String msg) {
         Notify.show(msg);
     }
@@ -947,7 +933,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
      * 代价是画面被裁。现在改成独立的 {@code @id/videoFocusRing}：与海报四边对齐后，
      * 用**负边距向外扩出一圈描边宽度**，框完全落在海报外的空白上 —— 既不遮画面，也不受 surface 影响。</p>
      *
-     * <p>负边距的量取 {@code @dimen/ag_stroke_focus}（随字号档位 6~10dp），与描边宽度严格相等，
+     * <p>负边距的量取 {@code @dimen/ag_stroke_focus}（随字号档位 5~10dp），与描边宽度严格相等，
      * 所以环的内缘永远贴着海报边界。</p>
      */
     private void setupVideoFocusRing() {
@@ -1221,7 +1207,9 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     private void showError(String text) {
         PlaybackAction.hideSpeedHint(mBinding.widget.message);
         mBinding.widget.error.setVisibility(View.VISIBLE);
-        mBinding.widget.text.setText(text);
+        // 电视端不放可聚焦按钮（会抢播放页的焦点），用「按返回键退出」明确出口；
+        // 遥控器「确定」在播放页仍有原用途（呼出控制条），不抢用。
+        mBinding.widget.text.setText(text + "\n" + getString(R.string.error_exit_hint));
         hideProgress();
     }
 
@@ -1639,6 +1627,12 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     /** 播放页字号档位变化不重建：recreate 会打断播放并丢掉全屏态/焦点/会话标记（见 BaseActivity:onResume）。 */
     @Override
     protected boolean autoRecreateOnFontChange() {
+        return false;
+    }
+
+    /** 播放中不因图片尺寸变化而重建：会打断播放。 */
+    @Override
+    protected boolean autoRecreateOnSizeChange() {
         return false;
     }
 }

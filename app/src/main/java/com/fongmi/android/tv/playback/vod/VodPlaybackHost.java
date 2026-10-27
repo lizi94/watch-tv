@@ -6,6 +6,7 @@ import com.fongmi.android.tv.bean.Episode;
 import com.fongmi.android.tv.bean.Flag;
 import com.fongmi.android.tv.bean.History;
 import com.fongmi.android.tv.bean.Result;
+import com.fongmi.android.tv.bean.Site;
 import com.fongmi.android.tv.bean.Vod;
 
 import java.util.List;
@@ -20,13 +21,21 @@ public interface VodPlaybackHost {
 
     String getVodName();
 
+    /**
+     * 当前详情页所属的站点。
+     *
+     * <p>用于区分「index 片单源」—— 它只有数据、没有播放线路，
+     * 播放失败时必须直接跨源（不能套「源不可切换就不换」的护栏）。</p>
+     */
+    default Site getSite() {
+        return new Site();
+    }
+
     String getVodPic();
 
     String getVodMark();
 
     String getHistoryKey();
-
-    boolean isSiteChangeable();
 
     boolean isFromCollect();
 
@@ -119,8 +128,6 @@ public interface VodPlaybackHost {
     void onDetailFallbackCancelled();
 
     void onSearchStarted(String keyword);
-
-    void onSearchResult();
 
     void showDetailMessage(String msg);
 

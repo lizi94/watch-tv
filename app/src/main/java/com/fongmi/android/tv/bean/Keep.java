@@ -13,6 +13,9 @@ import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
+import com.fongmi.android.tv.utils.SiteVisibility;
+
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -67,8 +70,15 @@ public class Keep implements Diffable<Keep> {
         AppDatabase.get().getKeepDao().delete(key);
     }
 
+    /** 收藏（点播）：与 {@link History#get(int)} 同一口径 —— 用户关掉的站源，其收藏一并隐藏。 */
     public static List<Keep> getVod() {
-        return AppDatabase.get().getKeepDao().getVod();
+        List<Keep> items = AppDatabase.get().getKeepDao().getVod();
+        if (items == null || items.isEmpty()) return items == null ? Collections.emptyList() : items;
+        java.util.Set<String> disabled = SiteVisibility.disabledSnapshot();
+        if (disabled.isEmpty()) return items;
+        List<Keep> visible = new ArrayList<>(items.size());
+        for (Keep item : items) if (!disabled.contains(item.getSiteKey())) visible.add(item);
+        return visible;
     }
 
     public static List<Keep> getLive() {

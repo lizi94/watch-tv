@@ -26,7 +26,8 @@ public class CustomRowPresenter extends ListRowPresenter {
      * 单侧上下外扩 {@code 0.05 × 654 ≈ 32.7dp}，远超 16dp。</p>
      *
      * <p>关闭后四周间距恒为 16dp、横竖一致；放大带来的"醒目感"由焦点框承担，
-     * 与详情页海报框（{@code shape_video_focused}）、设置项、按钮完全同一套观感。</p>
+     * 与详情页海报框（{@code shape_video_focus_ring}，同一 {@code ag_primary} + {@code ag_stroke_focus}）、
+     * 设置项、按钮完全同一套观感。</p>
      *
      * <p>调用点可继续显式传 {@link FocusHighlight#ZOOM_FACTOR_NONE}：写法冗余，
      * 但能在有人改动本默认值时防止回归。</p>

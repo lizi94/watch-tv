@@ -251,7 +251,8 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         return getKey().concat(AppDatabase.SYMBOL).concat(getId()).concat(AppDatabase.SYMBOL) + VodConfig.getCid();
     }
 
-    private Site getSite() {
+    @Override
+    public Site getSite() {
         return VodConfig.get().getSite(getKey());
     }
 
@@ -355,6 +356,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mBinding.content.setOnClickListener(view -> onContent());
         mBinding.reverse.setOnClickListener(view -> onReverse());
         mBinding.director.setOnClickListener(view -> onDirector());
+        mBinding.change.setOnClickListener(view -> onChange());
         mBinding.name.setOnLongClickListener(view -> onChange());
         mBinding.content.setOnLongClickListener(view -> onCopy());
         mBinding.control.back.setOnClickListener(view -> onBack());
@@ -502,11 +504,6 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     @Override
-    public boolean isSiteChangeable() {
-        return getSite().isChangeable();
-    }
-
-    @Override
     public boolean isHostFinishing() {
         return isFinishing() || isDestroyed();
     }
@@ -563,7 +560,9 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     @Override
     public void prepareSource(Vod item) {
-        if (service() == null) return;
+        // ⚠ key/id 的更新必须排在 service() 判空之前（与电视端同款修复）：
+        // 原来判空就整段 return，key/id 不落地，requestDetail() 会拿旧 key 旧 id 再请求同一个源，
+        // 表现为「一直换源却一直在播同一个坏的源」。
         getIntent().putExtra("key", item.getSiteKey());
         getIntent().putExtra("id", item.getId());
         mBinding.swipeLayout.setRefreshing(true);
@@ -572,6 +571,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mBinding.scroll.scrollTo(0, 0);
         mClock.setCallback(null);
         updateNavigationKey();
+        if (service() == null) return;
         player().reset();
         player().stop();
         checkControl();
@@ -780,11 +780,6 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     @Override
     public void onSearchStarted(String keyword) {
         // 换源候选行已移除；保留空实现以满足宿主接口
-    }
-
-    @Override
-    public void onSearchResult() {
-        App.removeCallbacks(mR4);
     }
 
     @Override
@@ -1225,7 +1220,11 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     private void showError(String text) {
         PlaybackAction.hideSpeedHint(mBinding.widget.message);
         mBinding.widget.error.setVisibility(View.VISIBLE);
-        mBinding.widget.error.setText(text);
+        // 错误页给一个出口：点一下 = 重试当前源（原来只有一行字，老人只能按返回）
+        mBinding.widget.error.setText(text + "\n" + getString(R.string.error_retry_hint));
+        // 点击 = 换源（不是重试）：自动链路已经把「原地重试 → 换线路」走过一遍，
+        // 老人主动点的时候，换一个站源才是有效动作。
+        mBinding.widget.error.setOnClickListener(v -> mVod.manualSwitchSource());
         hideProgress();
     }
 
@@ -1768,6 +1767,17 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         DanmakuApi.cancel();
         RefreshEvent.keep();
         App.removeCallbacks(mR1, mR2, mR3, mR4, mR5);
+        // ⚠ 与电视版对齐：起播看门狗与「跨源搜索结算」都是挂在 App 主线程 Handler 上的定时器，
+        // 不撤销的话，老人「转圈中按返回离开」后它们仍会在死掉的 Activity 上跑完整的
+        // 「自动换线 → 跨站搜索 → Toast」链路（Toast 是应用级单例，会弹在用户当前所在的任何界面）。
+        // reset() 内部会 playRequestTime=0 + 撤看门狗 + 撤结算，两个定时任务首行即 return。
+        if (mVod != null) mVod.reset();
         super.onDestroy();
+    }
+
+    /** 播放中不因图片尺寸变化而重建：会打断播放。 */
+    @Override
+    protected boolean autoRecreateOnSizeChange() {
+        return false;
     }
 }

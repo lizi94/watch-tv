@@ -333,6 +333,7 @@
     <string name="error_play_drm">此设备不支持所需的 DRM scheme</string>
     <string name="error_play_url">播放地址加载失败</string>
     <string name="error_play_timeout">连接超时</string>
+    <string name="error_decode_unsupported">这台设备放不了这个视频，试试换一集或换个源</string>
     <string name="error_audio_effect_unsupported">当前播放方式不支持音质设置</string>
     <string name="error_audio_effect_passthrough">音频直通音轨不支持音质设置</string>
     <string name="error_audio_effect_apply">音质设置应用失败</string>
@@ -403,4 +404,7 @@
         <item>选择字幕</item>
     </string-array>
 
+<string name="setting_vod_source">点播源</string>
+    <string name="setting_live_source">直播源</string>
+    <string name="setting_wall_source">壁纸源</string>
 </resources>

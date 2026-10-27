@@ -216,4 +216,12 @@
         <item name="android:textSize">@dimen/ag_text_label</item>
     </style>
 
+
+    <!-- 站源管理页标题（电视版）：与手机版同名同结构，颜色/字号走本端 ag_* 令牌。
+         flavor 各自一份定义，SiteManageActivity 才能一份代码双端复用。 -->
+    <style name="ToolbarTextAppearance" parent="TextAppearance.Material3.TitleLarge">
+        <item name="android:textSize">@dimen/ag_text_title</item>
+        <item name="android:textColor">@color/ag_text</item>
+        <item name="titleTextColor">@color/ag_text</item>
+    </style>
 </resources>

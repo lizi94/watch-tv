@@ -84,6 +84,19 @@ public class ElderLock {
         Prefers.put(KEY_SEARCH, true);
     }
 
+    /**
+     * 锁定的源已被用户在「选择能看的站」里关掉 → 清掉锁定。
+     *
+     * <p>否则锁定页会自相矛盾：{@code isLocked()} 仍为 true（按钮显示「解锁」），
+     * 而 {@link #main()} 返回 null（文字显示「未锁定」）。清锁后两者一致，
+     * 且换源入口恢复正常，用户能重新选一个能看的源。</p>
+     */
+    public static void dropIfHidden() {
+        if (!isLocked()) return;
+        if (SiteVisibility.isKeyEnabled(getSiteKey())) return;
+        unlock();
+    }
+
     /** 清除锁定相关偏好（供「恢复默认设置」调用）。 */
     public static void clear() {
         Prefers.put(KEY_ON, false);
@@ -115,6 +128,9 @@ public class ElderLock {
      */
     public static Site main() {
         if (!isLocked()) return null;
+        // 锁定的源后来被用户在「选择能看的站」里关掉：等于锁了个看不见的源 ——
+        // 一律按「未锁定」处理，避免「设置页显示已锁定 A、实际取内容用的是 B」这种错乱。
+        if (!SiteVisibility.isKeyEnabled(getSiteKey())) return null;
         Site site = VodConfig.get().getSite(getSiteKey());
         return site.isEmpty() ? null : site;
     }
@@ -153,7 +169,8 @@ public class ElderLock {
     public static Site preferredSite() {
         if (!isSearchLocked()) return null;
         Site site = main();
-        return site != null && site.isSearchable() ? site : null;
+        if (site == null || !site.isSearchable()) return null;
+        return site;
     }
 
     /**
@@ -171,8 +188,14 @@ public class ElderLock {
         Prefers.put(KEY_SEARCH, locked);
     }
 
-    /** 播放页是否隐藏线路选择条。 */
+    /**
+     * 详情页是否隐藏「线路」选择行。
+     *
+     * <p>2026-10-27：改为<b>只看是否锁定</b> —— 锁定 = 完全托管，老人不该看到线路选择；
+     * 未锁定则照常显示（配置者仍可手动选线路）。不再叠加「自动换源」开关
+     * （否则「锁定 + 关闭自动换源」时线路行会露出来，语义就乱了）。</p>
+     */
     public static boolean hideRoute() {
-        return isLocked() && isRouteLocked();
+        return isLocked();
     }
 }

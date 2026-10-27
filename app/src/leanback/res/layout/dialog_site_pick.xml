@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 一键锁定 › 选择数据源（电视版）：只列「已启用」的站源。标题由 builder().setTitle() 提供，布局里不再自绘。
+     ⚠ @id/recycler、@id/empty 必须与手机版同名同类型（SitePickDialog 双端共用）。
+     ⚠ 列表限高一律走 CustomRecyclerView + app:maxHeight（与「历史记录 / 收藏」弹窗同一套），
+       不再在布局里硬编码 320dp、也不在代码里手算行高 —— 高度规则只有一个来源。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="@dimen/ag_space_6"
+    android:paddingTop="@dimen/ag_space_5"
+    android:paddingEnd="@dimen/ag_space_6"
+    android:paddingBottom="@dimen/ag_space_5">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <com.fongmi.android.tv.ui.custom.CustomRecyclerView
+            android:id="@+id/recycler"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:overScrollMode="never"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+            app:maxHeight="@dimen/ag_dialog_list_max" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/empty"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:padding="@dimen/ag_space_3"
+            android:text="@string/site_pick_empty"
+            android:textColor="@color/ag_text_sub"
+            android:textSize="@dimen/ag_text_body"
+            android:visibility="gone"
+            tools:visibility="visible" />
+    </FrameLayout>
+
+    <!-- 电视版没有底部按钮（纯遥控器：点一行即选中并关闭），用一行灰字说明怎么退出。
+         ⛔ 必须 focusable=false：否则会成为一个空的焦点停靠点，遥控器按「下」会停在这里。 -->
+    <com.google.android.material.textview.MaterialTextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/ag_space_3"
+        android:clickable="false"
+        android:focusable="false"
+        android:gravity="center"
+        android:text="@string/site_pick_close_hint"
+        android:textColor="@color/ag_text_sub"
+        android:textSize="@dimen/ag_text_body" />
+
+</LinearLayout>

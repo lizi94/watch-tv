@@ -30,7 +30,6 @@ import com.fongmi.android.tv.event.StateEvent;
 import com.fongmi.android.tv.impl.Callback;
 import com.fongmi.android.tv.impl.ConfigListener;
 import com.fongmi.android.tv.impl.FilterListener;
-import com.fongmi.android.tv.impl.SiteListener;
 import com.fongmi.android.tv.model.SiteViewModel;
 import com.fongmi.android.tv.ui.activity.HistoryActivity;
 import com.fongmi.android.tv.ui.activity.KeepActivity;
@@ -52,7 +51,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-public class VodFragment extends BaseFragment implements ConfigListener, SiteListener, FilterListener, TypeAdapter.OnClickListener {
+public class VodFragment extends BaseFragment implements ConfigListener, FilterListener, TypeAdapter.OnClickListener {
 
     private FragmentVodBinding mBinding;
     private SiteViewModel mViewModel;
@@ -71,6 +70,13 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
         return (FolderFragment) mBinding.pager.getAdapter().instantiateItem(mBinding.pager, mBinding.pager.getCurrentItem());
     }
 
+    /**
+     * 内容请求用的站点。
+     *
+     * <p>2026-10-26：主源若是网盘源（开关开启），这里返回「第一个非网盘可用源」——
+     * 首页推荐、分类列表、点击媒体进入全部走这个方法，所以一处替换即覆盖所有入口。
+     * <b>只影响取源，不写回配置</b>；全站都是网盘源时原样返回（兜底不空白）。</p>
+     */
     private Site getHome() {
         return VodConfig.get().getHome();
     }
@@ -383,11 +389,6 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
                 showContent();
             }
         });
-    }
-
-    @Override
-    public void setSite(Site item) {
-        VodConfig.get().setHome(item);
     }
 
     @Override

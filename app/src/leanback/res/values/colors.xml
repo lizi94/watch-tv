@@ -28,7 +28,7 @@
 
     <!-- ==== 主色（操作 / 选中 / 焦点） ====
          ag_focus_ring 同时充当「全局唯一焦点态」的描边色：
-         焦点态 = 主色淡底 + 6dp 主色描边，全站不允许第二种焦点样式。 -->
+         焦点态 = 主色淡底 + 5dp 主色描边，全站不允许第二种焦点样式。 -->
     <color name="ag_primary">#0B57D0</color>
     <color name="ag_primary_bg">#E4EDFC</color>
     <color name="ag_primary_text">#0842A0</color>
@@ -56,10 +56,6 @@
 
     <!-- ==== 视频层（深色浮层专用，功能性要求，非风格混搭） ==== -->
     <color name="ag_focus_on_dark">#7FB8E8</color>
-    <!-- 详情页海报框专用焦点色：海报里是**视频画面**（常常是黑场/暗景），
-         全站主色 #0B57D0 深蓝压在黑底上几乎看不见 ⇒ 这里单独用高饱和红。
-         仅 shape_video_focused 引用，不影响其它控件的焦点态。 -->
-    <color name="ag_focus_video">#FF5252</color>
     <color name="ag_controller">#F01A1A18</color>
     <color name="ag_caption">#B3000000</color>
     <!-- 播放器控制条按钮：深色面板上的统一芯片。普通态深灰面（白字对它 ≥12:1），

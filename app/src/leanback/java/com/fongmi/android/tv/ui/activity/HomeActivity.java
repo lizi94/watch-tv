@@ -49,7 +49,6 @@ import com.fongmi.android.tv.model.SiteViewModel;
 import com.fongmi.android.tv.player.extractor.Source;
 import com.fongmi.android.tv.server.Server;
 import com.fongmi.android.tv.service.DLNARendererService;
-import com.fongmi.android.tv.service.PlaybackService;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.ui.adapter.BaseDiffCallback;
 import com.fongmi.android.tv.ui.base.BaseActivity;
@@ -285,6 +284,13 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
      *  避免 setItems 引起的焦点抖动被「移到即加载」误判成切了分类。 */
     private List<Object> mChipItems;
 
+    /**
+     * 内容请求用的站点。
+     *
+     * <p>2026-10-26：主源若是网盘源（开关开启），这里返回「第一个非网盘可用源」——
+     * 首页推荐、分类列表、点击媒体进入全部走这个方法，所以一处替换即覆盖所有入口。
+     * <b>只影响取源，不写回配置</b>；全站都是网盘源时原样返回（兜底不空白）。</p>
+     */
     private Site getHome() {
         return VodConfig.get().getHome();
     }
@@ -414,7 +420,7 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
         // 封面网格 / 最近观看：关闭 leanback 的焦点放大高亮（见 CustomRowPresenter 的说明）。
         // 媒体封面是 3:4 竖版，卡片高 ≈ 1.4 倍宽，放大时上下外扩量是左右的 1.33 倍，
         // 而横竖间距都只有 16dp —— 任何一档放大都会在垂直方向越出、压住相邻行。
-        // 关闭后四周间距恒为 16dp，与焦点框（3dp，同 ag_stroke_focus）一起构成反馈。
+        // 关闭后四周间距恒为 16dp，与焦点框（5dp，同 ag_stroke_focus）一起构成反馈。
         selector.addPresenter(ListRow.class, new CustomRowPresenter(16, FocusHighlight.ZOOM_FACTOR_NONE), VodPresenter.class);
         selector.addPresenter(ListRow.class, new CustomRowPresenter(16), FuncPresenter.class);
         selector.addPresenter(ListRow.class, new CustomRowPresenter(16), HomeChipPresenter.class);
@@ -835,6 +841,18 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
         markInternalRecreate();
     }
 
+    /**
+     * 图片尺寸变化<b>不</b>重建本页：首页自己响应 {@code RefreshEvent.SIZE}
+     * （{@code getVideo()} + {@code getHistory(true)}，推荐区与「最近观看」行都会重建 presenter），
+     * 内容与尺寸都已刷新；再走一次 recreate 只会白丢焦点与滚动位置 —— 对老人来说
+     * 「焦点无缘无故跑掉」比任何东西都难受。字号档位变化仍走重建（倍率作用于全局 dp/sp，
+     * 事件刷新覆盖不到标题栏等静态区）。
+     */
+    @Override
+    protected boolean autoRecreateOnSizeChange() {
+        return false;
+    }
+
     private void loadLive(String url) {
         if (isFinishing() || isDestroyed()) return;
         LiveConfig.load(Config.find(url, 1), new Callback() {
@@ -1139,6 +1157,13 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
     private void showContentEmpty() {
         if (mAdapter.indexOf(mChipRow) == -1) return;
         removeContent();
+        // 用户把所有站源都关掉了：配置本身是好的，只是没有「能看的站」——
+        // 不能说成「还没有设置数据源」（那是没导入过），要指路到站源选择。
+        if (VodConfig.get().getSites().isEmpty()) {
+            mEmptyItem = EmptyCardPresenter.Item.plain(VodConfig.get().getRawSites().isEmpty() ? R.string.home_empty_no_source : R.string.home_empty_no_site);
+            mAdapter.add(mEmptyItem);
+            return;
+        }
         if (configFailed) {
             // 数据源拿不到。2026-10-17 起文案分两种、且不再显示「重新加载」按钮（按钮必然无效）：
             //   · 从来没导入过数据源 → 直接指路去设置里导入（这是唯一能让页面有内容的动作）；
@@ -1536,7 +1561,7 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
     public void showDialog() {
         // ⛔ 2026-10-17：本页**不提供任何换源入口**（标题、头像、菜单键全部无功能）。
         // 换源入口全站唯一 = 「设置 → 长辈设置 → 一键锁定」（ElderLockActivity）。
-        // 本方法仅为满足 CustomTitleView.Listener / SiteListener 的接口契约而保留（空实现）。
+        // 本方法仅为满足 CustomTitleView.Listener 的接口契约而保留（空实现）。
         // ⚠ 菜单键已改为「筛选」（见 dispatchKeyEvent），与换源无关。
     }
 
@@ -1611,11 +1636,6 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
     }
 
     @Override
-    public void setSite(Site item) {
-        VodConfig.get().setHome(item);
-    }
-
-    @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
         // 2026-10-17：菜单键 = 打开「筛选」弹窗（复刻手机端首页的筛选能力）。
         // · 只在当前是**真实分类**且该分类带 filters 时才弹；推荐页 / 无 filters 的分类只提示一句。
@@ -1638,6 +1658,8 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
     @Override
     protected void onResume() {
         super.onResume();
+        // 从二级页 / 播放页回到首页：退出连按从头计，避免「按了一下又离开、回来再按一下就退」。
+        resetBackTaps();
         mClock.start();
     }
 
@@ -1649,24 +1671,31 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
 
     @Override
     protected void onBackInvoked() {
+        // ① 连按计数：2.5 秒内第三次按，任何状态都直接退出
+        int taps = countBackTap();
+        if (taps == 0) {
+            finish();
+            return;
+        }
+        // ② 启动画面：第一次按只是「别等了，进首页」，不计入退出
         if (mBinding.progressLayout.isProgress()) {
-            // 老人主动从启动画面退出来 = 他不想再等，也就不必再自动跳转续播：
-            // 否则他刚落到首页、数据源恰好就绪，屏幕又会被抢走。
+            resetBackTaps();
             bootInteracted = true;
             showContent();
-        } else if (mPresenter.isDelete()) {
-            setHistoryDelete(false);
-        } else if (mBinding.recycler.getSelectedPosition() != 0) {
-            mBinding.recycler.scrollToPosition(0);
-        } else if (PlaybackService.isRunning()) {
-            Util.moveToBackground(this);
-        } else {
-            // 适老化：首页的返回逻辑统一交给 BaseActivity 处理。
-            // 此处不得再自行调用 confirmExit()，否则会与父类重复判定：
-            // 第一次调用把 lastBackTime 清零，父类二次判定时时间差被放大成
-            // 「当前时刻」，永远判定为「不是连按」，finish() 因而永不执行 —— 按多少次都退不出。
-            super.onBackInvoked();
+            return;
         }
+        // ③ 历史删除模式：先退出删除模式，不计入退出
+        if (mPresenter.isDelete()) {
+            resetBackTaps();
+            setHistoryDelete(false);
+            return;
+        }
+        // ④ 焦点不在第一行：顺手回顶部（保留导航能力），本次按键仍计入退出连按
+        if (mBinding.recycler.getSelectedPosition() != 0) mBinding.recycler.scrollToPosition(0);
+
+        // ⑤ 只在「本轮第一次」提示一次：系统 Toast 撑不住连续 show（会被队列节流甚至丢弃），
+        //    分级提示既看不见又白耗一次 inflate，所以三次里只提示这一下。
+        if (taps == 1) Notify.center(R.string.elder_exit_count);
     }
 
     @Override

@@ -334,6 +334,7 @@
     <string name="error_play_drm">This device does not support the required DRM scheme</string>
     <string name="error_play_url">Unable to load url</string>
     <string name="error_play_timeout">Timed out</string><string name="error_audio_effect_unsupported">Audio settings are unavailable for the current playback mode</string>
+    <string name="error_decode_unsupported">This device does not support this video. Try another episode or source</string>
     <string name="error_audio_effect_passthrough">Audio settings are unavailable for passthrough audio</string>
     <string name="error_audio_effect_apply">Unable to apply audio settings</string>
     <string name="error_video_effect_unsupported">Video settings are unavailable for the current playback mode</string>
@@ -413,4 +414,7 @@
         <item>Select subtitle track</item>
     </string-array>
 
+<string name="setting_vod_source">Vod source</string>
+    <string name="setting_live_source">Live source</string>
+    <string name="setting_wall_source">Wallpaper source</string>
 </resources>

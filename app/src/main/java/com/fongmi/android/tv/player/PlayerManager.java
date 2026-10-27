@@ -1,5 +1,7 @@
 package com.fongmi.android.tv.player;
 
+import android.app.ActivityManager;
+import android.content.Context;
 import android.net.Uri;
 import android.text.TextUtils;
 
@@ -47,6 +49,9 @@ import java.util.List;
 import java.util.Map;
 
 public class PlayerManager implements ParseCallback {
+
+    /** 低内存分档线（与 OkGlideModule 同一口径）：设备总内存低于此值视为低配设备。 */
+    private static final long LOW_RAM_TOTAL_BYTES = 2L * 1024 * 1024 * 1024;
 
     private final PlayerEffectManager effects;
     private final Runnable runnable;
@@ -483,7 +488,33 @@ public class PlayerManager implements ParseCallback {
 
     private void handleDecodeError(PlaybackException e) {
         if (++retry > 1) callback.onError(engine.getErrorMessage(e));
+        else if (isHard() && isLowRamDevice()) callback.onError(ResUtil.getString(R.string.error_decode_unsupported));
         else retryDecode(isHard() ? PlayerEngine.SOFT : PlayerEngine.HARD);
+    }
+
+    /**
+     * 低内存设备判定（2026-10-26 低配电视卡死治理 P1-1）。
+     *
+     * <p>硬解失败后自动切软解，在高配设备上是提升成功率的好策略；但在 1GB 内存 / 4 核 A53
+     * 级别的低配电视上，1080p/4K 软解直接把 CPU 打满 —— 连 SurfaceFlinger 的合成时间片都
+     * 抢不到，整机卡死（不是 ANR，系统级卡）。对这类设备，软解没有赢家：与其无声地切过去
+     * 让老人面对一台卡死的电视，不如直接报「设备不支持该解码方式」，由用户自己决定
+     * 是否在设置里手动切换。高内存设备维持自动软解，成功率不回退。</p>
+     *
+     * <p>判据用 {@code MemoryInfo.totalMem}（设备总内存 &lt; 2GB），与
+     * {@code OkGlideModule} 保持同一口径；不用 {@code getMemoryClass()} —— 那是
+     * <b>标准</b> heap 上限，本应用 largeHeap 后实际可用远大于它，会全员误判。</p>
+     */
+    private boolean isLowRamDevice() {
+        try {
+            ActivityManager am = (ActivityManager) App.get().getSystemService(Context.ACTIVITY_SERVICE);
+            if (am == null) return false;
+            ActivityManager.MemoryInfo info = new ActivityManager.MemoryInfo();
+            am.getMemoryInfo(info);
+            return info.totalMem > 0 && info.totalMem < LOW_RAM_TOTAL_BYTES;
+        } catch (Throwable e) {
+            return false;
+        }
     }
 
     private void retryDecode(int decode) {

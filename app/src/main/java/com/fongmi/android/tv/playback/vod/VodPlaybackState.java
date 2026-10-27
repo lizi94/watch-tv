@@ -32,8 +32,6 @@ public class VodPlaybackState {
     private String detailId;
     private String searchKeyword;
     private int qualityPosition;
-    private boolean selectFirstSource;
-    private boolean autoFallback;
     private boolean useParse;
 
     public VodPlaybackState() {
@@ -61,8 +59,6 @@ public class VodPlaybackState {
         detailId = "";
         searchKeyword = "";
         qualityPosition = 0;
-        selectFirstSource = false;
-        autoFallback = false;
         useParse = false;
     }
 
@@ -74,13 +70,43 @@ public class VodPlaybackState {
         return id != null && failedIds.contains(id);
     }
 
+    /**
+     * 清空「已失败源」记录（手动换源专用）。
+     *
+     * <p>自动链靠 failedIds 防止原地打转；但用户<b>主动</b>点「换源」时，上一次的失败不该
+     * 挡住他 —— 否则「换了一圈全失败后，再点换源就永远找不到候选」，按钮看起来就是坏的。</p>
+     */
+    void clearFailedIds() {
+        failedIds.clear();
+    }
+
+    /** 清空候选源（重新搜索前先清，避免新旧候选混在一起重复换到同一个源）。 */
+    void clearSources() {
+        sources.clear();
+    }
+
     List<Vod> getSources() {
         return sources;
     }
 
-    void setSources(List<Vod> items) {
-        sources.clear();
-        sources.addAll(items);
+    /**
+     * 追加候选源（跨源搜索是<b>每个站源各回调一次</b>，结果必须累加而不是覆盖）。
+     *
+     * <p>按「源 + id」判重：同一个站源可能对同一个站点的多次回调给出同一条，
+     * 无脑 addAll 会让同一个候选被反复换到 —— 那就是「换源风暴」。</p>
+     */
+    void addSources(List<Vod> items) {
+        for (Vod item : items) {
+            if (item == null || contains(item)) continue;
+            sources.add(item);
+        }
+    }
+
+    private boolean contains(Vod item) {
+        for (Vod exist : sources) {
+            if (exist.getId().equals(item.getId()) && exist.getSiteKey().equals(item.getSiteKey())) return true;
+        }
+        return false;
     }
 
     /** 移除指定的候选源（跨源择优时用，不必恰好是第一个）。 */
@@ -261,22 +287,6 @@ public class VodPlaybackState {
 
     void setPlaybackMetadata(MediaMetadata playbackMetadata) {
         this.playbackMetadata = playbackMetadata;
-    }
-
-    boolean isSelectFirstSource() {
-        return selectFirstSource;
-    }
-
-    void setSelectFirstSource(boolean selectFirstSource) {
-        this.selectFirstSource = selectFirstSource;
-    }
-
-    boolean isAutoFallback() {
-        return autoFallback;
-    }
-
-    void setAutoFallback(boolean autoFallback) {
-        this.autoFallback = autoFallback;
     }
 
     boolean isUseParse() {

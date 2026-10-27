@@ -15,11 +15,13 @@ import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.api.config.VodConfig;
 import com.fongmi.android.tv.db.AppDatabase;
 import com.fongmi.android.tv.impl.Diffable;
+import com.fongmi.android.tv.utils.SiteVisibility;
 import com.fongmi.android.tv.utils.Task;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -88,8 +90,24 @@ public class History implements Diffable<History> {
         return get(VodConfig.getCid());
     }
 
+    /**
+     * 历史记录：<b>剔除「用户已关掉的站源」的记录</b>。
+     *
+     * <p>2026-10-27：站源由用户在「选择能看的站」里决定。关掉的源在首页/搜索/换源里都看不到，
+     * 历史里却还留着它的记录 —— 点进去只会撞进一个取不到内容的空详情页，等于给老人挖坑。
+     * 所以这里一并隐藏。{@code siteKey} 为空的旧记录一律保留（不能因为缺字段就吞掉用户的历史）。</p>
+     *
+     * <p>副作用（符合预期）：开机自动续播取 {@code get().get(0)}，会自然跳过已关掉源的记录。</p>
+     */
     public static List<History> get(int cid) {
-        return AppDatabase.get().getHistoryDao().find(cid, System.currentTimeMillis() - Constant.HISTORY_TIME);
+        List<History> items = AppDatabase.get().getHistoryDao().find(cid, System.currentTimeMillis() - Constant.HISTORY_TIME);
+        if (items == null || items.isEmpty()) return items == null ? Collections.emptyList() : items;
+        // ⚠ 用一次性快照：逐条调 isKeyEnabled 会每条解析一次 JSON（100 条历史就是 100 次）。
+        java.util.Set<String> disabled = SiteVisibility.disabledSnapshot();
+        if (disabled.isEmpty()) return items;
+        List<History> visible = new ArrayList<>(items.size());
+        for (History item : items) if (!disabled.contains(item.getSiteKey())) visible.add(item);
+        return visible;
     }
 
     public static History find(String key) {

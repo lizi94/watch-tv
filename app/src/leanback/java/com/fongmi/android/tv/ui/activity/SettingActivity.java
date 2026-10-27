@@ -21,7 +21,6 @@ import com.fongmi.android.tv.event.ConfigEvent;
 import com.fongmi.android.tv.impl.Callback;
 import com.fongmi.android.tv.impl.ConfigListener;
 import com.fongmi.android.tv.impl.LiveListener;
-import com.fongmi.android.tv.impl.SiteListener;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.ui.base.BaseActivity;
 import com.fongmi.android.tv.ui.dialog.ConfirmDialog;
@@ -43,7 +42,7 @@ import org.greenrobot.eventbus.ThreadMode;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SettingActivity extends BaseActivity implements ConfigListener, SiteListener, LiveListener, DohDialog.Listener {
+public class SettingActivity extends BaseActivity implements ConfigListener, LiveListener, DohDialog.Listener {
 
     private ActivitySettingBinding mBinding;
 
@@ -227,11 +226,6 @@ public class SettingActivity extends BaseActivity implements ConfigListener, Sit
                 Notify.show(msg);
             }
         };
-    }
-
-    @Override
-    public void setSite(Site item) {
-        VodConfig.get().setHome(item);
     }
 
     @Override

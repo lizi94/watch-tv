@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 长辈设置页（电视版）：适老化相关设置的唯一入口。尺寸与配色走 ag_* 设计令牌，行样式走 Ag.* 组件样式。 -->
+<!-- 长辈设置页（电视版）：适老化相关设置的唯一入口。尺寸与配色走 ag_* 设计令牌，行样式走 Ag.* 组件样式。
+
+     2026-10-27：**去掉分类标题，按优先级单列排序**（用户定案）。
+     顺序原则：锁定 → 站源 → 显示 → 播放 → 交互 → 恢复默认（越靠前越重要、越少动）。
+     ⚠ TV 每行的 nextFocusDown 必须指向「新顺序里的下一行」，改顺序时这里要同步改，
+       否则遥控器按「下」会按旧顺序乱跳。 -->
 <androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -19,35 +24,14 @@
             android:layout_height="wrap_content"
             android:text="@string/elder_setting_title" />
 
-        <!-- ============ 锁定 ============ -->
-        <androidx.appcompat.widget.LinearLayoutCompat
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/ag_space_5"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <View
-                android:layout_width="@dimen/ag_space_1"
-                android:layout_height="@dimen/ag_space_6"
-                android:background="@drawable/shape_ag_bar" />
-
-            <com.google.android.material.textview.MaterialTextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/ag_space_3"
-                android:text="@string/elder_setting_group_lock"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_headline" />
-        </androidx.appcompat.widget.LinearLayoutCompat>
-
+        <!-- 1. 一键锁定 -->
         <androidx.appcompat.widget.LinearLayoutCompat
             android:id="@+id/lock"
             style="@style/Ag.ListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/ag_space_3"
-            android:nextFocusDown="@id/full"
+            android:layout_marginTop="@dimen/ag_space_4"
+            android:nextFocusDown="@id/siteManage"
             android:orientation="horizontal">
 
             <com.google.android.material.textview.MaterialTextView
@@ -64,104 +48,13 @@
                 tools:text="未锁定" />
         </androidx.appcompat.widget.LinearLayoutCompat>
 
-        <!-- ============ 播放 ============ -->
+        <!-- 2. 站源管理 -->
         <androidx.appcompat.widget.LinearLayoutCompat
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/ag_space_5"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <View
-                android:layout_width="@dimen/ag_space_1"
-                android:layout_height="@dimen/ag_space_6"
-                android:background="@drawable/shape_ag_bar" />
-
-            <com.google.android.material.textview.MaterialTextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/ag_space_3"
-                android:text="@string/elder_setting_group_play"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_headline" />
-        </androidx.appcompat.widget.LinearLayoutCompat>
-
-        <androidx.appcompat.widget.LinearLayoutCompat
-            android:id="@+id/full"
+            android:id="@+id/siteManage"
             style="@style/Ag.ListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/ag_space_3"
-            android:nextFocusDown="@id/resume"
-            android:orientation="horizontal">
-
-            <com.google.android.material.textview.MaterialTextView
-                style="@style/Ag.Text.Body"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="@dimen/ag_space_4"
-                android:text="@string/elder_setting_full_entry" />
-
-            <com.google.android.material.textview.MaterialTextView
-                android:id="@+id/fullText"
-                style="@style/Ag.Text.Value"
-                android:layout_height="wrap_content"
-                tools:text="开启" />
-        </androidx.appcompat.widget.LinearLayoutCompat>
-
-        <androidx.appcompat.widget.LinearLayoutCompat
-            android:id="@+id/resume"
-            style="@style/Ag.ListItem"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/ag_space_4"
-            android:nextFocusDown="@id/sound"
-            android:orientation="horizontal">
-
-            <com.google.android.material.textview.MaterialTextView
-                style="@style/Ag.Text.Body"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="@dimen/ag_space_4"
-                android:text="@string/elder_setting_resume_entry" />
-
-            <com.google.android.material.textview.MaterialTextView
-                android:id="@+id/resumeText"
-                style="@style/Ag.Text.Value"
-                android:layout_height="wrap_content"
-                tools:text="开启" />
-        </androidx.appcompat.widget.LinearLayoutCompat>
-
-        <androidx.appcompat.widget.LinearLayoutCompat
-            android:id="@+id/sound"
-            style="@style/Ag.ListItem"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/ag_space_4"
-            android:nextFocusDown="@id/indexSearch"
-            android:orientation="horizontal">
-
-            <com.google.android.material.textview.MaterialTextView
-                style="@style/Ag.Text.Body"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="@dimen/ag_space_4"
-                android:text="@string/elder_setting_sound_entry" />
-
-            <com.google.android.material.textview.MaterialTextView
-                android:id="@+id/soundText"
-                style="@style/Ag.Text.Value"
-                android:layout_height="wrap_content"
-                tools:text="开启" />
-        </androidx.appcompat.widget.LinearLayoutCompat>
-
-
-        <androidx.appcompat.widget.LinearLayoutCompat
-            android:id="@+id/indexSearch"
-            style="@style/Ag.ListItem"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/ag_space_4"
+            android:layout_marginTop="@dimen/ag_space_2"
             android:nextFocusDown="@id/font"
             android:orientation="horizontal">
 
@@ -170,43 +63,22 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="@dimen/ag_space_4"
-                android:text="@string/elder_setting_index_search_entry" />
+                android:text="@string/site_manage_title" />
 
             <com.google.android.material.textview.MaterialTextView
-                android:id="@+id/indexSearchText"
+                android:id="@+id/siteManageText"
                 style="@style/Ag.Text.Value"
                 android:layout_height="wrap_content"
-                tools:text="关闭" />
+                tools:text="20 / 80" />
         </androidx.appcompat.widget.LinearLayoutCompat>
 
-        <!-- ============ 显示 ============ -->
-        <androidx.appcompat.widget.LinearLayoutCompat
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/ag_space_5"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <View
-                android:layout_width="@dimen/ag_space_1"
-                android:layout_height="@dimen/ag_space_6"
-                android:background="@drawable/shape_ag_bar" />
-
-            <com.google.android.material.textview.MaterialTextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/ag_space_3"
-                android:text="@string/elder_setting_group_display"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_headline" />
-        </androidx.appcompat.widget.LinearLayoutCompat>
-
+        <!-- 3. 字体大小 -->
         <androidx.appcompat.widget.LinearLayoutCompat
             android:id="@+id/font"
             style="@style/Ag.ListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/ag_space_3"
+            android:layout_marginTop="@dimen/ag_space_2"
             android:nextFocusDown="@id/size"
             android:orientation="horizontal">
 
@@ -224,13 +96,14 @@
                 tools:text="标准" />
         </androidx.appcompat.widget.LinearLayoutCompat>
 
+        <!-- 4. 图片尺寸 -->
         <androidx.appcompat.widget.LinearLayoutCompat
             android:id="@+id/size"
             style="@style/Ag.ListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/ag_space_4"
-            android:nextFocusDown="@id/restore"
+            android:layout_marginTop="@dimen/ag_space_2"
+            android:nextFocusDown="@id/full"
             android:orientation="horizontal">
 
             <com.google.android.material.textview.MaterialTextView
@@ -247,34 +120,109 @@
                 tools:text="中" />
         </androidx.appcompat.widget.LinearLayoutCompat>
 
-        <!-- ============ 数据 ============ -->
+        <!-- 5. 点播自动全屏 -->
         <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/full"
+            style="@style/Ag.ListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/ag_space_5"
-            android:gravity="center_vertical"
+            android:layout_marginTop="@dimen/ag_space_2"
+            android:nextFocusDown="@id/resume"
             android:orientation="horizontal">
 
-            <View
-                android:layout_width="@dimen/ag_space_1"
-                android:layout_height="@dimen/ag_space_6"
-                android:background="@drawable/shape_ag_bar" />
-
             <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Body"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/ag_space_3"
-                android:text="@string/elder_setting_group_data"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_headline" />
+                android:layout_marginEnd="@dimen/ag_space_4"
+                android:text="@string/elder_setting_full_entry" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/fullText"
+                style="@style/Ag.Text.Value"
+                android:layout_height="wrap_content"
+                tools:text="开启" />
         </androidx.appcompat.widget.LinearLayoutCompat>
 
+        <!-- 6. 退出自动续播 -->
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/resume"
+            style="@style/Ag.ListItem"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ag_space_2"
+            android:nextFocusDown="@id/indexSearch"
+            android:orientation="horizontal">
+
+            <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Body"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/ag_space_4"
+                android:text="@string/elder_setting_resume_entry" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/resumeText"
+                style="@style/Ag.Text.Value"
+                android:layout_height="wrap_content"
+                tools:text="开启" />
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <!-- 7. 首页快速搜索 -->
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/indexSearch"
+            style="@style/Ag.ListItem"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ag_space_2"
+            android:nextFocusDown="@id/sound"
+            android:orientation="horizontal">
+
+            <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Body"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/ag_space_4"
+                android:text="@string/elder_setting_index_search_entry" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/indexSearchText"
+                style="@style/Ag.Text.Value"
+                android:layout_height="wrap_content"
+                tools:text="关闭" />
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <!-- 8. 遥控器按键音 -->
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/sound"
+            style="@style/Ag.ListItem"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ag_space_2"
+            android:nextFocusDown="@id/restore"
+            android:orientation="horizontal">
+
+            <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Body"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/ag_space_4"
+                android:text="@string/elder_setting_sound_entry" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/soundText"
+                style="@style/Ag.Text.Value"
+                android:layout_height="wrap_content"
+                tools:text="开启" />
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <!-- 9. 恢复默认设置（破坏性操作，固定最后） -->
         <androidx.appcompat.widget.LinearLayoutCompat
             android:id="@+id/restore"
             style="@style/Ag.ListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/ag_space_3"
+            android:layout_marginTop="@dimen/ag_space_4"
             android:orientation="horizontal">
 
             <com.google.android.material.textview.MaterialTextView

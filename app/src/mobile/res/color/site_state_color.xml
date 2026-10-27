@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 站源状态文字色（手机版）：已开 = 白，已关 = 60% 白。adapter 只 setSelected。 -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="@color/white" android:state_selected="true" />
+    <item android:color="@color/white_60" />
+</selector>

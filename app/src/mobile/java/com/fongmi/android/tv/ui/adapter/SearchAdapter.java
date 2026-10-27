@@ -6,7 +6,6 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.bumptech.glide.Glide;
 import com.fongmi.android.tv.bean.Vod;
 import com.fongmi.android.tv.databinding.AdapterSearchBinding;
 import com.fongmi.android.tv.utils.ImgUtil;
@@ -44,7 +43,7 @@ public class SearchAdapter extends BaseDiffAdapter<Vod, SearchAdapter.ViewHolder
 
     @Override
     public void onViewRecycled(@NonNull ViewHolder holder) {
-        Glide.with(holder.binding.image).clear(holder.binding.image);
+        ImgUtil.clear(holder.binding.image);
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder {

@@ -22,6 +22,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewbinding.ViewBinding;
 
 import com.fongmi.android.tv.R;
+import com.fongmi.android.tv.setting.PlayerSetting;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.ui.activity.HomeActivity;
 import com.fongmi.android.tv.ui.custom.CustomWallView;
@@ -47,8 +48,17 @@ public abstract class BaseActivity extends AppCompatActivity {
     private static final float DESIGN_WIDTH = 1920f;
 
     private long lastBackTime;
+    /** 首页「连按三次返回键退出」：单次按键的最大间隔（超过则重新计数）。 */
+    private static final long EXIT_TAP_WINDOW = 2500L;
+    /** 退出所需连按次数。 */
+    private static final int EXIT_TAPS = 3;
+    /** 已连按次数。 */
+    private int backTaps;
     /** 本页创建时的字号倍率：用于回前台时检测「字号档位是否已变」，变了就重建以应用新倍率。 */
     private float scaleOnCreate = 1f;
+
+    /** 本页创建时的图片尺寸档位：用于回前台时检测「图片尺寸是否已变」，变了就重建以应用新列数。 */
+    private int sizeOnCreate;
 
     /** 全局焦点监听：电视遥控器导航移动焦点时给出短促滴声反馈（适老化操作反馈音）。 */
     private final ViewTreeObserver.OnGlobalFocusChangeListener focusSoundListener = (oldFocus, newFocus) -> {
@@ -61,6 +71,7 @@ public abstract class BaseActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         scaleOnCreate = Setting.getFontScale();
+        sizeOnCreate = PlayerSetting.getSize();
         setContentView(getBinding().getRoot());
         EventBus.getDefault().register(this);
         initView(savedInstanceState);
@@ -72,10 +83,14 @@ public abstract class BaseActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // 字号档位在别处（设置页）切换后，回到前台的页面重建以应用新的全局倍率。
-        // 播放页覆写 autoRecreateOnFontChange() 为 false，不重建以免打断播放。
-        if (autoRecreateOnFontChange() && Setting.getFontScale() != scaleOnCreate) {
+        // 字号档位 / 图片尺寸在别处（长辈设置页）切换后，回到前台的页面重建以应用新的全局倍率 / 新列数。
+        // 播放页覆写 autoRecreateOnFontChange() / autoRecreateOnSizeChange() 为 false，不重建以免打断播放；
+        // 电视首页自己响应 RefreshEvent.SIZE，同样覆写为 false —— 重建只会白丢焦点与滚动位置。
+        boolean scaleChanged = autoRecreateOnFontChange() && Setting.getFontScale() != scaleOnCreate;
+        boolean sizeChanged = autoRecreateOnSizeChange() && PlayerSetting.getSize() != sizeOnCreate;
+        if (scaleChanged || sizeChanged) {
             scaleOnCreate = Setting.getFontScale();
+            sizeOnCreate = PlayerSetting.getSize();
             onBeforeRecreate();
             recreate();
         }
@@ -101,6 +116,22 @@ public abstract class BaseActivity extends AppCompatActivity {
 
     /** 字号档位变化后是否自动重建本页以应用新倍率（默认 true；播放页覆写为 false，避免打断播放）。 */
     protected boolean autoRecreateOnFontChange() {
+        return true;
+    }
+
+    /**
+     * 图片尺寸档位变化后是否自动重建本页以应用新列数（默认 true）。
+     *
+     * <p>与 {@link #autoRecreateOnFontChange()} 同一机制：图片尺寸在长辈设置页被切换后，
+     * 回前台时按需重建。之所以需要它 —— 卡片宽高由 {@code Product#getColumn()}
+     * （← {@link PlayerSetting#getSize()}）在 presenter / adapter <b>构造时</b>算定并锁定，
+     * 已 inflate 的列表不会自行重排；历史页、收藏页这类只靠 {@code RefreshEvent.SIZE}
+     * 刷新数据的页面，尺寸会一直停在旧档位直到下次冷启动。</p>
+     *
+     * <p>播放页覆写为 false 以免打断播放；电视首页覆写为 false —— 它自己响应
+     * {@code RefreshEvent.SIZE}（重建推荐区与「最近观看」行），再重建一次只会白丢焦点与滚动位置。</p>
+     */
+    protected boolean autoRecreateOnSizeChange() {
         return true;
     }
 
@@ -248,6 +279,33 @@ public abstract class BaseActivity extends AppCompatActivity {
      *
      * @return true 表示已达到退出条件，可以退出
      */
+    /** 清零「连按退出」计数：离开首页再回来、或走了不计数的分支（启动画面/删除模式）时调用。 */
+    protected void resetBackTaps() {
+        backTaps = 0;
+        lastBackTime = 0L;
+    }
+
+    /**
+     * 首页连按退出计数。
+     *
+     * <p>改成「三次」而不是两次，是为了让首页的返回键<b>只有一个含义</b>：
+     * 不再需要判断焦点在不在第一行、列表有没有滚动、播放服务在不在跑 ——
+     * 那些分支正是过去「按两次不退出、反而后退/回后台」的根源。
+     * 2.5 秒内连按三次，老人误触几乎不可能触发。</p>
+     *
+     * @return 0 = 达到退出条件；1 = 本轮第一次（调用方需提示一次）；2 = 已提示过（静默）
+     */
+    protected int countBackTap() {
+        long now = System.currentTimeMillis();
+        if (now - lastBackTime > EXIT_TAP_WINDOW) backTaps = 0;
+        lastBackTime = now;
+        if (++backTaps >= EXIT_TAPS) {
+            resetBackTaps();
+            return 0;
+        }
+        return backTaps;
+    }
+
     protected boolean confirmExit() {
         long now = System.currentTimeMillis();
         if (now - lastBackTime < EXIT_INTERVAL) {

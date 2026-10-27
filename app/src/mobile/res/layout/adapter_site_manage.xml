@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 站源列表项（手机版）：与长辈设置页同构的 shape_item 行（4dp 圆角 + ripple）。
+     @id/text 与 @id/state 必须与电视版同名同类型（SiteManageAdapter 双端共用）。
+     ⚠ 内边距只由 shape_item 自带（12/8dp）提供，这里不再写 padding：
+        写了两者会叠加成 24/16dp。弹窗（选择模式）换成系统 ripple 背景时
+        由 SiteManageAdapter 显式补同样的 12/8dp。 -->
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="8dp"
+    android:background="@drawable/shape_item"
+    android:gravity="center_vertical"
+    android:minHeight="48dp"
+    android:orientation="horizontal">
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/text"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:ellipsize="middle"
+        android:singleLine="true"
+        android:textColor="@color/white"
+        android:textSize="16sp"
+        tools:text="木偶 4K" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/state"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:singleLine="true"
+        android:textColor="@color/site_state_color"
+        android:textSize="16sp"
+        tools:text="已关" />
+</androidx.appcompat.widget.LinearLayoutCompat>

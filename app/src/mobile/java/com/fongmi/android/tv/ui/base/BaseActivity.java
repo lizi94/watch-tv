@@ -16,6 +16,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.FragmentActivity;
 import androidx.viewbinding.ViewBinding;
 
+import com.fongmi.android.tv.setting.PlayerSetting;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.ui.custom.CustomWallView;
 import com.fongmi.android.tv.utils.ResUtil;
@@ -28,6 +29,9 @@ import org.greenrobot.eventbus.ThreadMode;
 
 public abstract class BaseActivity extends AppCompatActivity {
 
+    /** 本页创建时的图片尺寸档位：用于回前台时检测「图片尺寸是否已变」，变了就重建以应用新列数。 */
+    private int sizeOnCreate;
+
     protected abstract ViewBinding getBinding();
 
     @Override
@@ -35,11 +39,42 @@ public abstract class BaseActivity extends AppCompatActivity {
         enableEdgeToEdge();
         enableDynamicColor();
         super.onCreate(savedInstanceState);
+        sizeOnCreate = PlayerSetting.getSize();
         setContentView(getBinding().getRoot());
         EventBus.getDefault().register(this);
         initView(savedInstanceState);
         setBackCallback();
         initEvent();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // 图片尺寸在长辈设置页被切换后，回到前台的页面重建以应用新列数（与电视端 BaseActivity 同机制）。
+        // 之所以需要它：卡片宽高由 Product#getColumn()（← PlayerSetting#getSize()）在 presenter /
+        // adapter 构造时算定并锁定，已 inflate 的列表不会自行重排；而手机端 RefreshEvent.SIZE
+        // 只有 VodFragment 响应，历史页 / 收藏页 / 直播页的尺寸会一直停在旧档位直到下次冷启动。
+        // 播放页覆写 autoRecreateOnSizeChange() 为 false，不重建以免打断播放。
+        if (autoRecreateOnSizeChange() && PlayerSetting.getSize() != sizeOnCreate) {
+            sizeOnCreate = PlayerSetting.getSize();
+            onBeforeRecreate();
+            recreate();
+        }
+    }
+
+    /**
+     * 图片尺寸档位变化后是否自动重建本页以应用新列数（默认 true）。
+     *
+     * <p>播放页覆写为 false 以免打断播放。注意重建首页的实现必须覆写
+     * {@link #onBeforeRecreate()} 打上「内部重建」标记 —— 否则重建出的新实例会被开机直达
+     * （自动续播）误判成一次用户启动而抢屏。</p>
+     */
+    protected boolean autoRecreateOnSizeChange() {
+        return true;
+    }
+
+    /** 因设置项变化而重建本页前的钩子：首页在此声明「这是内部重建」，避免被误判成用户打开软件。 */
+    protected void onBeforeRecreate() {
     }
 
     @Override

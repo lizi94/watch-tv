@@ -178,7 +178,6 @@ public class SearchActivity extends BaseActivity implements WordAdapter.OnClickL
     public void showDialog() {
         // ⛔ 2026-10-17：本页**不提供搜索源切换入口**（与首页一致）。
         // 换源入口全站唯一 = 「设置 → 长辈设置 → 一键锁定」（ElderLockActivity）。
-        // 本方法仅为满足 SiteListener 的接口契约而保留（空实现）。
     }
 
     @Override

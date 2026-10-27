@@ -13,7 +13,6 @@ import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.api.config.VodConfig;
 import com.fongmi.android.tv.bean.Site;
-import com.fongmi.android.tv.impl.SiteListener;
 import com.fongmi.android.tv.utils.KeyUtil;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.google.android.material.textview.MaterialTextView;
@@ -70,7 +69,7 @@ public class CustomTitleView extends MaterialTextView {
         coolDown = true;
     }
 
-    public interface Listener extends SiteListener {
+    public interface Listener {
 
         void showDialog();
 

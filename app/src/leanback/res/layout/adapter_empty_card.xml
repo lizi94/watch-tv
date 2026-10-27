@@ -17,21 +17,32 @@
        有源连不上 → 「暂时连接不上，网络恢复后会自动重试」）。
      卡片不可聚焦、不可点击（没有可执行动作就不该抢焦点），焦点只在功能区 / 分类 / 内容之间流转。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:gravity="center"
     android:orientation="vertical">
 
+    <!-- 空态文案：⛔ 不能只给固定 sp。字号档位放大后（档位4 单字约 55px）长文案必然折行，
+         还常出现「最后一行只剩一两个字」的孤字。这里限 3 行 + 18~28sp 自动缩放：
+         优先大字，放不下自动缩，最多三行，超过才省略。 -->
     <com.google.android.material.textview.MaterialTextView
         android:id="@+id/text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:ellipsize="end"
         android:gravity="center"
+        android:lineSpacingExtra="@dimen/ag_space_1"
+        android:maxLines="3"
         android:paddingStart="@dimen/ag_space_8"
         android:paddingEnd="@dimen/ag_space_8"
         android:textColor="@color/ag_text"
         android:textSize="@dimen/ag_text_headline"
+        app:autoSizeMaxTextSize="@dimen/ag_text_headline"
+        app:autoSizeMinTextSize="@dimen/ag_text_body"
+        app:autoSizeStepGranularity="1sp"
+        app:autoSizeTextType="uniform"
         tools:text="@string/home_empty_source" />
 
 </LinearLayout>

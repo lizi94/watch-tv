@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 分页加载指示行。⚠ padding 用 ag_space_4(16dp) 而不是 ag_space_16(64dp)：
+     字号档位 4 时 density 约 2.3 倍，64dp 会让整行高达约 480px（占屏 45%），
+     卡片被推到屏幕底部、看着像「贴边」。16dp 时约 260px，卡片自然上移贴近内容。 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="@dimen/ag_space_16">
+    android:padding="@dimen/ag_space_4">
 
     <include
         layout="@layout/view_progress"

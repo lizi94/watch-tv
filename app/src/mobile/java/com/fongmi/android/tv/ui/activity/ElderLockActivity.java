@@ -14,10 +14,9 @@ import com.fongmi.android.tv.bean.Live;
 import com.fongmi.android.tv.bean.Site;
 import com.fongmi.android.tv.databinding.ActivityElderLockBinding;
 import com.fongmi.android.tv.impl.LiveListener;
-import com.fongmi.android.tv.impl.SiteListener;
 import com.fongmi.android.tv.ui.base.BaseActivity;
+import com.fongmi.android.tv.ui.dialog.SitePickDialog;
 import com.fongmi.android.tv.ui.dialog.LiveDialog;
-import com.fongmi.android.tv.ui.dialog.SiteDialog;
 import com.fongmi.android.tv.utils.ElderLock;
 import com.fongmi.android.tv.utils.Notify;
 
@@ -26,8 +25,8 @@ import com.fongmi.android.tv.utils.Notify;
  *
  * <p>页面固定 4 项，一对一对应「换哪个源 / 锁哪种行为」：</p>
  * <ul>
- *   <li><b>数据源</b>（{@code @id/site}）：点开 {@link SiteDialog}（带 search/change 开关）——
- *       一窗两用：点一行即换数据源；行内的放大镜 / 换源图标分别切换「可搜索」「可切换」，长按批量。</li>
+ *   <li><b>数据源</b>（{@code @id/site}）：点开 {@link com.fongmi.android.tv.ui.dialog.SitePickDialog} ——
+ *       只列已启用的站源，点一行即选为要锁定的数据源，当前生效源标「使用中」。</li>
  *   <li><b>播放线路</b>（{@code @id/route}）：自动择优换线开关。</li>
  *   <li><b>搜索优先源</b>（{@code @id/search}）：开启后搜索结果里优先展示锁定的数据源。</li>
  *   <li><b>直播源</b>（{@code @id/live}）：点开 {@link LiveDialog} —— 点一行即换直播源，
@@ -41,7 +40,7 @@ import com.fongmi.android.tv.utils.Notify;
  * <p>⚠ {@code @id/site} 与 {@code @id/live} 是「锁的是哪个源」，必须先解锁才能改；
  * {@code @id/route} 与 {@code @id/search} 是「锁定后的行为开关」，随时可切换、不受解锁约束。</p>
  */
-public class ElderLockActivity extends BaseActivity implements SiteListener, LiveListener {
+public class ElderLockActivity extends BaseActivity implements LiveListener {
 
     private ActivityElderLockBinding mBinding;
     private String draftSite;
@@ -62,6 +61,13 @@ public class ElderLockActivity extends BaseActivity implements SiteListener, Liv
         // 未锁定时草稿跟随当前生效的数据源：老人看到的即可锁定的
         if (draftSite.isEmpty()) draftSite = VodConfig.get().getHome().getKey();
         draftLive = LiveConfig.get().getHome().getName();
+        // 选源结果由 SitePickDialog 通过 FragmentResult 回传（配置变更重建后仍然可靠）
+        getSupportFragmentManager().setFragmentResultListener(SitePickDialog.RESULT_KEY, this, (requestKey, bundle) -> {
+            String siteKey = bundle.getString(SitePickDialog.ARG_KEY);
+            if (siteKey == null || siteKey.isEmpty()) return;
+            draftSite = siteKey;
+            refresh();
+        });
         refresh();
     }
 
@@ -75,8 +81,12 @@ public class ElderLockActivity extends BaseActivity implements SiteListener, Liv
     }
 
     private void refresh() {
-        boolean locked = ElderLock.isLocked();
-        mBinding.siteText.setText(name(draftSite));
+        // ⚠ 锁定态以 main() 为准：锁定的源被用户在「选择能看的站」里关掉时，
+        // isLocked() 仍为 true（按钮会显示「解锁」），而 main() 已返回 null（文字显示未锁定）——
+        // 用同一个判据消除这种自相矛盾。
+        Site lockedSite = ElderLock.main();
+        boolean locked = lockedSite != null;
+        mBinding.siteText.setText(locked ? lockedSite.getName() : name(draftSite));
         mBinding.routeText.setText(ElderLock.isRouteLocked() ? R.string.elder_lock_route_auto : R.string.elder_lock_route_manual);
         mBinding.searchText.setText(ElderLock.isSearchLocked() ? R.string.elder_lock_search_on : R.string.elder_lock_search_off);
         mBinding.liveText.setText(liveName());
@@ -100,26 +110,19 @@ public class ElderLockActivity extends BaseActivity implements SiteListener, Liv
 
     /** 「锁的是哪个源」两项（数据源/直播源）已锁定时不允许改动，必须先点「解锁」。 */
     private boolean needUnlockFirst() {
-        if (!ElderLock.isLocked()) return false;
+        if (ElderLock.main() == null) return false;
         Notify.show(R.string.elder_lock_need_unlock_first);
         return true;
     }
 
-    /**
-     * 数据源：站源弹窗 —— 一窗两用，与电视版 {@code SiteDialog.action()} 语义等价。
-     *
-     * <p>⛔ 必须带 {@code .search().change()}：手机端 {@code SiteDialog} 的形态是
-     * <b>行内按钮</b>（没有电视端那种顶部操作栏），行内「可搜索 / 可切换」两个按钮的显隐
-     * 完全由 {@code SiteAdapter} 持有的这两个开关决定（{@code search ? VISIBLE : GONE}）。
-     * 只写 {@code create()} 等于两个开关全 false ⇒ 弹窗里只剩「点一行换源」，
-     * <b>站源管理能力整体消失</b>（这正是「站源管理没合并进一键锁定页面」的成因）。</p>
-     */
+    /** 播放线路：随时可切换的「锁定后行为开关」，不要求先解锁。 */
+    /** 数据源：弹出选择列表（只列已启用的站源），点一行即选中；当前生效源标「使用中」。 */
     private void onPickSite(View view) {
         if (needUnlockFirst()) return;
-        SiteDialog.create().search().change().show(this);
+        // 草稿源（锁定中=锁定源，未锁=当前生效源）标「使用中」，老人一眼分清哪个是正在看的站
+        SitePickDialog.create().current(draftSite).show(this);
     }
 
-    /** 播放线路：随时可切换的「锁定后行为开关」，不要求先解锁。 */
     private void onRoute(View view) {
         ElderLock.putRouteLocked(!ElderLock.isRouteLocked());
         refresh();
@@ -146,13 +149,6 @@ public class ElderLockActivity extends BaseActivity implements SiteListener, Liv
     }
 
     @Override
-    public void setSite(Site item) {
-        if (item == null || item.isEmpty()) return;
-        draftSite = item.getKey();
-        refresh();
-    }
-
-    @Override
     public void setLive(Live item) {
         if (item == null || item.isEmpty()) return;
         draftLive = item.getName();
@@ -170,6 +166,7 @@ public class ElderLockActivity extends BaseActivity implements SiteListener, Liv
             Notify.show(R.string.elder_lock_need_source);
             return;
         }
+        draftSite = site.getKey();
         doLock(site);
     }
 

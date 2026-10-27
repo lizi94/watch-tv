@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 「站源管理」（电视版）。
+     令牌：页面四周 ag_space_6；两个 chip 各占一半宽、高 ag_touch_min；
+           底色/圆角/描边/焦点/激活全部由 selector_item 提供（shape_item_normal / _activated / _focused），
+           ⛔ 不再自造 selector_item_filter / shape_filter_active。
+     ⚠ 与 mobile 同名布局必须「id 与控件类型完全一致」——SiteManageActivity/Adapter 在 main 里一份代码双端共用。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/ag_bg"
+    android:orientation="vertical"
+    android:padding="@dimen/ag_space_6">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/transparent"
+        android:minHeight="0dp"
+        android:paddingStart="0dp"
+        android:paddingEnd="0dp"
+        app:contentInsetStartWithNavigation="0dp"
+        app:title="@string/site_manage_title"
+        app:titleMarginStart="0dp"
+        app:titleMarginEnd="0dp"
+        app:titleTextAppearance="@style/ToolbarTextAppearance" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/count"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/ag_space_2"
+        android:textColor="@color/ag_text"
+        android:textSize="@dimen/ag_text_headline"
+        tools:text="已启用 20 / 共 80" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/desc"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/ag_space_1"
+        android:layout_marginBottom="@dimen/ag_space_4"
+        android:ellipsize="end"
+        android:maxLines="2"
+        android:text="@string/site_manage_desc"
+        android:textColor="@color/ag_text_sub"
+        android:textSize="@dimen/ag_text_body" />
+
+    <!-- 一行两 chip：左边「全部启用 / 全部停用」随状态切换；右边「只看停用 · N」筛选 -->
+    <LinearLayout
+        android:id="@+id/chipRow"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/ag_space_4"
+        android:orientation="horizontal">
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/toggleAll"
+            style="@style/Ag.ListItem"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:nextFocusDown="@id/recycler"
+            android:nextFocusRight="@id/filter">
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/toggleAllText"
+                style="@style/Ag.Text.Body"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="@string/site_manage_all_off" />
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/filter"
+            style="@style/Ag.ListItem"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/ag_space_1"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:nextFocusDown="@id/recycler"
+            android:nextFocusLeft="@id/toggleAll">
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/filterText"
+                style="@style/Ag.Text.Body"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="@string/site_manage_filter"
+                android:textColor="@color/site_filter_text" />
+        </androidx.appcompat.widget.LinearLayoutCompat>
+    </LinearLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recycler"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingBottom="@dimen/ag_space_4" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/empty"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:padding="@dimen/ag_space_6"
+            android:textColor="@color/ag_text_sub"
+            android:textSize="@dimen/ag_text_body"
+            android:visibility="gone"
+            tools:text="暂无站源，请先导入配置" />
+    </FrameLayout>
+
+</LinearLayout>

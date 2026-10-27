@@ -2,7 +2,6 @@ package com.fongmi.android.tv.ui.holder;
 
 import androidx.annotation.NonNull;
 
-import com.bumptech.glide.Glide;
 import com.fongmi.android.tv.bean.Vod;
 import com.fongmi.android.tv.databinding.AdapterVodRectBinding;
 import com.fongmi.android.tv.ui.adapter.VodAdapter;
@@ -53,6 +52,6 @@ public class VodRectHolder extends BaseVodHolder {
 
     @Override
     public void unbind() {
-        Glide.with(binding.image).clear(binding.image);
+        ImgUtil.clear(binding.image);
     }
 }

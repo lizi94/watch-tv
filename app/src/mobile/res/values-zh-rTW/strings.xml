@@ -73,10 +73,10 @@
 
     <!-- 長輩鎖：一鍵鎖定 -->
     <string name="elder_lock_title">一鍵鎖定</string>
-    <string name="elder_lock_source">主數據源</string>
-    <string name="elder_lock_route">播放線路</string>
-    <string name="elder_lock_route_auto">主源優先，不行自動換源</string>
-    <string name="elder_lock_route_manual">手動選線路</string>
+    <string name="elder_lock_source">資料源</string>
+    <string name="elder_lock_route">自動換源</string>
+    <string name="elder_lock_route_auto">開啟</string>
+    <string name="elder_lock_route_manual">關閉</string>
     <string name="elder_lock_search">搜尋優先源</string>
     <string name="elder_lock_search_on">已開啟</string>
     <string name="elder_lock_search_off">未開啟</string>
@@ -99,10 +99,6 @@
     <string name="setting_exit_resume">退出自動續播</string>
     <string name="elder_setting_entry">長輩設定</string>
     <string name="elder_setting_title">長輩設定</string>
-    <string name="elder_setting_group_lock">鎖定</string>
-    <string name="elder_setting_group_play">播放</string>
-    <string name="elder_setting_group_display">顯示</string>
-    <string name="elder_setting_group_data">資料</string>
     <string name="elder_setting_lock_entry">一鍵鎖定</string>
     <string name="elder_setting_full_entry">隨選自動全螢幕</string>
     <string name="elder_setting_resume_entry">退出自動續播</string>
@@ -119,4 +115,29 @@
     <string name="empty_retry">重新載入</string>
     <string name="elder_confirm_restore_backup">恢復會覆蓋目前全部資料（收藏、歷史、資料來源設定），確定繼續嗎？</string>
     <string name="elder_confirm_delete_backup">確定要刪除這個備份檔嗎？</string>
+    <string name="site_manage_title">站源管理</string>
+    <string name="site_manage_desc">停用後不顯示在首頁和搜尋中</string>
+    <string name="site_manage_count">已啟用 %1$d / 共 %2$d</string>
+    <string name="site_manage_all_on">全部啟用</string>
+    <string name="site_manage_all_off">全部停用</string>
+    <string name="site_manage_on">啟用</string>
+    <string name="site_manage_off">停用</string>
+    <string name="home_empty_no_site">未啟用任何站源，請在長輩設定中啟用</string>
+    <string name="site_manage_filter">只看停用</string>
+    <string name="site_manage_filter_on">只看停用 · %1$d</string>
+    <string name="site_manage_empty_no_config">暫無站源，請先匯入配置</string>
+    <string name="site_manage_empty_all_on">沒有已停用的站源</string>
+    <string name="site_pick_title">選擇資料源</string>
+    <string name="site_pick_empty">沒有可用的站源</string>
+    <string name="site_pick_in_use">使用中</string>
+    <string name="error_no_matching_source">未找到同一影片的其他站源</string>
+    <string name="error_no_playable_line">該站源沒有可播放的線路</string>
+    <string name="site_manage_disable_confirm">停用全部站源？停用後將無法觀看任何內容。</string>
+    <string name="elder_site_locked_hint">已鎖定 · 如需更換請先解鎖</string>
+    <string name="elder_live_locked_hint">已鎖定 · 如需更換請先解鎖</string>
+    <string name="site_manage_count_short">%1$d / %2$d</string>
+    <string name="detail_change">換源</string>
+    <string name="detail_switch_searching">正在查找其它站源……</string>
+    <string name="error_retry_hint">點擊重試</string>
+    <string name="site_pick_close_hint">按「返回」鍵關閉</string>
 </resources>

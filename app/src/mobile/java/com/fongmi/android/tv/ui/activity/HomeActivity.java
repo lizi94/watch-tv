@@ -85,10 +85,26 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
         backHomeStamp = System.currentTimeMillis();
     }
 
-    /** 声明这次重建是内部重建（切壁纸 / 主题色），不是用户打开软件。 */
+    /** 声明这次重建是内部重建（切壁纸 / 主题色 / 图片尺寸），不是用户打开软件。 */
     public static void markInternalRecreate() {
         internalRecreatePending = true;
         internalRecreateStamp = System.currentTimeMillis();
+    }
+
+    /**
+     * 图片尺寸变化触发的重建：先声明「这是内部重建」。
+     *
+     * <p>手机端首页同时承载点播列表（{@code VodFragment}）与分类列表（{@code TypeFragment}），
+     * 而 {@code RefreshEvent.SIZE} 只有 {@code VodFragment} 响应，分类列表的卡片宽高同样是在
+     * adapter 构造时按 {@code Product#getColumn()} 算定的 —— 只靠事件刷新覆盖不全，
+     * 所以这里走整页重建（与切壁纸/主题色的既有处理同一手法）。</p>
+     *
+     * <p>⚠ 不打这个标记的话，重建出的新实例会被 {@code checkBootDirect()} 误判成
+     * 「用户在软件里重新打开」，从而重新走一遍自动续播判定并抢屏。</p>
+     */
+    @Override
+    protected void onBeforeRecreate() {
+        markInternalRecreate();
     }
 
     /** 消费回退标记（读取即清除），保证一次性；超出有效窗口视为失效并丢弃。 */

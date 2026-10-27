@@ -2,9 +2,15 @@
 <!-- 全局浮层提示（Toast）：电视版覆盖版 —— 用电视版 ag_* 设计令牌。
      字号用 ag_text_title（32sp，比正文大 1/3）：浮层是「一闪而过」的单次提示，
      老人必须一眼可读，正文号不够 —— 2026-10-16 定案（用户确认）。
-     随「字号大小」档位与屏幕尺寸补偿等比放大。
+
+     ⛔ 2026-10-27 修「提示文案莫名换行」：之前只给固定 32sp、不限行数。
+     字号档位会等比放大 scaledDensity，档位 4 时单字约 75px（1080p 一行仅 14 字）⇒
+     十几字的文案必然折行，还常出现「最后一行只剩一两个字」的孤字，非常难看。
+     现在：32sp 起步、20sp 兜底，由 autoSize 自动缩到能放下为止，最多两行、超出省略。
+
      main 同名布局保留手机版原样，手机端不继承电视版的老人友好令牌。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:background="@drawable/shape_toast"
@@ -15,12 +21,19 @@
     android:paddingEnd="@dimen/ag_space_6"
     android:paddingBottom="@dimen/ag_space_3">
 
-    <TextView
+    <com.google.android.material.textview.MaterialTextView
         android:id="@+id/text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:ellipsize="end"
         android:gravity="center"
+        android:lineSpacingExtra="@dimen/ag_space_1"
+        android:maxLines="2"
         android:textColor="@color/white"
-        android:textSize="@dimen/ag_text_title" />
+        android:textSize="@dimen/ag_text_title"
+        app:autoSizeMaxTextSize="@dimen/ag_text_title"
+        app:autoSizeMinTextSize="@dimen/ag_text_headline"
+        app:autoSizeStepGranularity="1sp"
+        app:autoSizeTextType="uniform" />
 
 </LinearLayout>

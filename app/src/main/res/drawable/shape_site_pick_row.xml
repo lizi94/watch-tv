@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 「选择数据源」弹窗的行背景（手机版，SiteManageAdapter 选择模式专用）。
+     管理页沿用 adapter_site_manage.xml 自带的 shape_item 卡片，本 drawable 只用于弹窗：
+     与弹窗深色面板同源的「淡白圆角行 + 按下主色高亮」，不再用透明行 + 系统灰色波纹
+     （旧观感与管理页/长辈设置页割裂，按下反馈也偏弱）。
+     ⚠ 颜色用字面量：main 层资源不能引用 leanback 的 @color/ag_primary；
+        8% 白 ≈ #14FFFFFF、20% 主色蓝 ≈ #330B57D0，在深色面板上对比清晰。 -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:state_pressed="true">
+        <shape android:shape="rectangle">
+            <corners android:radius="10dp" />
+            <solid android:color="#330B57D0" />
+        </shape>
+    </item>
+
+    <item android:state_focused="true">
+        <shape android:shape="rectangle">
+            <corners android:radius="10dp" />
+            <solid android:color="#330B57D0" />
+        </shape>
+    </item>
+
+    <item>
+        <shape android:shape="rectangle">
+            <corners android:radius="10dp" />
+            <solid android:color="#14FFFFFF" />
+        </shape>
+    </item>
+
+</selector>

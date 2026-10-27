@@ -80,7 +80,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="@dimen/ag_space_4"
                     android:layout_weight="0.3"
-                    android:text="@string/setting_vod"
+                    android:text="@string/setting_vod_source"
                     android:textColor="@color/ag_text"
                     android:textSize="@dimen/ag_text_body" />
 
@@ -129,7 +129,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="@dimen/ag_space_4"
                     android:layout_weight="0.3"
-                    android:text="@string/setting_live"
+                    android:text="@string/setting_live_source"
                     android:textColor="@color/ag_text"
                     android:textSize="@dimen/ag_text_body" />
 
@@ -178,7 +178,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="@dimen/ag_space_4"
                     android:layout_weight="0.3"
-                    android:text="@string/setting_wall"
+                    android:text="@string/setting_wall_source"
                     android:textColor="@color/ag_text"
                     android:textSize="@dimen/ag_text_body" />
 

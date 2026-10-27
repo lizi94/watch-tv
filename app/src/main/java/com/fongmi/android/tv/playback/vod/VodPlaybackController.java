@@ -4,6 +4,7 @@ import androidx.media3.common.C;
 import androidx.media3.common.MediaMetadata;
 
 import com.fongmi.android.tv.App;
+import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.api.config.VodConfig;
 import com.fongmi.android.tv.bean.Episode;
 import com.fongmi.android.tv.bean.Flag;
@@ -13,6 +14,7 @@ import com.fongmi.android.tv.bean.Parse;
 import com.fongmi.android.tv.bean.Result;
 import com.fongmi.android.tv.bean.Vod;
 import com.fongmi.android.tv.playback.PlaybackResult;
+import com.fongmi.android.tv.utils.ResUtil;
 
 import java.util.Collections;
 import java.util.List;
@@ -22,11 +24,16 @@ public class VodPlaybackController {
     private static final String PUSH_PREFIX = "push://";
     private static final String SEARCH_PREFIX = "msearch:";
     /**
-     * 起播看门狗超时：发出线路请求后 10 秒仍未出首帧即判定该线路失败。
-     * 有些线路会永远停在缓冲态而不触发播放器错误事件，若只依赖 onError，
-     * 老人就会面对一个一直转圈的播放页 —— 看门狗保证这种情况也会自动换线/换源。
+     * 起播看门狗超时：发出线路请求后 15 秒仍未出首帧即判定该线路失败。
+     *
+     * <p>有些线路会永远停在缓冲态而不触发播放器错误事件，若只依赖 onError，
+     * 老人就会面对一个一直转圈的播放页 —— 看门狗保证这种情况也会自动换线/换源。</p>
+     *
+     * <p>⚠ 2026-10-27：10 秒 → 15 秒。低端电视上「线路只是慢、并没有坏」很常见，
+     * 10 秒会把这类线路误判成失败而白白换走，结果老人等得更久（换过去的源还要重新起播）。
+     * 15 秒既能兜住真卡死的无限转圈，又给慢线路留足机会。</p>
      */
-    private static final long START_TIMEOUT_MS = 10000L;
+    private static final long START_TIMEOUT_MS = 15000L;
 
     private final VodPlaybackHost host;
     private final VodDataSource dataSource;
@@ -35,12 +42,18 @@ public class VodPlaybackController {
     private final VodFallbackPolicy fallbackPolicy;
     private final VodPreloader preloader;
     private History lastHistory;
-    /** 本次线路请求的发出时刻，用于统计起播耗时（0 表示当前没有待统计的请求）。 */
+    /** 本次线路请求的发出时刻（0 表示当前没有待统计的请求）；也是起播看门狗的守卫标记。 */
     private long playRequestTime;
-    /** 首帧是否已出（本次起播会话内）。用于区分「起播失败」与「播放中途失败」。 */
-    private boolean playbackHasStarted;
     /** 起播看门狗任务：到点仍未出首帧就走 playbackError 同链路自动换线/换源。 */
     private final Runnable startWatchdog = this::onStartTimeout;
+    /**
+     * 首帧是否已经出来过（本次起播是否真的成功）。
+     *
+     * <p>跨源搜索是异步的：结果回来时画面可能早已播起来（例如换线成功的回调先到）。
+     * 没有这个标记，晚到的搜索结果会无条件把已经正常播放的片子换走 ——
+     * 表现就是「明明在放，突然跳到另一个源从头开始」。</p>
+     */
+    private boolean started;
 
     public VodPlaybackController(VodPlaybackHost host, VodDataSource dataSource, VodPlaybackState state) {
         this.host = host;
@@ -53,12 +66,10 @@ public class VodPlaybackController {
 
     public void reset() {
         playRequestTime = 0L;
+        started = false;
         cancelStartWatchdog();
+        fallbackPolicy.cancelSearch();
         preloader.clear();
-        // ⚠ 2026-10-16 审计修复（P2）：playbackHasStarted 是控制器字段，reset() 清不掉 ⇒
-        // onNewIntent 换片复用同一控制器时，新片「起播阶段」的失败会被误判成「播放中失败」，
-        // 走 tryMidPlayRetry 原地重试，而不是设计好的「起播失败直接换线，老人不等」。
-        playbackHasStarted = false;
         state.reset();
     }
 
@@ -75,30 +86,33 @@ public class VodPlaybackController {
     /** 看门狗到点：仍未出首帧（playRequestTime 未清零）按播放错误处理，走同一条换线/换源链路。 */
     private void onStartTimeout() {
         if (playRequestTime == 0L) return;
-        // ⚠ 2026-10-16 审计修复（P10）：原文案是「线路加载超时，正在自动换源…」，但实际动作是
-        // 「**先换线路**，换不动了才换源」（fallbackToNextLineOrSource → 先 nextLine 再 nextSource）
-        // ⇒ 提示与行为不符，老人会以为已经换源了。改成与实际一致的表述。
-        playbackError("线路加载超时，正在尝试其它线路…");
+        // ⚠ 文案只描述「发生了什么」，不带「正在尝试…」这类过程性措辞 ——
+        // 这条消息一路传到顺序链的终点才展示，那时已经不再尝试，写着「正在尝试」会自相矛盾。
+        playbackError(ResUtil.getString(R.string.error_play_timeout));
+    }
+
+    /** 本次起播是否真的出过首帧（异步回调回来时用它判断「还要不要继续换」）。 */
+    public boolean hasPlaybackStarted() {
+        return started;
     }
 
     /**
-     * 播放真正开始（首帧已出）。这是线路健康度的<b>成功样本</b>来源：
-     * 用「请求发出 → 首帧显示」的耗时给线路打分。
+     * 当前是否有一条线路正在起播、还没判出成败（看门狗正在计时）。
      *
-     * <p>只在紧随一次线路请求之后记一次 —— {@code playRequestTime} 用完即清，
-     * 因此暂停后再恢复不会重复计入。</p>
+     * <p>跨源搜索的结果会在起播途中陆续到达，此时换源等于把正在起播的线路掐掉 ——
+     * 那是「播不起来」最隐蔽的一种成因：每次都差一点就被换走了。</p>
      */
+    public boolean isPlayPending() {
+        return playRequestTime != 0L;
+    }
+
+    /** 播放真正开始（首帧已出）：撤销起播看门狗，并重置「已试线路」——下一集若出问题，从全部线路重新顺序试。 */
     public void playbackStarted() {
         if (playRequestTime == 0L) return;
-        long cost = System.currentTimeMillis() - playRequestTime;
         playRequestTime = 0L;
+        started = true;
         // 首帧已出，撤销起播看门狗
         cancelStartWatchdog();
-        playbackHasStarted = true;
-        if (!state.hasFlags()) return;
-        LineHealth.success(host.getVodKey(), state.getFlag().getFlag(), cost);
-        // 已经能放了，重置「已试线路」—— 下一集若出问题，应从全部线路里重新择优，
-        // 而不是被上一集的失败记录锁住可选范围。
         state.clearTriedFlags();
     }
 
@@ -239,26 +253,23 @@ public class VodPlaybackController {
         host.stopPlaybackForRefresh();
         if (result == null) requestSelectedEpisode();
         else {
-            // ⚠ 2026-10-16 审计修复（P5）：预加载命中的这条路原先**直接 applyPlaybackResult**，
-            // 绕过了 requestPlayer 里的看门狗与首帧标记复位 ⇒ 两个后果：
-            //   ① 预加载的下一集若「永远缓冲不出画」且不触发 onError，**没有任何兜底 ⇒ 无限转圈**
-            //      （看门狗本就是为这种场景设计的，见 START_TIMEOUT_MS 的注释）；
-            //   ② playbackHasStarted 仍是上一集的 true ⇒ 起播失败被误判成「播放中途失败」，
-            //      走 tryMidPlayRetry 原地重试而不是设计好的「起播失败直接换线」。
+            // ⚠ 2026-10-16 审计修复（P5）：预加载命中的这条路**必须**走 armStartGuard
+            // （看门狗 + 请求时刻复位），否则预加载的下一集若永远缓冲不出画，
+            // 没有看门狗兜底 ⇒ 无限转圈。
             armStartGuard();
             applyPlaybackResult(result, VodPlayRequest.create(host.getVodKey(), state.getFlag(), item));
         }
     }
 
     /**
-     * 起播守卫：记录请求时刻 + 复位首帧标记 + 起看门狗。
+     * 起播守卫：记录请求时刻 + 起看门狗。
      *
      * <p>{@link #requestPlayer} 与 {@link #playEpisode}（预加载命中）两条起播路径<b>必须</b>共用本方法 ——
-     * 少一处就会出现「无兜底无限转圈」或「起播失败被当成中途失败」（P5）。</p>
+     * 少一处就会出现「无兜底无限转圈」（P5）。</p>
      */
     private void armStartGuard() {
         playRequestTime = System.currentTimeMillis();
-        playbackHasStarted = false;
+        started = false;
         armStartWatchdog();
     }
 
@@ -289,29 +300,26 @@ public class VodPlaybackController {
     }
 
     public void selectSource(Vod item) {
-        switchSource(item, false);
+        switchSource(item);
     }
 
     void fallbackSource(Vod item) {
-        switchSource(item, true);
+        switchSource(item);
     }
 
-    private void switchSource(Vod item, boolean autoFallback) {
-        state.setAutoFallback(autoFallback);
+    private void switchSource(Vod item) {
         saveCurrentHistory();
         preloader.clear();
         state.clearPlayRequest();
         state.clearTriedFlags();
         playRequestTime = 0L;
         cancelStartWatchdog();
-        // 换了数据源，原地重试预算重新计
-        fallbackPolicy.resetMidPlayRetry();
         host.prepareSource(item);
         requestDetail();
     }
 
     public void search(String keyword) {
-        fallbackPolicy.search(keyword, false);
+        fallbackPolicy.search(keyword);
     }
 
     public void manualSwitchSource() {
@@ -320,15 +328,11 @@ public class VodPlaybackController {
 
     public void playbackError(String msg) {
         playRequestTime = 0L;
+        started = false;
         cancelStartWatchdog();
         preloader.clear();
-        host.resetPlaybackForError(msg);
-        fallbackPolicy.playbackError();
-    }
-
-    /** 首帧是否已出（供换源策略区分「起播失败」与「播放中途失败」）。 */
-    boolean hasPlaybackStarted() {
-        return playbackHasStarted;
+        // 错误提示交给策略在「整条顺序链终止」时展示；中间换线/换源不打扰用户
+        fallbackPolicy.playbackError(msg);
     }
 
     public void playbackEnded() {

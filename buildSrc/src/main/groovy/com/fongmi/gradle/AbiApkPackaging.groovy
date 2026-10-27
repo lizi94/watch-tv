@@ -68,7 +68,8 @@ class AbiApkPackaging {
             doLast {
                 project.copy {
                     from project.fileTree(dir: apkDirectory, include: "${device}-*.apk")
-                    into project.rootProject.file('Release/apk')
+                    // 出包统一落到仓库外的 dist（与 FongMi-TV/repo 同级），避免 repo 内残留旧包被误用
+                    into project.rootProject.file('../dist')
                     eachFile { it.path = it.name }
                     includeEmptyDirs = false
                 }

@@ -15,11 +15,11 @@ import com.fongmi.android.tv.bean.Site;
 import com.fongmi.android.tv.databinding.ActivityElderSettingsBinding;
 import com.fongmi.android.tv.event.RefreshEvent;
 import com.fongmi.android.tv.impl.Callback;
-import com.fongmi.android.tv.playback.vod.LineHealth;
 import com.fongmi.android.tv.setting.PlayerSetting;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.ui.base.BaseActivity;
 import com.fongmi.android.tv.ui.dialog.ConfirmDialog;
+import com.fongmi.android.tv.utils.SiteVisibility;
 import com.fongmi.android.tv.utils.ElderLock;
 import com.fongmi.android.tv.utils.ElderMode;
 import com.fongmi.android.tv.utils.Notify;
@@ -30,7 +30,7 @@ import com.fongmi.android.tv.utils.SoundFx;
  * 长辈设置（电视版）：适老化相关设置的<b>唯一入口</b>，设置页只保留一行跳转。
  *
  * <p>页内按四组排布：锁定（一键锁定，跳转 {@link ElderLockActivity}）／播放（点播自动全屏、
- * 退出自动续播、依赖预下载、按键音、首页快速搜索）／显示（字号大小、图片尺寸）／数据（恢复默认设置）。</p>
+ * 退出自动续播、按键音、首页快速搜索、自动跳过网盘源）／显示（字号大小、图片尺寸）／数据（恢复默认设置）。</p>
  *
  * <p>命名统一走 {@code elder_setting_*} 文案，不再借用通用设置项的字符串，
  * 避免改动长辈文案时误伤普通用户的设置页。</p>
@@ -62,6 +62,7 @@ public class ElderSettingsActivity extends BaseActivity {
         mBinding.resume.setOnClickListener(this::setAutoResume);
         mBinding.sound.setOnClickListener(this::setKeySound);
         mBinding.indexSearch.setOnClickListener(this::setIndexQuickSearch);
+        mBinding.siteManage.setOnClickListener(this::onSiteManage);
         mBinding.font.setOnClickListener(this::onFont);
         mBinding.size.setOnClickListener(this::setSize);
         mBinding.restore.setOnClickListener(this::onRestore);
@@ -82,6 +83,8 @@ public class ElderSettingsActivity extends BaseActivity {
         mBinding.resumeText.setText(Setting.getSwitch(Setting.isAutoResume()));
         mBinding.soundText.setText(Setting.getSwitch(Setting.isKeySound()));
         mBinding.indexSearchText.setText(Setting.getSwitch(Setting.isIndexQuickSearch()));
+        // 设置行右侧只放计数（行标题已经是「站源管理」，再写「已启用」会重复）
+        mBinding.siteManageText.setText(getString(R.string.site_manage_count_short, SiteVisibility.countEnabled(VodConfig.get().getRawSites()), VodConfig.get().getRawSites().size()));
         mBinding.fontText.setText(getFontName());
         mBinding.sizeText.setText((size = ResUtil.getStringArray(R.array.select_size))[PlayerSetting.getSize()]);
     }
@@ -134,6 +137,12 @@ public class ElderSettingsActivity extends BaseActivity {
     private void setIndexQuickSearch(View view) {
         Setting.putIndexQuickSearch(!Setting.isIndexQuickSearch());
         mBinding.indexSearchText.setText(Setting.getSwitch(Setting.isIndexQuickSearch()));
+
+    }
+
+    /** 「选择能看的站」：站源由用户自己挑，关掉的从全站消失。 */
+    private void onSiteManage(View view) {
+        SiteManageActivity.start(this);
     }
 
     /**
@@ -174,8 +183,6 @@ public class ElderSettingsActivity extends BaseActivity {
      *   <li>{@link ElderLock#clear()} 保留：它写的是与 {@code ElderMode} 白名单里
      *       {@code elder_lock_*} 同一批键，此处补齐「选中源 / 直播源」这类需要写成空串而非删除的项
      *       （删除后 {@code getString} 返回 null，{@code ElderLock} 内部有判空，但显式写空更干净）。</li>
-     *   <li>{@link LineHealth#clear()} 保留：线路健康度是「学出来的」数据，
-     *       与偏好无关，但恢复默认后用户期望线路选择也回到初始状态，故一并清空。</li>
      * </ul>
      *
      * <p>本页是适老化设置的<b>唯一入口</b>（设置页只有一行跳转），
@@ -186,12 +193,16 @@ public class ElderSettingsActivity extends BaseActivity {
     private void restoreDefault() {
         ElderMode.restoreDefault();
         ElderLock.clear();
-        LineHealth.clear();
         Notify.show(R.string.elder_setting_restore_done);
         // 字号档位与图片尺寸都可能被重置：重建本页让新倍率/新档位立即生效，
         // 并重新加载配置、广播刷新，让首页与历史页同步到默认外观。
         recreate();
         initConfig();
+        // ⚠ 顺序有讲究：size() 必须是「尺寸类」事件（getVideo + getHistory(renew=true)，
+        // 重建 presenter 让新列数生效），home()/history() 只刷内容不换 presenter。
+        // 恢复默认可能把图片尺寸从「大」打回「中」，少发 size() 会让首页「最近观看」行的封面
+        // 一直停在旧档位，直到下次冷启动。
+        RefreshEvent.size();
         RefreshEvent.home();
         RefreshEvent.history();
     }

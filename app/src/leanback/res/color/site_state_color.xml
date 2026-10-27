@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 站源状态文字色（电视版）：已开 = 全站主色，已关 = 次要灰。adapter 只 setSelected。 -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="@color/ag_primary" android:state_selected="true" />
+    <item android:color="@color/ag_text_sub" />
+</selector>

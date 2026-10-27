@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 站源列表项（电视版）：Ag.ListItem 自带 selector_item（含 5dp 主色焦点框）与 48dp 最小触控高度。
+     @id/text 与 @id/state 必须与手机版同名同类型（SiteManageAdapter 双端共用）。
+     状态颜色走 @color/site_state_color（selected=已开），两端各定义一份，adapter 只 setSelected。 -->
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    style="@style/Ag.ListItem"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="@dimen/ag_space_2"
+    android:orientation="horizontal">
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/text"
+        style="@style/Ag.Text.Body"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:ellipsize="middle"
+        android:singleLine="true"
+        tools:text="木偶 4K" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/state"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/ag_space_3"
+        android:singleLine="true"
+        android:textColor="@color/site_state_color"
+        android:textSize="@dimen/ag_text_body"
+        tools:text="已关" />
+</androidx.appcompat.widget.LinearLayoutCompat>

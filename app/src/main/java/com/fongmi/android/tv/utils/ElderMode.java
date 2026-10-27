@@ -47,7 +47,8 @@ public class ElderMode {
      *   <li>{@code elder_key_sound} —— 按键音；</li>
      *   <li>{@code elder_font_size} —— 字号档位；</li>
      *   <li>{@code size} —— 图片尺寸（决定首页 / 分类页的列数与卡片大小）；</li>
-     *   <li>{@code elder_nav_live} —— 手机版底部导航「直播」入口（电视版不读，登记以保持双端口径一致）。</li>
+     *   <li>{@code elder_nav_live} —— 手机版底部导航「直播」入口（电视版不读，登记以保持双端口径一致）；</li>
+     *   <li>{@code site_disabled} —— 用户关掉的站源（站源选择，见 {@link com.fongmi.android.tv.utils.SiteVisibility}）。</li>
      * </ul>
      */
     private static final String[] RESET_KEYS = {
@@ -63,6 +64,7 @@ public class ElderMode {
             "elder_font_size",
             "size",
             "elder_nav_live",
+            "site_disabled",
     };
 
     private ElderMode() {

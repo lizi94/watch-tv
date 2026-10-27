@@ -7,6 +7,7 @@
      属已知的良性冗余 —— 保留它是因为它是 Notify 的唯一布局契约来源，删除会让
      「leanback 覆盖版一旦漏删就编译失败」的风险升高。需要清掉时应连同 leanback 覆盖版一起处理。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:background="@drawable/shape_toast"
@@ -17,12 +18,20 @@
     android:paddingEnd="24dp"
     android:paddingBottom="12dp">
 
-    <TextView
-    android:id="@+id/text"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:gravity="center"
-    android:textColor="@color/white"
-    android:textSize="24sp" />
+    <!-- ⚠ 与 leanback 覆盖版保持同一套「限行 + 自动缩放」契约（见那份的说明）。 -->
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:gravity="center"
+        android:lineSpacingExtra="2dp"
+        android:maxLines="2"
+        android:textColor="@color/white"
+        android:textSize="24sp"
+        app:autoSizeMaxTextSize="24sp"
+        app:autoSizeMinTextSize="14sp"
+        app:autoSizeStepGranularity="1sp"
+        app:autoSizeTextType="uniform" />
 
 </LinearLayout>

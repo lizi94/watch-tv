@@ -16,10 +16,10 @@ import com.fongmi.android.tv.databinding.ActivityElderSettingsBinding;
 import com.fongmi.android.tv.event.ConfigEvent;
 import com.fongmi.android.tv.event.RefreshEvent;
 import com.fongmi.android.tv.impl.Callback;
-import com.fongmi.android.tv.playback.vod.LineHealth;
 import com.fongmi.android.tv.setting.PlayerSetting;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.ui.base.BaseActivity;
+import com.fongmi.android.tv.utils.SiteVisibility;
 import com.fongmi.android.tv.utils.ElderLock;
 import com.fongmi.android.tv.utils.ElderMode;
 import com.fongmi.android.tv.utils.Notify;
@@ -30,7 +30,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
  * 长辈设置（手机版）：适老化相关设置的<b>唯一入口</b>，设置页只保留一行跳转。
  *
  * <p>页内按四组排布：锁定（一键锁定，跳转 {@link ElderLockActivity}）／播放（点播自动全屏、
- * 退出自动续播、依赖预下载、首页快速搜索）／显示（图片尺寸）／数据（底部导航直播入口、恢复默认设置）。</p>
+ * 退出自动续播、首页快速搜索、自动跳过网盘源）／显示（图片尺寸）／数据（底部导航直播入口、恢复默认设置）。</p>
  *
  * <p>与电视版的差异只有两处：手机端字号跟随系统，故无「字号大小」；手机端有底部导航，
  * 故多「底部导航直播入口」。</p>
@@ -60,6 +60,7 @@ public class ElderSettingsActivity extends BaseActivity {
         mBinding.full.setOnClickListener(this::setAutoFullscreen);
         mBinding.resume.setOnClickListener(this::setAutoResume);
         mBinding.indexSearch.setOnClickListener(this::setIndexQuickSearch);
+        mBinding.siteManage.setOnClickListener(this::onSiteManage);
         mBinding.size.setOnClickListener(this::setSize);
         mBinding.navLive.setOnClickListener(this::setNavLive);
         mBinding.restore.setOnClickListener(this::onRestore);
@@ -79,6 +80,8 @@ public class ElderSettingsActivity extends BaseActivity {
         mBinding.fullText.setText(Setting.getSwitch(Setting.isAutoFullscreen()));
         mBinding.resumeText.setText(Setting.getSwitch(Setting.isAutoResume()));
         mBinding.indexSearchText.setText(Setting.getSwitch(Setting.isIndexQuickSearch()));
+        // 设置行右侧只放计数（行标题已经是「站源管理」，再写「已启用」会重复）
+        mBinding.siteManageText.setText(getString(R.string.site_manage_count_short, SiteVisibility.countEnabled(VodConfig.get().getRawSites()), VodConfig.get().getRawSites().size()));
         mBinding.sizeText.setText((size = ResUtil.getStringArray(R.array.select_size))[PlayerSetting.getSize()]);
         mBinding.navLiveText.setText(Setting.getSwitch(Setting.isNavLive()));
     }
@@ -108,9 +111,15 @@ public class ElderSettingsActivity extends BaseActivity {
     private void setIndexQuickSearch(View view) {
         Setting.putIndexQuickSearch(!Setting.isIndexQuickSearch());
         mBinding.indexSearchText.setText(Setting.getSwitch(Setting.isIndexQuickSearch()));
+
     }
 
     /** 底部导航栏直播入口开关：关闭后首页底部导航不再显示直播 tab。 */
+    /** 「选择能看的站」：站源由用户自己挑，关掉的从全站消失。 */
+    private void onSiteManage(View view) {
+        SiteManageActivity.start(this);
+    }
+
     private void setNavLive(View view) {
         Setting.putNavLive(!Setting.isNavLive());
         mBinding.navLiveText.setText(Setting.getSwitch(Setting.isNavLive()));
@@ -143,13 +152,13 @@ public class ElderSettingsActivity extends BaseActivity {
     private void restoreDefault() {
         ElderMode.restoreDefault();
         ElderLock.clear();
-        // 线路健康度是「学出来的」数据，偏好被清空后内存缓存也得一起清，
-        // 否则旧分数会继续影响择优排序。
-        LineHealth.clear();
         Notify.show(R.string.elder_setting_restore_done);
         // 重建本页让新档位立即生效，并重新加载配置、广播刷新，让首页与历史页同步到默认外观。
         recreate();
         initConfig();
+        // 与电视端同口径：size() 是「尺寸类」事件，恢复默认可能把图片尺寸打回「中」，
+        // 必须发它让列表按新列数重排（VodFragment 的 SIZE 分支）；home()/history() 只刷内容。
+        RefreshEvent.size();
         RefreshEvent.home();
         RefreshEvent.history();
     }

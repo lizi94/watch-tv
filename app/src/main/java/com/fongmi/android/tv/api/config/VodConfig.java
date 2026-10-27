@@ -13,6 +13,7 @@ import com.fongmi.android.tv.bean.Site;
 import com.fongmi.android.tv.event.ConfigEvent;
 import com.fongmi.android.tv.event.RefreshEvent;
 import com.fongmi.android.tv.impl.Callback;
+import com.fongmi.android.tv.utils.SiteVisibility;
 import com.fongmi.android.tv.utils.UrlUtil;
 import com.github.catvod.bean.Doh;
 import com.github.catvod.bean.Header;
@@ -38,7 +39,10 @@ public class VodConfig extends BaseConfig {
     private Parse parse;
     private List<Doh> doh;
     private List<Rule> rules;
+    /** 配置里的全量站点（不做任何过滤：站源管理页要用它，否则被关掉的源再也找不回来）。 */
     private List<Site> sites;
+    /** 用户「已打开」的可见站点：{@code sites} 减去被关掉的。所有取内容的入口都读它。 */
+    private List<Site> visibleSites;
     /** sites 的 key → Site 索引（配置装载时一次性建好，见 setSites）。 */
     private Map<String, Site> siteIndex;
     private List<String> ads;
@@ -89,6 +93,7 @@ public class VodConfig extends BaseConfig {
         wall = null;
         parse = null;
         sites = null;
+        visibleSites = null;
         siteIndex = null;
         flags = null;
         rules = null;
@@ -184,9 +189,17 @@ public class VodConfig extends BaseConfig {
         }
     }
 
+    /**
+     * 配置是否装载成功。
+     *
+     * <p>⛔ 必须看<b>全量</b> {@link #getRawSites()}，不能看过滤后的 {@link #getSites()}：
+     * 用户可能把所有站点都关掉（或配置里全是用不了的网盘源），此时可见列表为空，
+     * 但配置本身是好的 —— 用可见列表判空会让启动门控永远认为「数据源没就绪」，
+     * 卡在启动画面转圈出不来。</p>
+     */
     @Override
     protected boolean isLoaded() {
-        return !getSites().isEmpty();
+        return !getRawSites().isEmpty();
     }
 
     private void checkJson(Config config, JsonObject object) throws Throwable {
@@ -195,16 +208,31 @@ public class VodConfig extends BaseConfig {
         } else if (object.has("urls")) {
             parseDepot(config, object);
         } else {
+            // ⛔ 普通配置必须清掉 depot 标记：否则「先导 depot、再导普通配置」时指纹仍沿用
+            // 旧 depot 的 URL ⇒ 两份配置的站源选择互相串味。
+            // 但不能在 depot 递归加载子配置时清（那条路径正需要保留），所以用 inDepot 区分。
+            if (!inDepot) SiteVisibility.setDepotUrl(null);
             parseConfig(config, object);
         }
     }
 
+    /** depot 递归加载子配置期间为 true：此时不得清空 depotUrl（见 checkJson）。 */
+    private boolean inDepot;
+
     private void parseDepot(Config config, JsonObject object) throws Throwable {
+        // depot 多源集合按「导入时这份配置的 URL」整体共用一份站源选择：
+        // 否则切换子源时选择会整个变掉，用户会以为设置丢了。
+        SiteVisibility.setDepotUrl(config.getUrl());
         List<Depot> items = Depot.arrayFrom(object.getAsJsonArray("urls").toString());
         List<Config> configs = new ArrayList<>();
         for (Depot item : items) configs.add(Config.find(item, VOD));
         if (configs.isEmpty()) throw new Exception("Depot urls is empty");
-        load(this.config = configs.get(0));
+        inDepot = true;
+        try {
+            load(this.config = configs.get(0));
+        } finally {
+            inDepot = false;
+        }
         // ⚠ 2026-10-16 审计修复（P1）：findOne 按 time DESC 取「当前配置」，而 Config.create()
         // 新建的子行 time=0。原先子行的激活时间戳全靠 saveCache() 的 update() 顺手补上——
         // 激活语义寄生在另一条路径的副作用上；一旦 saveCache 提前 return，冷启动就会
@@ -267,7 +295,7 @@ public class VodConfig extends BaseConfig {
         if (!offlineParsing) BaseLoader.get().parseJar(spider, true);
         setSites(Json.safeListElement(object, "sites").stream().map(e -> Site.objectFrom(e, spider)).distinct().collect(Collectors.toCollection(ArrayList::new)));
         Map<String, Site> items = Site.findAll().stream().collect(Collectors.toMap(Site::getKey, Function.identity()));
-        getSites().forEach(site -> site.sync(items.get(site.getKey())));
+        getRawSites().forEach(site -> site.sync(items.get(site.getKey())));
         setHome(config, findHome(config), false);
     }
 
@@ -299,12 +327,29 @@ public class VodConfig extends BaseConfig {
         return sites.get(0);
     }
 
-    public List<Site> getSites() {
+    /** 全量站点（配置原样，含用户关掉的）。仅「选择能看的站」与管理类逻辑使用。 */
+    public List<Site> getRawSites() {
         return sites == null ? Collections.emptyList() : sites;
+    }
+
+    /**
+     * 可见站点 = 全量 − 用户关掉的。首页、分类、搜索、换源、锁定、历史、收藏全部经由这里取源，
+     * 所以「一处过滤，全部入口生效」。
+     */
+    public List<Site> getSites() {
+        return visibleSites == null ? Collections.emptyList() : visibleSites;
+    }
+
+    /** 用户在「选择能看的站」里改完选择后调用：重建可见列表，让新选择立刻生效。 */
+    public void applyVisibility() {
+        this.visibleSites = SiteVisibility.filter(this.sites);
     }
 
     private void setSites(List<Site> sites) {
         this.sites = sites;
+        // 装载时顺手修剪：配置里已删掉的 key 从「已关掉」集合中移除，避免桶无限堆积。
+        SiteVisibility.prune(sites);
+        this.visibleSites = SiteVisibility.filter(sites);
         // key → Site 索引：getSite(key) 是全应用最高频的配置查询之一（详情页取源、播放页取源、
         // 搜索、弹幕、锁定校验、历史取名等十余处都调），原实现是线性 stream 扫描 ——
         // 站点数上百时每次都是 O(n) 的字符串比较。这里在配置装载时一次性建索引，查询降为 O(1)。
@@ -416,7 +461,7 @@ public class VodConfig extends BaseConfig {
         home.setSelected(true);
         config.setHome(home.getKey());
         if (save) config.save();
-        getSites().forEach(item -> item.setSelected(home));
+        getRawSites().forEach(item -> item.setSelected(home));
     }
 
     private static class Loader {

@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- 长辈设置页（手机版）：与设置页同构 —— fitsSystemWindows 置顶、透明 toolbar 透出壁纸、shape_item 行样式。
-     与电视版的差异只有两处：无「字号大小」（手机端字号跟随系统）、多「底部导航直播入口」。 -->
+     与电视版的差异只有两处：无「字号大小」（手机端字号跟随系统）、多「底部导航直播入口」。
+
+     2026-10-27：**去掉分类标题，按优先级单列排序**（用户定案）。
+     顺序原则：锁定 → 站源 → 显示 → 播放 → 交互 → 恢复默认（与电视版同一套原则）。 -->
 <androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -31,15 +34,7 @@
             android:paddingEnd="16dp"
             android:paddingBottom="16dp">
 
-            <!-- ============ 锁定 ============ -->
-            <com.google.android.material.textview.MaterialTextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="@string/elder_setting_group_lock"
-                android:textColor="@color/white_60"
-                android:textSize="14sp" />
-
+            <!-- 1. 一键锁定 -->
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:id="@+id/lock"
                 android:layout_width="match_parent"
@@ -66,23 +61,68 @@
                     android:textColor="@color/white"
                     android:textSize="16sp"
                     tools:text="未锁定" />
-
             </androidx.appcompat.widget.LinearLayoutCompat>
 
-            <!-- ============ 播放 ============ -->
-            <com.google.android.material.textview.MaterialTextView
+            <!-- 2. 站源管理 -->
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:id="@+id/siteManage"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:text="@string/elder_setting_group_play"
-                android:textColor="@color/white_60"
-                android:textSize="14sp" />
+                android:layout_marginTop="12dp"
+                android:background="@drawable/shape_item"
+                android:orientation="horizontal">
 
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="16dp"
+                    android:text="@string/site_manage_title"
+                    android:textColor="@color/white"
+                    android:textSize="16sp" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/siteManageText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="end"
+                    android:textColor="@color/white"
+                    android:textSize="16sp"
+                    tools:text="20 / 80" />
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+            <!-- 3. 图片尺寸 -->
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:id="@+id/size"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/shape_item"
+                android:orientation="horizontal">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="16dp"
+                    android:text="@string/elder_setting_size_entry"
+                    android:textColor="@color/white"
+                    android:textSize="16sp" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/sizeText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="end"
+                    android:textColor="@color/white"
+                    android:textSize="16sp"
+                    tools:text="中" />
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+            <!-- 4. 点播自动全屏 -->
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:id="@+id/full"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="12dp"
                 android:background="@drawable/shape_item"
                 android:orientation="horizontal">
 
@@ -102,9 +142,9 @@
                     android:textColor="@color/white"
                     android:textSize="16sp"
                     tools:text="开启" />
-
             </androidx.appcompat.widget.LinearLayoutCompat>
 
+            <!-- 5. 退出自动续播 -->
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:id="@+id/resume"
                 android:layout_width="match_parent"
@@ -129,9 +169,9 @@
                     android:textColor="@color/white"
                     android:textSize="16sp"
                     tools:text="开启" />
-
             </androidx.appcompat.widget.LinearLayoutCompat>
 
+            <!-- 6. 首页快速搜索 -->
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:id="@+id/indexSearch"
                 android:layout_width="match_parent"
@@ -156,59 +196,14 @@
                     android:textColor="@color/white"
                     android:textSize="16sp"
                     tools:text="关闭" />
-
             </androidx.appcompat.widget.LinearLayoutCompat>
 
-            <!-- ============ 显示 ============ -->
-            <com.google.android.material.textview.MaterialTextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:text="@string/elder_setting_group_display"
-                android:textColor="@color/white_60"
-                android:textSize="14sp" />
-
-            <androidx.appcompat.widget.LinearLayoutCompat
-                android:id="@+id/size"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:background="@drawable/shape_item"
-                android:orientation="horizontal">
-
-                <com.google.android.material.textview.MaterialTextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="16dp"
-                    android:text="@string/elder_setting_size_entry"
-                    android:textColor="@color/white"
-                    android:textSize="16sp" />
-
-                <com.google.android.material.textview.MaterialTextView
-                    android:id="@+id/sizeText"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="end"
-                    android:textColor="@color/white"
-                    android:textSize="16sp"
-                    tools:text="中" />
-
-            </androidx.appcompat.widget.LinearLayoutCompat>
-
-            <!-- ============ 数据 ============ -->
-            <com.google.android.material.textview.MaterialTextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:text="@string/elder_setting_group_data"
-                android:textColor="@color/white_60"
-                android:textSize="14sp" />
-
+            <!-- 7. 底部导航直播入口 -->
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:id="@+id/navLive"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="12dp"
                 android:background="@drawable/shape_item"
                 android:orientation="horizontal">
 
@@ -228,14 +223,14 @@
                     android:textColor="@color/white"
                     android:textSize="16sp"
                     tools:text="开启" />
-
             </androidx.appcompat.widget.LinearLayoutCompat>
 
+            <!-- 8. 恢复默认设置（破坏性操作，固定最后） -->
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:id="@+id/restore"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
+                android:layout_marginTop="16dp"
                 android:background="@drawable/shape_item"
                 android:orientation="horizontal">
 
@@ -245,7 +240,6 @@
                     android:text="@string/elder_setting_restore_entry"
                     android:textColor="@color/white"
                     android:textSize="16sp" />
-
             </androidx.appcompat.widget.LinearLayoutCompat>
 
         </androidx.appcompat.widget.LinearLayoutCompat>

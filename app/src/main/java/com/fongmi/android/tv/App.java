@@ -12,6 +12,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.os.HandlerCompat;
 
+import com.bumptech.glide.Glide;
 import com.fongmi.android.tv.db.AppDatabase;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.hook.DelegateHook;
@@ -135,5 +136,27 @@ public class App extends Application implements Application.ActivityLifecycleCal
 
     @Override
     public void onActivityStopped(@NonNull Activity activity) {
+    }
+
+    /**
+     * 系统内存吃紧时主动收缩图片缓存（2026-10-26 低配电视卡死治理 P0-2）。
+     *
+     * <p><b>为什么必须有它</b>：此前全工程没有任何 onTrimMemory 实现 —— 低配电视上进入
+     * 详情页 / 播放页把内存顶到上限后，系统只能走 LMK 直接杀进程，用户看到的就是
+     * 「卡死 → 黑屏 → 回到首页」。响应本回调后，Glide 会先收缩资源缓存与位图池，
+     * 封面重新联网加载一次即可，比整个进程被杀温和得多。</p>
+     *
+     * <p>{@code TRIM_MEMORY_RUNNING_*} 是「本进程在前台但系统内存不足」；
+     * {@code TRIM_MEMORY_BACKGROUND/UI_HIDDEN} 是「本进程已退到后台」，此时更应清。
+     * {@code trimMemory} 必须在主线程调用（本回调本身就在主线程）。</p>
+     */
+    @Override
+    public void onTrimMemory(int level) {
+        super.onTrimMemory(level);
+        if (level < TRIM_MEMORY_RUNNING_MODERATE && level < TRIM_MEMORY_BACKGROUND) return;
+        try {
+            Glide.get(this).trimMemory(level);
+        } catch (Throwable ignored) {
+        }
     }
 }

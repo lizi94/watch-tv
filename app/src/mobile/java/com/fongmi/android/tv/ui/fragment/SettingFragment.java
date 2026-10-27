@@ -91,8 +91,10 @@ public class SettingFragment extends BaseFragment implements ConfigListener, The
     @Override
     protected void initView() {
         EventBus.getDefault().register(this);
-        mBinding.vodUrl.setText(VodConfig.getDesc());
-        mBinding.liveUrl.setText(LiveConfig.getDisplayDesc());
+        // 锁定后右侧换成「已锁定」提示（对齐电视端 SettingActivity 的口径）；
+        // 之前手机端直接显示真实 URL，老人点进去还能改，等于锁定没生效。
+        mBinding.vodUrl.setText(ElderLock.isLocked() ? getString(R.string.elder_site_locked_hint) : VodConfig.getDesc());
+        mBinding.liveUrl.setText((ElderLock.isLiveLocked() || ElderLock.isLocked()) ? getString(R.string.elder_live_locked_hint) : LiveConfig.getDisplayDesc());
         mBinding.wallUrl.setText(WallConfig.getDesc());
         mBinding.versionText.setText(BuildConfig.VERSION_NAME);
         setOtherText();
@@ -211,15 +213,27 @@ public class SettingFragment extends BaseFragment implements ConfigListener, The
         RefreshEvent.theme();
     }
 
+    /** 数据源锁生效时提示并拦截（与电视端 blockedBySiteLock 同语义）。 */
+    private boolean blockedBySiteLock() {
+        if (!ElderLock.isLocked()) return false;
+        Notify.show(R.string.elder_site_blocked);
+        return true;
+    }
+
+    /** 直播源锁生效时提示并拦截；数据源锁定同样拦设置页的管理入口（与电视端同语义）。 */
+    private boolean blockedByLiveLock() {
+        if (!ElderLock.isLiveLocked() && !ElderLock.isLocked()) return false;
+        Notify.show(R.string.elder_live_blocked);
+        return true;
+    }
+
     private void onVod(View view) {
+        if (blockedBySiteLock()) return;
         ConfigDialog.create().vod().show(this);
     }
 
     private void onLive(View view) {
-        if (ElderLock.isLiveLocked()) {
-            Notify.show(R.string.elder_live_blocked);
-            return;
-        }
+        if (blockedByLiveLock()) return;
         ConfigDialog.create().live().show(this);
     }
 
@@ -236,11 +250,13 @@ public class SettingFragment extends BaseFragment implements ConfigListener, The
     }
 
     private boolean onVodEdit(View view) {
+        if (blockedBySiteLock()) return true;
         ConfigDialog.create().vod().edit().show(this);
         return true;
     }
 
     private boolean onLiveEdit(View view) {
+        if (blockedByLiveLock()) return true;
         ConfigDialog.create().live().edit().show(this);
         return true;
     }
@@ -358,8 +374,10 @@ public class SettingFragment extends BaseFragment implements ConfigListener, The
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onConfigEvent(ConfigEvent event) {
         if (event.type() != ConfigEvent.Type.COMMON) return;
-        mBinding.vodUrl.setText(VodConfig.getDesc());
-        mBinding.liveUrl.setText(LiveConfig.getDisplayDesc());
+        // 锁定后右侧换成「已锁定」提示（对齐电视端 SettingActivity 的口径）；
+        // 之前手机端直接显示真实 URL，老人点进去还能改，等于锁定没生效。
+        mBinding.vodUrl.setText(ElderLock.isLocked() ? getString(R.string.elder_site_locked_hint) : VodConfig.getDesc());
+        mBinding.liveUrl.setText((ElderLock.isLiveLocked() || ElderLock.isLocked()) ? getString(R.string.elder_live_locked_hint) : LiveConfig.getDisplayDesc());
         mBinding.wallUrl.setText(WallConfig.getDesc());
     }
 

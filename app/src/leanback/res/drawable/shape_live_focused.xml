@@ -3,7 +3,7 @@
     android:shape="rectangle">
 
     <!-- 直播浮层列表项的焦点框：圆角 4dp / 描边 1.5dp 是上游原值，**不要**套 ag_radius_s(8dp) /
-         ag_stroke_focus(现 6dp) —— 那两个全局令牌的值比原值高，套上去焦点框会明显变粗变圆，
+         ag_stroke_focus(现 5dp) —— 那两个全局令牌的值比原值高，套上去焦点框会明显变粗变圆，
          与上游观感不一致（这不是「重构」，是改版式）。 -->
     <corners android:radius="4dp" />
 

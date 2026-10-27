@@ -8,9 +8,16 @@ import com.fongmi.android.tv.databinding.DialogConfirmBinding;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 /**
- * 适老化二次确认弹窗：大字号提示 + 两个大按钮，焦点默认落在「取消」上。
- * 用于删除、清空、恢复默认等不可逆操作，避免老人误触。
+ * 适老化二次确认弹窗：大字号提示 + 两个大按钮。
+ * 用于删除、清空、恢复默认、停用全部站源等不可逆操作，避免误触。
  * 弹窗跑在独立 Window 中，焦点天然不会穿透到背后的界面。
+ *
+ * <p><b>为什么上移到 main</b>：站源管理页（main）里的「停用全部站源」也是同一类不可逆操作，
+ * 以前它只能用裸 {@code MaterialAlertDialogBuilder}（因为本类只在 leanback 有），
+ * 电视端观感与其它确认框不一致 —— 等于凭空多出一种弹窗样式。
+ * 上移后双端共用同一个确认框：电视端用 {@code ag_*} 大按钮版，手机版用仿系统对话框观感版，
+ * 各自与本机「历史记录 / 收藏」里的确认框保持同一种样式。
+ * 包名不变，10 处既有调用者的 import 一行都不用改。</p>
  */
 public class ConfirmDialog extends BaseAlertDialog {
 
@@ -90,9 +97,18 @@ public class ConfirmDialog extends BaseAlertDialog {
         if (callback != null) callback.run();
     }
 
+    /**
+     * 电视版才需要「收窄窗口 + 默认焦点落取消」：手机是触屏，0.45 屏宽的窄条反而难看，
+     * 也没有遥控器连按的问题。判断方式与 {@link SitePickDialog} 一致（main 层不引用 flavor 类）。
+     */
+    private boolean isLeanback() {
+        return "leanback".equals(com.fongmi.android.tv.BuildConfig.FLAVOR);
+    }
+
     @Override
     public void onStart() {
         super.onStart();
+        if (!isLeanback()) return;
         setWidth(0.45f);
         // 适老化：默认焦点落在「取消」。确认类操作多为删除 / 清空等不可逆行为，
         // 老人连按 OK 时不应直接命中危险项，必须主动按右键才能移到「确定」。

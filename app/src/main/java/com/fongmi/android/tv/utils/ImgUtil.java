@@ -22,10 +22,10 @@ import com.bumptech.glide.load.engine.GlideException;
 import com.bumptech.glide.load.model.GlideUrl;
 import com.bumptech.glide.load.model.LazyHeaders;
 import com.bumptech.glide.request.RequestListener;
-import com.bumptech.glide.request.target.Target;
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.api.config.VodConfig;
+import com.bumptech.glide.request.target.Target;
 import com.fongmi.android.tv.impl.CustomTarget;
 import com.fongmi.android.tv.server.Server;
 import com.github.catvod.utils.Crypto;
@@ -57,9 +57,13 @@ public class ImgUtil {
     private static final Set<String> failed = Collections.synchronizedSet(new HashSet<>());
     private static final Cache<String, Image> CACHE = CacheBuilder.newBuilder().maximumWeight(MAX_CACHE_SIZE).weigher((String key, Image value) -> value.data().length).build();
 
+    /** 台标 logo 的解码上限（2026-10-26 低配卡死治理 P0-3）：配置里塞一张超大 logo 时兜底。 */
+    private static final int LOGO_MAX_DP = 256;
+
     public static void logo(ImageView view) {
         try {
-            Glide.with(view).load(UrlUtil.convert(VodConfig.get().getConfig().getLogo())).circleCrop().override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL).error(R.drawable.ic_logo).into(view);
+            int size = ResUtil.dp2px(LOGO_MAX_DP);
+            Glide.with(view).load(UrlUtil.convert(VodConfig.get().getConfig().getLogo())).circleCrop().override(size, size).error(R.drawable.ic_logo).into(view);
         } catch (Throwable e) {
             e.printStackTrace();
         }

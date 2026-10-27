@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 一键锁定 › 选择数据源（手机版）：只列「已启用」的站源。标题由 builder().setTitle() 提供，布局里不再自绘。
+     ⚠ @id/recycler、@id/empty 必须与电视版同名同类型（SitePickDialog 双端共用）。
+     ⚠ 列表限高一律走 CustomRecyclerView + app:maxHeight（与「历史记录 / 收藏」弹窗同一套，
+       上限值也取同一个 376dp），不再在布局里硬编码 360dp、也不在代码里手算行高。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="24dp"
+    android:paddingTop="16dp"
+    android:paddingEnd="24dp"
+    android:paddingBottom="16dp">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <com.fongmi.android.tv.ui.custom.CustomRecyclerView
+            android:id="@+id/recycler"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:overScrollMode="never"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+            app:maxHeight="376dp" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/empty"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:padding="8dp"
+            android:text="@string/site_pick_empty"
+            android:textColor="@color/white_60"
+            android:textSize="14sp"
+            android:visibility="gone"
+            tools:visibility="visible" />
+    </FrameLayout>
+
+</LinearLayout>

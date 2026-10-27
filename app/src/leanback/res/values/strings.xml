@@ -61,10 +61,10 @@
     <!-- One-tap lock -->
     <string name="elder_lock_title">One-tap lock</string>
     <string name="elder_lock_desc">After locking, only the source picked here is used — home, search and playback all follow it; if it fails, lines switch automatically.</string>
-    <string name="elder_lock_source">Main source</string>
-    <string name="elder_lock_route">Playback line</string>
-    <string name="elder_lock_route_auto">Prefer main, auto switch</string>
-    <string name="elder_lock_route_manual">Only manually picked lines</string>
+    <string name="elder_lock_source">Source</string>
+    <string name="elder_lock_route">Auto switch source</string>
+    <string name="elder_lock_route_auto">On</string>
+    <string name="elder_lock_route_manual">Off</string>
     <string name="elder_lock_search">Search priority source</string>
     <string name="elder_lock_search_on">On</string>
     <string name="elder_lock_search_off">Off</string>
@@ -92,10 +92,6 @@
 
     <string name="elder_setting_entry">Elder settings</string>
     <string name="elder_setting_title">Elder settings</string>
-    <string name="elder_setting_group_lock">Lock</string>
-    <string name="elder_setting_group_play">Playback</string>
-    <string name="elder_setting_group_display">Display</string>
-    <string name="elder_setting_group_data">Data</string>
     <string name="elder_setting_lock_entry">One-tap lock</string>
     <string name="elder_setting_full_entry">Auto fullscreen on play</string>
     <string name="elder_setting_resume_entry">Auto-resume after exit</string>
@@ -122,4 +118,29 @@
     <string name="elder_site_locked_hint">Locked · unlock first to change</string>
     <string name="elder_live_locked_hint">Locked · unlock first to change</string>
     <string name="elder_confirm_restore_backup">Restoring overwrites all current data (favorites, history, sources). Continue?</string>
+    <string name="site_manage_title">Sources</string>
+    <string name="site_manage_desc">Disabled sources are hidden from home and search</string>
+    <string name="site_manage_count">%1$d of %2$d enabled</string>
+    <string name="site_manage_all_on">Enable all</string>
+    <string name="site_manage_all_off">Disable all</string>
+    <string name="site_manage_on">On</string>
+    <string name="site_manage_off">Off</string>
+    <string name="home_empty_no_site">No source enabled. Enable some in Elder settings</string>
+    <string name="elder_exit_count">Press Back twice more to exit</string>
+    <string name="site_manage_filter">Only disabled</string>
+    <string name="site_manage_filter_on">Only disabled · %1$d</string>
+    <string name="site_manage_empty_no_config">No sources. Import a config first</string>
+    <string name="site_manage_empty_all_on">No disabled sources</string>
+    <string name="site_pick_title">Choose a source</string>
+    <string name="site_pick_empty">No available sources</string>
+    <string name="site_pick_in_use">In use</string>
+    <string name="error_no_matching_source">No other source has the same title</string>
+    <string name="error_no_playable_line">No playable source on this site</string>
+    <string name="site_manage_disable_confirm">Disable all sources? Nothing will be playable.</string>
+    <string name="site_manage_count_short">%1$d / %2$d</string>
+    <string name="detail_change">Switch source</string>
+    <string name="detail_switch_searching">Looking for another source…</string>
+    <string name="error_retry_hint">Tap to retry</string>
+    <string name="error_exit_hint">Press Back to exit</string>
+    <string name="site_pick_close_hint">Press Back to close</string>
 </resources>
