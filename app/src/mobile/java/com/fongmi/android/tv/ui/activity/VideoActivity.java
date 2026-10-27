@@ -144,6 +144,8 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     private static final long EMPTY_DETAIL_FALLBACK_MS = 20000L;
     /** 最近一次渲染的线路条数：R-A′ 的判据（不能用线路行可见性 —— 手机端锁定后 hideRoute() 会把它隐藏，但线路其实存在）。 */
     private int mFlagCount;
+    /** 用户是否已手动点过「换源」：置位后永久取消 mR5 自动跳搜索页（见 {@link #onSwitchSource}）。 */
+    private boolean userSwitchedSource;
     private History mHistory;
     /**
      * 已提交给 Glide 的底图 URL（R30 去重，与电视端同款）。
@@ -169,11 +171,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     public static void cast(Activity activity, History history) {
-        start(activity, history.getSiteKey(), history.getVodId(), history.getVodName(), history.getVodPic(), null, false, true);
-    }
-
-    public static void collect(Activity activity, String key, String id, String name, String pic) {
-        start(activity, key, id, name, pic, null, true, false);
+        start(activity, history.getSiteKey(), history.getVodId(), history.getVodName(), history.getVodPic(), null, true);
     }
 
     public static void start(Activity activity, String url) {
@@ -192,13 +190,16 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         start(activity, key, id, name, pic, mark, false);
     }
 
-    public static void start(Activity activity, String key, String id, String name, String pic, String mark, boolean collect) {
-        start(activity, key, id, name, pic, mark, collect, false);
-    }
-
-    public static void start(Activity activity, String key, String id, String name, String pic, String mark, boolean collect, boolean resume) {
+    /**
+     * 7 参完整版：{@code (resume)}，{@code resume=true} = 从历史记录 / 首页续播进来
+     * （读取方见 {@code VideoActivity:232}）。
+     *
+     * <p>⚠ 2026-10-27 删掉了原来的 {@code collect} 参数：它唯一的作用是写 {@code "collect"} extra，
+     * 而读取方 {@code isFromCollect()} 已随「详情为空不再强制关页」一并删除（见
+     * {@code VodPlaybackController#detailEmpty}），留着就是写了没人读的死数据。</p>
+     */
+    public static void start(Activity activity, String key, String id, String name, String pic, String mark, boolean resume) {
         Intent intent = new Intent(activity, VideoActivity.class);
-        intent.putExtra("collect", collect);
         intent.putExtra("resume", resume);
         intent.putExtra("mark", mark);
         intent.putExtra("name", name);
@@ -264,11 +265,6 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mVod.setScale(scale);
         mBinding.player.setResizeMode(scale);
         mBinding.control.action.scale.setText(ResUtil.getStringArray(R.array.select_scale)[scale]);
-    }
-
-    @Override
-    public boolean isFromCollect() {
-        return getIntent().getBooleanExtra("collect", false);
     }
 
     private boolean isAutoRotate() {
@@ -658,6 +654,8 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         // 这类源（豆瓣等）本来就不提供可播线路，点进来必然是「只有片名的空页」；
         // 而普通源的「详情为空」是偶发事件、且此刻自动择源正在处理它 —— 绝不能抢在它前面关页面。
         if (!getSite().isIndex()) return;
+        // ⛔ 用户已经自己点过换源：自动兜底必须让位（详见 onSwitchSource 的说明）。
+        if (userSwitchedSource) return;
         // index 源上同时撤掉既有的 10s 空态看门狗：否则老人会先看到「什么都没有」再被跳走，
         // 中间那 10 秒是一次无意义的闪烁。这里直接等 mR5 到点转搜索。
         App.removeCallbacks(mR4);
@@ -674,7 +672,8 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
      */
     private void fallbackToSearch() {
         if (isFinishing() || isDestroyed()) return;
-        if (mFlagCount > 0) return;                                  // 择源成功，线路已经出来了
+        // 择源成功，线路已经出来了；或用户已手动介入 —— 两种都不再自动跳走
+        if (mFlagCount > 0 || userSwitchedSource) return;
         String name = mBinding.name.getText().toString().trim();
         if (name.isEmpty()) return;
         Notify.show(getString(R.string.elder_detail_empty_search, name));
@@ -812,9 +811,17 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         Notify.show(reversed ? R.string.error_play_next : R.string.error_play_prev);
     }
 
-    @Override
-    public void finishVod() {
-        finish();
+    /**
+     * 用户手动换源：一旦用户自己介入，就<b>永久取消</b>「20 秒后自动跳搜索页」的兜底。
+     *
+     * <p>⛔ 原来没有这个标记：{@code renderFallbackName()} 在<b>每一次</b>详情只拿到片名时都会
+     * 重新 post mR5，所以「用户一直手动换源」时，20 秒兜底会在他还在挑源的途中把页面跳走 ——
+     * 观感就是「闪退回搜索页」。自动兜底绝不能抢在用户的选择前面。</p>
+     */
+    private void onSwitchSource() {
+        userSwitchedSource = true;
+        App.removeCallbacks(mR5);
+        mVod.manualSwitchSource();
     }
 
     private void checkId() {
@@ -945,7 +952,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     private boolean onChange() {
-        mVod.manualSwitchSource();
+        onSwitchSource();
         return true;
     }
 
@@ -1224,7 +1231,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mBinding.widget.error.setText(text + "\n" + getString(R.string.error_retry_hint));
         // 点击 = 换源（不是重试）：自动链路已经把「原地重试 → 换线路」走过一遍，
         // 老人主动点的时候，换一个站源才是有效动作。
-        mBinding.widget.error.setOnClickListener(v -> mVod.manualSwitchSource());
+        mBinding.widget.error.setOnClickListener(v -> onSwitchSource());
         hideProgress();
     }
 

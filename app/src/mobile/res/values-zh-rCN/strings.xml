@@ -138,6 +138,7 @@
     <string name="site_manage_count_short">%1$d / %2$d</string>
     <string name="detail_change">换源</string>
     <string name="detail_switch_searching">正在查找其它站源……</string>
+    <string name="list_no_more">没有更多内容了</string>
     <string name="error_retry_hint">点击重试</string>
     <string name="site_pick_close_hint">按「返回」键关闭</string>
 </resources>

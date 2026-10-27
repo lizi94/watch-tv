@@ -106,7 +106,7 @@ public class HistoryActivity extends BaseActivity implements HistoryAdapter.OnCl
     @Override
     public void onItemClick(History item) {
         // 历史记录条目 = 显式续播：始终恢复上次播放，不受「退出自动续播」开关影响
-        VideoActivity.start(this, item.getSiteKey(), item.getVodId(), item.getVodName(), item.getVodPic(), null, false, true);
+        VideoActivity.start(this, item.getSiteKey(), item.getVodId(), item.getVodName(), item.getVodPic(), null, true);
     }
 
     @Override

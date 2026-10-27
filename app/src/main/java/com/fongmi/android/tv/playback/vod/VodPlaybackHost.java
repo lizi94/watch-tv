@@ -37,8 +37,6 @@ public interface VodPlaybackHost {
 
     String getHistoryKey();
 
-    boolean isFromCollect();
-
     /**
      * 是否为「显式续播」入口（历史记录页 / 首页最近观看 / 投屏恢复）。
      *
@@ -140,6 +138,4 @@ public interface VodPlaybackHost {
     void showNoNext(boolean reversed);
 
     void showNoPrev(boolean reversed);
-
-    void finishVod();
 }

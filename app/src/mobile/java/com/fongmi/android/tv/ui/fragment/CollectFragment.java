@@ -179,7 +179,7 @@ public class CollectFragment extends BaseFragment implements MenuProvider, Colle
     @Override
     public void onItemClick(Vod item) {
         if (item.isFolder()) FolderActivity.start(requireActivity(), item.getSiteKey(), Result.folder(item));
-        else VideoActivity.collect(requireActivity(), item.getSiteKey(), item.getId(), item.getName(), item.getPic());
+        else VideoActivity.start(requireActivity(), item.getSiteKey(), item.getId(), item.getName(), item.getPic());
     }
 
     @Override
@@ -189,6 +189,12 @@ public class CollectFragment extends BaseFragment implements MenuProvider, Colle
         mViewModel.searchContent(activated.getSite(), getKeyword(), false, page);
         activated.setPage(Integer.parseInt(page));
         return true;
+    }
+
+    /** 累计条目已达分页上限：只提示一次。 */
+    @Override
+    public void onLimitReached() {
+        Notify.show(R.string.list_no_more);
     }
 
     @Override

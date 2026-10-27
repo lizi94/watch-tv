@@ -24,7 +24,9 @@ import com.fongmi.android.tv.ui.base.BaseFragment;
 import com.fongmi.android.tv.ui.custom.CustomRowPresenter;
 import com.fongmi.android.tv.ui.custom.CustomScroller;
 import com.fongmi.android.tv.ui.custom.CustomSelector;
+import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.ui.presenter.VodPresenter;
+import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.google.common.collect.Lists;
 
@@ -38,6 +40,8 @@ public class CollectFragment extends BaseFragment implements CustomScroller.Call
     private ArrayObjectAdapter mLast;
     private CustomScroller mScroller;
     private SiteViewModel mViewModel;
+    /** 搜索结果行 Presenter：页面级复用，避免每翻一页多堆一个（见 {@link #vodPresenter}）。 */
+    private VodPresenter mVodPresenter;
     private Collect mCollect;
     private String mKeyword;
 
@@ -115,7 +119,8 @@ public class CollectFragment extends BaseFragment implements CustomScroller.Call
         for (Vod item : items) if (!item.isFolder()) playable.add(item);
         if (checkLastSize(playable) || getActivity() == null || getActivity().isFinishing()) return;
         List<ListRow> rows = new ArrayList<>();
-        VodPresenter presenter = new VodPresenter(requireContext(), this);
+        // ⚠ presenter 页面级复用（2026-10-27）：原来每翻一页就 new 一个，翻得越多堆得越多。
+        VodPresenter presenter = vodPresenter();
         for (List<Vod> part : Lists.partition(playable, Product.getColumn())) {
             mLast = new ArrayObjectAdapter(presenter);
             mLast.addAll(0, part);
@@ -124,10 +129,22 @@ public class CollectFragment extends BaseFragment implements CustomScroller.Call
         mAdapter.addAll(mAdapter.size(), rows);
     }
 
+    /** 搜索结果行 Presenter（懒建一次）。presenter 无状态，跨页复用安全。 */
+    private VodPresenter vodPresenter() {
+        if (mVodPresenter == null) mVodPresenter = new VodPresenter(requireContext(), this);
+        return mVodPresenter;
+    }
+
+    /** 累计条目已达分页上限：只提示一次。 */
+    @Override
+    public void onLimitReached() {
+        Notify.show(R.string.list_no_more);
+    }
+
     @Override
     public void onItemClick(Vod item) {
         requireActivity().setResult(Activity.RESULT_OK);
-        VideoActivity.collect(requireActivity(), item.getSiteKey(), item.getId(), item.getName(), item.getPic());
+        VideoActivity.start(requireActivity(), item.getSiteKey(), item.getId(), item.getName(), item.getPic());
     }
 
     @Override

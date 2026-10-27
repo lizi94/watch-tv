@@ -57,9 +57,14 @@ class VodFallbackPolicy {
         advance("");
     }
 
-    /** 详情为空：该源当前整体不可用。 */
-    void emptyDetail() {
-        advance("");
+    /**
+     * 详情为空：该源当前整体不可用。
+     *
+     * @param msg 站源返回的原始错误文案（可能为空）；沿 {@link #advance} 一路传到链尾，
+     *            只有真的走不动了才会展示（此时若为空，链尾兜底成「该站源没有可播放的线路」）。
+     */
+    void emptyDetail(String msg) {
+        advance(msg == null ? "" : msg);
     }
 
     /**

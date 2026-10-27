@@ -134,7 +134,7 @@ public class HistoryActivity extends BaseActivity implements HistoryAdapter.OnCl
             refreshToolbar();
             return;
         }
-        VideoActivity.start(this, item.getSiteKey(), item.getVodId(), item.getVodName(), item.getVodPic(), null, false, false, true);
+        VideoActivity.start(this, item.getSiteKey(), item.getVodId(), item.getVodName(), item.getVodPic(), null, false, true);
     }
 
     @Override

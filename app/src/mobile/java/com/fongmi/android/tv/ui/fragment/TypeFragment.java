@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import androidx.viewbinding.ViewBinding;
 
+import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.Product;
 import com.fongmi.android.tv.api.config.VodConfig;
 import com.fongmi.android.tv.bean.Result;
@@ -187,6 +188,12 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
         if (isHome()) return false;
         getVideo(getTypeId(), page);
         return true;
+    }
+
+    /** 累计条目已达分页上限：只提示一次。 */
+    @Override
+    public void onLimitReached() {
+        Notify.show(R.string.list_no_more);
     }
 
     @Override

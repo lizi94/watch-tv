@@ -118,7 +118,7 @@ public class VodPlaybackController {
 
     public void checkId() {
         String id = resolveVodId();
-        if (id.isEmpty() || id.startsWith(SEARCH_PREFIX)) detailEmpty(false);
+        if (id.isEmpty() || id.startsWith(SEARCH_PREFIX)) detailEmpty("");
         else if (!state.isDetailRequested(host.getVodKey(), id)) requestDetail();
     }
 
@@ -139,9 +139,10 @@ public class VodPlaybackController {
     public void onDetailResult(VodDetailResult detail) {
         if (detail == null || !detail.matches(host.getVodKey(), host.getVodId())) return;
         Result result = detail.result();
-        if (result.getList().isEmpty()) detailEmpty(result.hasMsg());
+        // ⚠ 站源 msg 不再在这里无条件 Toast（见 {@link #detailEmpty}）：它作为「最后一次真实错误」
+        // 交给回退链，只有真的走不动了才展示一次。成功加载时绝不该弹站源自己的文案。
+        if (result.getList().isEmpty()) detailEmpty(result.getMsg());
         else detailLoaded(result.getVod());
-        host.showDetailMessage(result.getMsg());
     }
 
     public void updateVod(Vod item) {
@@ -461,19 +462,35 @@ public class VodPlaybackController {
         if (state.getHistory() != null) state.getHistory().setRevPlay(revPlay);
     }
 
-    private void detailEmpty(boolean shouldFinish) {
-        if (shouldFinish || host.isFromCollect()) {
-            host.finishVod();
-            return;
-        }
+    /**
+     * 详情为空：这个源当前拿不到这部片的内容。
+     *
+     * <p>⛔ 2026-10-27（R96）删掉了原来的两条「直接关掉详情页」短路：</p>
+     * <pre>
+     * if (shouldFinish || host.isFromCollect()) { host.finishVod(); return; }
+     * </pre>
+     * <ul>
+     *   <li>{@code host.isFromCollect()}：从搜索结果页点进来的详情页会带 {@code collect=true}，
+     *       于是<b>任意一次详情请求返回空列表就直接 finish 回搜索页</b> ——
+     *       用户观感是「闪退」。而手动换源会高频换到没有这部片的源，这条必中；</li>
+     *   <li>{@code shouldFinish}（= 站源返回了非空 msg）：**任何入口**（首页 / 历史 / 收藏 /
+     *       搜索）都会直接关页，比上一条更狠。</li>
+     * </ul>
+     * 现在一律交给回退链：能换线就换线、能换源就换源，真走不动了才展示真实错误并停在错误页，
+     * 用户随时可以按返回键或继续手动换源。「关页面」只能由用户自己按返回键触发。
+     *
+     * @param msg 站源返回的原始错误文案，作为「最后一次真实错误」沿回退链传下去；
+     *            为空时由链尾兜底成「该站源没有可播放的线路」。
+     */
+    private void detailEmpty(String msg) {
         String name = host.getVodName();
         if (name.isEmpty()) {
             host.renderEmptyDetail();
-        } else {
-            host.renderFallbackName(name);
-            host.onDetailFallbackScheduled();
-            fallbackPolicy.emptyDetail();
+            return;
         }
+        host.renderFallbackName(name);
+        host.onDetailFallbackScheduled();
+        fallbackPolicy.emptyDetail(msg);
     }
 
     private void detailLoaded(Vod item) {

@@ -254,6 +254,8 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
     private CustomScroller mScroller;
     /** 内容区最后一行：跨页接续余数用，避免每页各自分行在滚动中出现成组空列位。 */
     private ArrayObjectAdapter mLast;
+    /** 内容行 Presenter：页面级复用，避免每翻一页多堆一个（见 {@link #vodPresenter}）。 */
+    private VodPresenter mVodPresenter;
     /** 内容区空态占位卡标记项（EmptyCardPresenter.Item）：当前正显示的空态行，数据到达或内容区重建时移除。 */
     private EmptyCardPresenter.Item mEmptyItem;
     /** chip 焦点防抖：App.post(r, delay) 内部先 removeCallbacks，因此快速划过整行只会发最后一次请求。 */
@@ -392,7 +394,20 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
         // 内容区滚动到底时自动加载分类下一页（CustomScroller 用通用 LayoutManager API 判定触底：
         // leanback VerticalGridView 的内部 GridLayoutManager 并非 androidx 的 LinearLayoutManager，
         // 之前用 instanceof LinearLayoutManager 判定恒为 false，导致分类永远无法翻页）
-        mBinding.recycler.addOnScrollListener(mScroller = new CustomScroller(this::onLoadMore));
+        // 到底 / 上限提示：onLimitReached 只回调一次，避免老人每滚到底都被同一句 Toast 打扰。
+        // ⚠ 必须是 Callback 的匿名实现而不是 CustomScroller 的子类 —— onLimitReached 是
+        // CustomScroller.Callback 的 default 方法，覆写它要落在 Callback 上。
+        mBinding.recycler.addOnScrollListener(mScroller = new CustomScroller(new CustomScroller.Callback() {
+            @Override
+            public boolean onLoadMore(String page) {
+                return HomeActivity.this.onLoadMore(page);
+            }
+
+            @Override
+            public void onLimitReached() {
+                Notify.show(R.string.list_no_more);
+            }
+        }));
     }
 
     private void checkAction(Intent intent) {
@@ -1003,13 +1018,21 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
     private void addGrid(List<Vod> items, Style style) {
         if (checkLastSize(items, style)) return;
         List<ListRow> rows = new ArrayList<>();
-        VodPresenter presenter = new VodPresenter(this, this, style);
+        // ⚠ presenter 页面级复用（2026-10-27）：原来每翻一页就 new 一个 VodPresenter，
+        // 页数越多堆积越多（presenter 无状态，只负责 create/bind/unbind holder，复用安全）。
+        VodPresenter presenter = vodPresenter(style);
         for (List<Vod> part : Lists.partition(items, Product.getColumn(style))) {
             mLast = new ArrayObjectAdapter(presenter);
             mLast.addAll(0, part);
             rows.add(new ListRow(mLast));
         }
         mAdapter.addAll(mAdapter.size(), rows);
+    }
+
+    /** 内容行 Presenter（懒建一次）。列表档位变化会重建 Activity，所以不必在这里处理失效。 */
+    private VodPresenter vodPresenter(Style style) {
+        if (mVodPresenter == null) mVodPresenter = new VodPresenter(this, this, style);
+        return mVodPresenter;
     }
 
     private void setFunc() {
@@ -1535,7 +1558,7 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
     public void onItemClick(History item) {
         bootInteracted = true;   // 老人已经在操作了 → 放弃本次自动抢屏跳转
         // 首页「最近观看」行 = 显式续播：始终恢复上次播放，不受「退出自动续播」开关影响
-        VideoActivity.start(this, item.getSiteKey(), item.getVodId(), item.getVodName(), item.getVodPic(), null, false, false, true);
+        VideoActivity.start(this, item.getSiteKey(), item.getVodId(), item.getVodName(), item.getVodPic(), null, false, true);
     }
 
     @Override

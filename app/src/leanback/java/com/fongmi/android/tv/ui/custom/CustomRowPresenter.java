@@ -7,6 +7,7 @@ import androidx.leanback.widget.FocusHighlight;
 import androidx.leanback.widget.HorizontalGridView;
 import androidx.leanback.widget.ListRowPresenter;
 import androidx.leanback.widget.RowPresenter;
+import androidx.recyclerview.widget.RecyclerView.RecycledViewPool;
 
 import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.TouchGridAlign;
@@ -15,6 +16,18 @@ public class CustomRowPresenter extends ListRowPresenter {
 
     private final int spacing;
     private final int strategy;
+    /**
+     * 本 presenter 名下<b>所有行内网格共享</b>的一个 ViewHolder 池（2026-10-27 低配治理）。
+     *
+     * <p>分类 / 搜索结果每翻一页就新增若干 {@code ListRow}，每个行内 {@code HorizontalGridView}
+     * 原本各带一个私有池：滚出屏幕的行把 ViewHolder 放回自己的池、新行却拿不到，只能重新 inflate。
+     * 翻得越深，重复 inflate 越多。共享之后，离屏行的 ViewHolder 可以直接被新行复用。</p>
+     *
+     * <p>⛔ 为什么不是全局静态池：不同 presenter（Vod / Func / Chip / History）的 ViewHolder
+     * 类型不同，共享会导致拿错类型。这里是「一个 presenter 实例一个池」，同一个 presenter 的
+     * viewType 必然一致，取值安全。</p>
+     */
+    private final RecycledViewPool pool = new RecycledViewPool();
 
     /**
      * 默认<b>关闭</b> leanback 的焦点放大高亮（{@link FocusHighlight#ZOOM_FACTOR_NONE}）。
@@ -63,6 +76,7 @@ public class CustomRowPresenter extends ListRowPresenter {
         // 写法与 CustomKeyboard#density() 一致。
         DisplayMetrics metrics = ResUtil.getDisplayMetrics(vh.getGridView().getContext());
         vh.getGridView().setHorizontalSpacing(Math.round(spacing * metrics.density));
+        vh.getGridView().setRecycledViewPool(pool);
         // 触屏滑动停稳修正（详见 TouchGridAlign），遥控器路径不受影响
         TouchGridAlign.attach(vh.getGridView());
     }

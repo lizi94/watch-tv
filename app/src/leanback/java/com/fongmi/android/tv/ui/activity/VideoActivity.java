@@ -129,6 +129,8 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     private Runnable mR5;
     /** 当前详情页已渲染的线路条数 —— R-A′ 的判据用「数据事实」而非 View 可见性。 */
     private int mFlagCount;
+    /** 用户是否已手动点过「换源」：置位后永久取消 mR5 自动跳搜索页（见 {@link #onSwitchSource}）。 */
+    private boolean userSwitchedSource;
     private History mHistory;
     private boolean fullscreen;
     /**
@@ -159,11 +161,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     }
 
     public static void cast(Activity activity, History history) {
-        start(activity, history.getSiteKey(), history.getVodId(), history.getVodName(), history.getVodPic(), null, false, true);
-    }
-
-    public static void collect(Activity activity, String key, String id, String name, String pic) {
-        start(activity, key, id, name, pic, null, true, false);
+        start(activity, history.getSiteKey(), history.getVodId(), history.getVodName(), history.getVodPic(), null, true);
     }
 
     public static void start(Activity activity, String url) {
@@ -179,26 +177,29 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     }
 
     public static void start(Activity activity, String key, String id, String name, String pic, String mark) {
-        start(activity, key, id, name, pic, mark, false, false);
+        start(activity, key, id, name, pic, mark, false);
     }
 
-    public static void start(Activity activity, String key, String id, String name, String pic, String mark, boolean collect, boolean cast) {
-        // TV 端语义：(collect, cast)。8 参一律 resume=false —— 与改动前行为完全一致。
-        // 手机端的 8 参末位是 resume（那边没有 cast 维度），两端刻意不同，勿混用。
-        start(activity, key, id, name, pic, mark, collect, cast, false);
+    public static void start(Activity activity, String key, String id, String name, String pic, String mark, boolean cast) {
+        // TV 端语义：(cast)。7 参一律 resume=false —— 与改动前行为完全一致。
+        // 手机端的 6 参末位是 resume（那边没有 cast 维度），两端刻意不同，勿混用。
+        start(activity, key, id, name, pic, mark, cast, false);
     }
 
     /**
-     * 9 参完整版：{@code (collect, cast, resume)}。
+     * 8 参完整版：{@code (cast, resume)}。
      *
      * <p>{@code resume=true} 表示「这是从历史记录/首页续播进来的」。
      * TV 端当前只写入不读取（读取方在手机端 {@code VideoActivity:232}），
      * 但保留该维度是为了与手机端调用点（{@code HomeActivity:1227} / {@code HistoryActivity:124}
-     * 传 9 参）保持签名一致 —— 这两处是跨端对齐的调用方，不能为了省一个参数改它们。</p>
+     * 传多参）保持签名一致 —— 这两处是跨端对齐的调用方，不能为了省一个参数改它们。</p>
+     *
+     * <p>⚠ 2026-10-27 删掉了原来的 {@code collect} 参数：它唯一的作用是写 {@code "collect"} extra，
+     * 而读取方 {@code isFromCollect()} 已随「详情为空不再强制关页」一并删除（见
+     * {@code VodPlaybackController#detailEmpty}），留着就是写了没人读的死数据。</p>
      */
-    public static void start(Activity activity, String key, String id, String name, String pic, String mark, boolean collect, boolean cast, boolean resume) {
+    public static void start(Activity activity, String key, String id, String name, String pic, String mark, boolean cast, boolean resume) {
         Intent intent = new Intent(activity, VideoActivity.class);
-        intent.putExtra("collect", collect);
         intent.putExtra("cast", cast);
         intent.putExtra("resume", resume);
         intent.putExtra("mark", mark);
@@ -263,11 +264,6 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         mVod.setScale(scale);
         mBinding.player.setResizeMode(scale);
         mBinding.control.action.scale.setText(ResUtil.getStringArray(R.array.select_scale)[scale]);
-    }
-
-    @Override
-    public boolean isFromCollect() {
-        return getIntent().getBooleanExtra("collect", false);
     }
 
     @Override
@@ -714,6 +710,8 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         // ⛔ 只对 index 源生效：这类源（豆瓣等）本来就不提供可播线路，点进来必然是「只有片名的空页」；
         // 而普通源的「详情为空」是偶发事件、且此刻自动择源正在处理它 —— 绝不能抢在它前面关页面。
         if (!getSite().isIndex()) return;
+        // ⛔ 用户已经自己点过换源：自动兜底必须让位（详见 onSwitchSource 的说明）。
+        if (userSwitchedSource) return;
         App.post(mR5, EMPTY_DETAIL_FALLBACK_MS);
     }
 
@@ -726,7 +724,8 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
      */
     private void fallbackToSearch() {
         if (isFinishing() || isDestroyed()) return;
-        if (mFlagCount > 0) return;   // 择源成功，线路已经出来了
+        // 择源成功，线路已经出来了；或用户已手动介入 —— 两种都不再自动跳走
+        if (mFlagCount > 0 || userSwitchedSource) return;
         String name = mBinding.name.getText().toString().trim();
         if (name.isEmpty()) return;
         Notify.show(getString(R.string.elder_detail_empty_search, name));
@@ -775,9 +774,17 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         Notify.show(reversed ? R.string.error_play_next : R.string.error_play_prev);
     }
 
-    @Override
-    public void finishVod() {
-        finish();
+    /**
+     * 用户手动换源：一旦用户自己介入，就<b>永久取消</b>「20 秒后自动跳搜索页」的兜底。
+     *
+     * <p>⛔ 原来没有这个标记：{@code onDetailFallbackScheduled()} 在<b>每一次</b>详情为空时都会
+     * 重新 post mR5，所以「用户一直手动换源」时，20 秒兜底会在他还在挑源的途中把页面跳走 ——
+     * 观感就是「闪退回搜索页」。自动兜底绝不能抢在用户的选择前面。</p>
+     */
+    private void onSwitchSource() {
+        userSwitchedSource = true;
+        App.removeCallbacks(mR5);
+        mVod.manualSwitchSource();
     }
 
     private void checkCast() {
@@ -1038,7 +1045,7 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     }
 
     private void onChange() {
-        mVod.manualSwitchSource();
+        onSwitchSource();
     }
 
     private void onRepeat() {
