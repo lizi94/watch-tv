@@ -10,22 +10,22 @@ import androidx.leanback.widget.Presenter;
 
 import com.fongmi.android.tv.Product;
 import com.fongmi.android.tv.bean.History;
+import com.fongmi.android.tv.bean.Style;
 import com.fongmi.android.tv.databinding.AdapterVodBinding;
 import com.fongmi.android.tv.utils.CoverText;
 import com.fongmi.android.tv.utils.ImgUtil;
-import com.fongmi.android.tv.utils.ResUtil;
 
 import java.util.Objects;
 
 public class HistoryPresenter extends Presenter {
 
     private final OnClickListener listener;
-    private int width, height;
+    /** 封面尺寸（px，[宽, 高]）。null = 尚未计算，见 {@link #spec(ViewGroup)}。 */
+    private int[] spec;
     private boolean delete;
 
     public HistoryPresenter(OnClickListener listener) {
         this.listener = listener;
-        setLayoutSize();
     }
 
     public interface OnClickListener {
@@ -37,15 +37,22 @@ public class HistoryPresenter extends Presenter {
         boolean onLongClick();
     }
 
-    private void setLayoutSize() {
-        // 与 Product.getSpec 同一套公式（3:4 竖版）。列数下限 1、可用宽度下限 1px：
-        // 「极大字号」档把全局 density 放大到 2 倍、大屏补偿再乘最多 1.6 倍，行距占位里的
-        // dp2px 项随之变大；屏宽读取异常（返回 0）时 base 会落到 0/负 —— 非法尺寸不能进 LayoutParams。
-        int column = Math.max(1, Product.getColumn());
-        int space = ResUtil.dp2px(48) + ResUtil.dp2px(16 * (column - 1));
-        int base = ResUtil.getScreenWidth() - space;
-        width = Math.max(1, base / column);
-        height = Math.max(1, (int) (width / 0.75f));
+    /**
+     * 封面尺寸（px）：<b>直接复用 {@link Product#getSpec}</b>，与首页分类 / 搜索结果逐像素同源。
+     *
+     * <p>⛔ 原先这里是手写的一份公式，行距占位用 {@code ResUtil.dp2px(48)} —— 那走的是
+     * {@code App.get()} 的 Resources，即 <b>Application 侧 density</b>，<b>不随「字号档位」与大屏补偿缩放</b>；
+     * 而功能性行距（{@code CustomRowPresenter}）与分类/搜索封面早就改用 Activity 侧 density
+     * （{@code BaseActivity#hackResources()} 按「屏宽/1920 × 字号倍率 × 大屏补偿」缩放过）。
+     * 于是档位越高，本行的左右边距相对越被压缩 —— 封面比分类/搜索那行更宽、更靠左，
+     * 与 {@code adapter_vod_rect} 的卡片对不齐（同一个「两个 density 域」坑的残留副本）。</p>
+     *
+     * <p>尺寸只依赖 {@code parent.getContext()}（Activity 侧），故首次创建 ViewHolder 时算一次并缓存；
+     * 字号档位变化时调用方会重建 presenter（{@code getHistory(true)}），缓存随之失效。</p>
+     */
+    private int[] spec(ViewGroup parent) {
+        if (spec == null) spec = Product.getSpec(parent.getContext(), Style.rect());
+        return spec;
     }
 
     public boolean isDelete() {
@@ -67,17 +74,7 @@ public class HistoryPresenter extends Presenter {
     @NonNull
     @Override
     public Presenter.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent) {
-        ViewHolder holder = new ViewHolder(AdapterVodBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false));
-        holder.binding.getRoot().getLayoutParams().width = width;
-        holder.binding.image.getLayoutParams().height = height;
-        // 封面文字跟随封面宽度并叠加字号档位增益（CoverText）：档位越高字越大，图文比例恒定
-        int sub = CoverText.sub(width);
-        holder.binding.name.setTextSize(TypedValue.COMPLEX_UNIT_PX, CoverText.title(width));
-        holder.binding.site.setTextSize(TypedValue.COMPLEX_UNIT_PX, sub);
-        holder.binding.remark.setTextSize(TypedValue.COMPLEX_UNIT_PX, sub);
-        // 角标超长兜底：框在封面宽度内，不溢到相邻列（常规短角标不触发）
-        CoverText.clamp(holder.binding.remark, holder.binding.site, width);
-        return holder;
+        return new ViewHolder(AdapterVodBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false)).size(spec(parent));
     }
 
     @Override
@@ -97,7 +94,7 @@ public class HistoryPresenter extends Presenter {
         holder.binding.delete.setVisibility(!delete ? View.GONE : View.VISIBLE);
         holder.binding.remark.setVisibility(delete || same ? View.GONE : View.VISIBLE);
         // 锁定解码尺寸到封面实际显示大小（详见 ImgUtil 带尺寸重载说明）
-        ImgUtil.load(item.getVodName(), item.getVodPic(), holder.binding.image, true, width, height);
+        ImgUtil.load(item.getVodName(), item.getVodPic(), holder.binding.image, true, holder.width, holder.height);
     }
 
     @Override
@@ -109,10 +106,30 @@ public class HistoryPresenter extends Presenter {
     public static class ViewHolder extends Presenter.ViewHolder {
 
         private final AdapterVodBinding binding;
+        /** 本 holder 的封面显示尺寸（px）：尺寸由 presenter 统一算，holder 负责落地并在绑定期回读。 */
+        private int width, height;
 
         public ViewHolder(@NonNull AdapterVodBinding binding) {
             super(binding.getRoot());
             this.binding = binding;
+        }
+
+        public ViewHolder size(int[] size) {
+            width = size[0];
+            height = size[1];
+            binding.getRoot().getLayoutParams().width = width;
+            binding.image.getLayoutParams().height = height;
+            // 封面文字跟随封面宽度并叠加字号档位增益（CoverText）：档位越高字越大，图文比例恒定
+            int sub = CoverText.sub(width);
+            binding.name.setTextSize(TypedValue.COMPLEX_UNIT_PX, CoverText.title(width));
+            binding.site.setTextSize(TypedValue.COMPLEX_UNIT_PX, sub);
+            binding.remark.setTextSize(TypedValue.COMPLEX_UNIT_PX, sub);
+            // year 在历史卡片恒 GONE，仍一并设定：与 VodRectHolder 保持同一套字号来源，
+            // 避免以后某处误让它可见时字号来源分叉
+            binding.year.setTextSize(TypedValue.COMPLEX_UNIT_PX, sub);
+            // 角标超长兜底：框在封面宽度内，不溢到相邻列（常规短角标不触发）
+            CoverText.clamp(binding.remark, binding.site, width);
+            return this;
         }
     }
 }

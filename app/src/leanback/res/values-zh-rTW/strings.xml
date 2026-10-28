@@ -143,4 +143,5 @@
     <string name="error_retry_hint">點擊重試</string>
     <string name="error_exit_hint">按「返回」鍵退出</string>
     <string name="site_pick_close_hint">按「返回」鍵關閉</string>
+    <string name="player_service_lost">播放已停止，按「返回」鍵退出</string>
 </resources>

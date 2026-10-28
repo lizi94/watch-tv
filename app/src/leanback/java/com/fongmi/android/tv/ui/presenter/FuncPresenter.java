@@ -38,7 +38,10 @@ public class FuncPresenter extends Presenter {
         // `屏宽 − 边距 − 4×间距` 理论上可能被压到 0/负，负宽传入 getChildMeasureSpec
         // 属未定义行为（此处虽不抛异常，但会写出非法宽度）；与 Product.getSpec 的
         // `Math.max(1, …)` 同口径，正常档位下与原值完全一致。
-        lp.width = Math.max(1, (ResUtil.getScreenWidth() - Math.round(48 * metrics.density) - spacing * 4) / 5);
+        // ⚠ 2026-10-28：屏宽改用 Activity 侧 metrics.widthPixels（与 Product#screenWidth 同源）。
+        // 原先用 ResUtil.getScreenWidth()（Application 侧），它在 orientation 判定为竖屏的机型上
+        // 返回短边，会把 5 个按钮一起压窄、与封面行错开 —— 详见 Product#screenWidth 的说明。
+        lp.width = Math.max(1, (metrics.widthPixels - Math.round(48 * metrics.density) - spacing * 4) / 5);
         // 高度：120dp 语义，用 Activity 密度（随字号档位等比放大），大字档位下图标+文字不溢出
         lp.height = Math.round(120f * metrics.density);
         return holder;

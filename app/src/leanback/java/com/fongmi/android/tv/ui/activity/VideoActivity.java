@@ -85,6 +85,7 @@ import com.fongmi.android.tv.utils.KeyUtil;
 import com.fongmi.android.tv.utils.ElderLock;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.ResUtil;
+import com.fongmi.android.tv.utils.SoundFx;
 import com.fongmi.android.tv.utils.TouchGridAlign;
 import com.fongmi.android.tv.utils.Sniffer;
 import com.fongmi.android.tv.utils.Traffic;
@@ -133,6 +134,8 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     private boolean userSwitchedSource;
     private History mHistory;
     private boolean fullscreen;
+    /** 「播放服务已不在」是否已提示过（每次进入本页只提示一次，见 {@link #notifyServiceLost()}）。 */
+    private boolean serviceLostNotified;
     /**
      * 进入全屏时被收起的「非播放区」视图 → 进入前的可见性。
      *
@@ -1530,10 +1533,32 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         if (isFullscreen() && KeyUtil.isMenuKey(event)) onToggle();
         if (isVisible(mBinding.control.getRoot())) setR1Callback();
         if (isVisible(mBinding.control.getRoot())) mFocus2 = getCurrentFocus();
-        if (isFullscreen() && isGone(mBinding.control.getRoot()) && mKeyDown.hasEvent(event) && service() != null) return mKeyDown.onKeyDown(event);
+        // ⚠ 兜底（防遥控器全失灵）：命中「全屏 + 控制栏收起」后方向键/确定键必须有人接手。
+        // 原先把 service() != null 写在接管条件里 —— 播放服务被系统回收时整段分支被跳过，
+        // 按键落到 super，而此刻控制栏与选集列表都是 GONE、播放页没有可聚焦 View，
+        // 方向键无人接收 ⇒ 表现为「遥控器失灵，只有电源/音量键能用」。
+        // 现在改为：条件命中即由本页接管，服务不在时给出一次提示并吞掉按键，绝不让按键落空。
+        if (isFullscreen() && isGone(mBinding.control.getRoot()) && mKeyDown.hasEvent(event)) {
+            if (service() != null) return mKeyDown.onKeyDown(event);
+            notifyServiceLost();
+            return true;
+        }
         if (KeyUtil.isMediaFastForward(event)) return onSeekForward();
         if (KeyUtil.isMediaRewind(event)) return onSeekBack();
         return super.dispatchKeyEvent(event);
+    }
+
+    /**
+     * 播放服务已不在时的提示（每次进入本页只提示一次）。
+     *
+     * <p>不能每次按键都提示 —— 会顶掉上一条提示、把屏幕刷成一片。
+     * 提示过之后按键仍被 {@link #dispatchKeyEvent} 吞掉，用户按返回键即可回首页。</p>
+     */
+    private void notifyServiceLost() {
+        if (serviceLostNotified) return;
+        serviceLostNotified = true;
+        Notify.show(R.string.player_service_lost);
+        SoundFx.error();
     }
 
     @Override

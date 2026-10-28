@@ -74,6 +74,7 @@ import com.fongmi.android.tv.utils.NetAwait;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.PermissionUtil;
 import com.fongmi.android.tv.utils.ResUtil;
+import com.fongmi.android.tv.utils.Task;
 import com.fongmi.android.tv.utils.TouchGridAlign;
 import com.fongmi.android.tv.utils.UrlUtil;
 import com.fongmi.android.tv.utils.Util;
@@ -1075,9 +1076,30 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
      * 先无条件 remove 再 add」，后果是：播放页返回、删除一条历史等都会广播 {@code RefreshEvent.HISTORY}
      * → 即使内容完全没变，历史标题行与历史行也被移除重建 → 焦点若正停在历史行上会丢失、
      * 内容区滚动位置跳动。对老人来说「焦点无缘无故跑掉」比内容晚一拍更新更难受，所以恢复条件重建。</p>
+     *
+     * <p><b>取数走后台线程（2026-10-28 遥控器假死排查）</b>：{@link History#get()} 是 60 天全表查询
+     * + Gson 反序列化 + 站点禁用快照，历史条数多时要几百毫秒。它原先在 {@code RefreshEvent.HISTORY}
+     * 触发时于<b>主线程同步</b>执行 —— 而「退出播放页 / 删记录 / 换源」都会广播该事件，
+     * 期间所有遥控器按键都排在输入队列里，是列表页瞬时「假死」的成因之一。
+     * 现在改为后台取数、回主线程再动 UI；数据本身不变，只是不再占着主线程。</p>
      */
     private void getHistory(boolean renew) {
-        List<History> items = History.get();
+        Task.execute(() -> {
+            List<History> items = History.get();
+            App.post(() -> applyHistory(items, renew));
+        });
+    }
+
+    /** 「最近观看」区的真正刷新（主线程）：items 已由 {@link #getHistory(boolean)} 在后台取好。 */
+    private void applyHistory(List<History> items, boolean renew) {
+        // 取数期间页面可能已销毁或正在结束：此时再动 adapter 会碰到已解绑的 RecyclerView
+        if (isDestroyed() || isFinishing()) return;
+        // 布局中增删行会抛 IllegalStateException（本项目 setHistoryDelete 已有同类教训）。
+        // 异步取数让这个时机更不可控，故显式推迟到本次布局结束；items 是快照，推迟不丢数据。
+        if (mBinding.recycler.isComputingLayout()) {
+            mBinding.recycler.post(() -> applyHistory(items, renew));
+            return;
+        }
         boolean exist = mAdapter.indexOf(mHistoryRow) != -1;
         boolean headerExist = mAdapter.indexOf(R.string.home_history) != -1;
         // 数据源不可用（无网 / 站点列表为空）时「最近观看」整行隐藏：这些记录点开也只会撞进一个

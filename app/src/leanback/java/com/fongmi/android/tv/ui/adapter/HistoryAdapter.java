@@ -1,5 +1,6 @@
 package com.fongmi.android.tv.ui.adapter;
 
+import android.content.Context;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -10,10 +11,10 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.fongmi.android.tv.Product;
 import com.fongmi.android.tv.bean.History;
+import com.fongmi.android.tv.bean.Style;
 import com.fongmi.android.tv.databinding.AdapterVodBinding;
 import com.fongmi.android.tv.utils.CoverText;
 import com.fongmi.android.tv.utils.ImgUtil;
-import com.fongmi.android.tv.utils.ResUtil;
 
 import java.util.HashSet;
 import java.util.List;
@@ -34,7 +35,6 @@ public class HistoryAdapter extends BaseDiffAdapter<History, HistoryAdapter.View
     public HistoryAdapter(OnClickListener listener) {
         this.listener = listener;
         this.selected = new HashSet<>();
-        setLayoutSize();
     }
 
     public interface OnClickListener {
@@ -42,15 +42,17 @@ public class HistoryAdapter extends BaseDiffAdapter<History, HistoryAdapter.View
         void onItemClick(History item);
     }
 
-    private void setLayoutSize() {
-        // 与 Product.getSpec 同一套公式（3:4 竖版）。列数下限 1、可用宽度下限 1px：
-        // 「极大字号」档把全局 density 放大到 2 倍、大屏补偿再乘最多 1.6 倍，行距占位里的
-        // dp2px 项随之变大；屏宽读取异常（返回 0）时 base 会落到 0/负 —— 非法尺寸不能进 LayoutParams。
-        int column = Math.max(1, Product.getColumn());
-        int space = ResUtil.dp2px(48) + ResUtil.dp2px(16 * (column - 1));
-        int base = ResUtil.getScreenWidth() - space;
-        width = Math.max(1, base / column);
-        height = Math.max(1, (int) (width / 0.75f));
+    /**
+     * 封面尺寸（px）：与首页分类 / 搜索结果 / 「最近观看」共用 {@link Product#getSpec}。
+     *
+     * <p>⛔ 原先这里是手写公式，行距占位用 {@code ResUtil.dp2px(48)} —— Application 侧 density，
+     * 不随字号档位与大屏补偿缩放；而分类/搜索封面走 Activity 侧 density。
+     * 档位越高两者差得越远，同屏两种卡片大小不同。详见 {@code HistoryPresenter#spec}。</p>
+     */
+    private void setLayoutSize(Context context) {
+        int[] size = Product.getSpec(context, Style.rect());
+        width = size[0];
+        height = size[1];
     }
 
     public boolean isSelectMode() {
@@ -103,6 +105,8 @@ public class HistoryAdapter extends BaseDiffAdapter<History, HistoryAdapter.View
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        // 尺寸依赖 Activity 侧 density，只能拿到 parent 之后才算（width == 0 表示尚未计算）
+        if (width <= 0) setLayoutSize(parent.getContext());
         ViewHolder holder = new ViewHolder(AdapterVodBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false));
         holder.binding.getRoot().getLayoutParams().width = width;
         holder.binding.image.getLayoutParams().height = height;

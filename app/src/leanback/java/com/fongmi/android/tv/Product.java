@@ -34,7 +34,29 @@ public class Product {
 
     public static int[] getSpec(Context context, Style style) {
         int column = getColumn(style);
-        return getSpec(space(context, column, style), column, style);
+        return getSpec(screenWidth(context), space(context, column, style), column, style);
+    }
+
+    /**
+     * 屏宽（px）：取 <b>Activity 侧</b> metrics 的 {@code widthPixels}。
+     *
+     * <p><b>⛔ 为什么不能用 {@code ResUtil.getScreenWidth()}（2026-10-28 修「大屏少一列」）</b>：
+     * 那个无参重载走 {@code App.get()}，内部靠 {@code isLand(App)} 决定「取长边还是短边」。
+     * 而 orientation 来自 <b>Application 侧</b> configuration（系统全局配置），<b>不保证跟随
+     * Activity 的 {@code sensorLandscape}</b> —— 部分电视的系统默认 orientation 就是 portrait。
+     * 一旦被判成竖屏，它返回的是<b>短边</b>：1080p 机器返回 1080、4K 机器返回 2160。</p>
+     *
+     * <p>后果：{@code base = 短边 − space} 算出的封面宽度只有应有值的 56% 左右 —— 一行 4 个封面
+     * 加起来只占屏宽的 2/3，<b>右边空出一大块，看起来就像少排了一列</b>；功能区
+     * （{@code FuncPresenter}）用的是同一个错基线，于是整块内容一起缩在左侧。
+     * 这正解释了现象为何只在「某些大屏设备」上出现 —— 取决于该机型 Application 的 orientation 是否同步。</p>
+     *
+     * <p>Activity 侧 {@code metrics.widthPixels} 是当前窗口的真实像素宽（TV 恒横屏），
+     * 且 {@code BaseActivity#hackResources()} 只改写 density / scaledDensity、<b>不动 widthPixels</b>，
+     * 因此它与 XML 里 dp 的换算同源，也与 {@link #space} 处在同一个 density 域。</p>
+     */
+    private static int screenWidth(Context context) {
+        return Math.max(1, ResUtil.getDisplayMetrics(context).widthPixels);
     }
 
     /**
@@ -62,18 +84,20 @@ public class Product {
     }
 
     /**
-     * 由「行距占位 + 列数」算出单个封面尺寸（px）。
+     * 由「屏宽 + 行距占位 + 列数」算出单个封面尺寸（px）。
+     *
+     * <p>{@code screenWidth} 必须由调用方传入 <b>Activity 侧</b>的真实窗口宽（见 {@link #screenWidth}）——
+     * 不要再在方法内部自己取，否则又会退回「基线与 space 不同域」的老坑。</p>
      *
      * <p><b>下限保护（必须保留）</b>：字号档位会把全局 density 放大到 2 倍（极大字号），
-     * 大屏补偿再乘最多 1.6 倍，{@code space} 里的 {@code dp2px} 项随之变大。正常情况
-     * {@code space} 与屏宽同比例增长、算出的尺寸稳定，但屏宽读取异常（返回 0）或
-     * 「小屏 + 高密度 + 少列」叠加时，{@code base / column} 可能落到 0 或负值，
-     * 再被写进 {@code LayoutParams.width/height} 就是非法尺寸 → 布局/测量异常。
-     * 因此这里统一兜到「至少 1px」。</p>
+     * 大屏补偿再乘最多 1.6 倍，{@code space} 随之变大。正常情况 {@code space} 与屏宽同比例增长、
+     * 算出的尺寸稳定，但屏宽读取异常（返回 0）或「小屏 + 高密度 + 少列」叠加时，
+     * {@code base / column} 可能落到 0 或负值，再写进 {@code LayoutParams.width/height}
+     * 就是非法尺寸 → 布局/测量异常。因此这里统一兜到「至少 1px」。</p>
      */
-    public static int[] getSpec(int space, int column, Style style) {
+    public static int[] getSpec(int screenWidth, int space, int column, Style style) {
         column = Math.max(1, column);
-        int base = ResUtil.getScreenWidth() - space;
+        int base = Math.max(1, screenWidth - space);
         int width = Math.max(1, base / column);
         float ratio = style.getRatio();
         if (!(ratio > 0f)) ratio = 0.75f;   // getRatio() 已归一化到 0.75~1.78，此判断仅防御非法输入
