@@ -36,6 +36,8 @@ public class Timer {
     }
 
     public void set(long t) {
+        // 连续设置两次睡眠定时时，旧定时器必须取消：否则它会先到点把播放提前暂停。
+        if (timer != null) timer.cancel();
         timer = new CountDownTimer(t, 1000) {
             @Override
             public void onTick(long tick) {
@@ -61,9 +63,15 @@ public class Timer {
     }
 
     private void sendPause() {
+        // 睡眠定时到点时应用多半已在后台：Android 8+ 后台 startService 抛 IllegalStateException
+        // ⇒ 走前台服务通道（服务本身已在播，通知栏常驻，不会多出一个通知）。
         Intent intent = new Intent(App.get(), PlaybackService.class);
         intent.setAction(ActionEvent.PAUSE);
-        App.get().startService(intent);
+        try {
+            androidx.core.content.ContextCompat.startForegroundService(App.get(), intent);
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
     }
 
     public void delay() {

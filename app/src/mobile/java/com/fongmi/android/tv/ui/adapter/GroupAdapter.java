@@ -63,6 +63,8 @@ public class GroupAdapter extends RecyclerView.Adapter<GroupAdapter.ViewHolder> 
     }
 
     public void setSelected(int position) {
+        // indexOf 命中不到时是 -1（切源/分组隐藏后常见），直接 get(-1) 会越界崩。
+        if (position < 0 || position >= mItems.size()) return;
         for (int i = 0; i < mItems.size(); i++) mItems.get(i).setSelected(i == position);
         notifyItemRangeChanged(0, getItemCount());
         listener.setWidth(mItems.get(position));

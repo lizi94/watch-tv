@@ -603,7 +603,8 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
 
     @Override
     public boolean onLongClick(Channel item) {
-        if (mGroup.isHidden()) return false;
+        // mGroup 在切源 / 列表重建的窗口期为 null（与电视端同）。
+        if (mGroup == null || mGroup.isHidden()) return false;
         boolean exist = Keep.exist(item.getName());
         Notify.show(exist ? R.string.keep_del : R.string.keep_add);
         if (exist) delKeep(item);
@@ -626,7 +627,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
     }
 
     private void delKeep(Channel item) {
-        if (mGroup.isKeep()) mChannelAdapter.remove(item);
+        if (mGroup != null && mGroup.isKeep()) mChannelAdapter.remove(item);
         Group group = getKeep();
         if (group != null) group.getChannel().remove(item);
         Keep.delete(item.getName());

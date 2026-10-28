@@ -18,6 +18,12 @@ public class ActionReceiver extends BroadcastReceiver {
         if (!PlaybackService.isRunning() || intent.getAction() == null) return;
         Intent serviceIntent = new Intent(context, PlaybackService.class);
         serviceIntent.setAction(intent.getAction());
-        context.startService(serviceIntent);
+        // 触发源是 PiP 遥控按钮：此时应用通常处于后台，Android 8+ 的后台 startService
+        // 会抛 IllegalStateException ⇒ 走前台服务通道。
+        try {
+            androidx.core.content.ContextCompat.startForegroundService(context, serviceIntent);
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
     }
 }

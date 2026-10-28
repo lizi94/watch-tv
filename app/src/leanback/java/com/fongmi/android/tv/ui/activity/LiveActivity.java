@@ -724,7 +724,8 @@ public class LiveActivity extends PlaybackActivity implements GroupAdapter.OnCli
 
     @Override
     public boolean onLongClick(Channel item) {
-        if (mGroup.isHidden()) return false;
+        // mGroup 在 setGroup() 的「填充列表 → 回调赋值」之间、以及 resetAdapter() 清空后为 null。
+        if (mGroup == null || mGroup.isHidden()) return false;
         boolean exist = Keep.exist(item.getName());
         Notify.show(exist ? R.string.keep_del : R.string.keep_add);
         if (exist) delKeep(item);
@@ -747,7 +748,7 @@ public class LiveActivity extends PlaybackActivity implements GroupAdapter.OnCli
     }
 
     private void delKeep(Channel item) {
-        if (mGroup.isKeep()) mChannelAdapter.remove(item);
+        if (mGroup != null && mGroup.isKeep()) mChannelAdapter.remove(item);
         if (mChannelAdapter.getItemCount() == 0) mBinding.group.requestFocus();
         Group group = getKeep();
         if (group != null) group.getChannel().remove(item);

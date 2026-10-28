@@ -1,5 +1,6 @@
 package com.fongmi.android.tv.ui.activity;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
 
@@ -11,9 +12,8 @@ import com.fongmi.android.tv.databinding.ActivityCrashBinding;
 import com.fongmi.android.tv.ui.base.BaseActivity;
 import com.github.catvod.utils.Prefers;
 
-import java.util.Objects;
-
 import cat.ereza.customactivityoncrash.CustomActivityOnCrash;
+import cat.ereza.customactivityoncrash.config.CaocConfig;
 
 public class CrashActivity extends BaseActivity {
 
@@ -38,7 +38,20 @@ public class CrashActivity extends BaseActivity {
     @Override
     protected void initEvent() {
         mBinding.details.setOnClickListener(v -> showError());
-        mBinding.restart.setOnClickListener(v -> CustomActivityOnCrash.restartApplication(this, Objects.requireNonNull(CustomActivityOnCrash.getConfigFromIntent(getIntent()))));
+        // ⚠ 崩溃页自己不能再崩：intent 里没有 CAOC 配置时（被直接拉起 / 边缘时序），
+        // requireNonNull 会再抛一次 NPE，而 CAOC 不拦截 error activity 内的崩溃 ⇒ 退到系统崩溃框。
+        mBinding.restart.setOnClickListener(v -> {
+            CaocConfig config = CustomActivityOnCrash.getConfigFromIntent(getIntent());
+            if (config == null) {
+                Intent launch = getPackageManager().getLaunchIntentForPackage(getPackageName());
+                if (launch != null && launch.getComponent() != null) {
+                    startActivity(Intent.makeRestartActivityTask(launch.getComponent()));
+                }
+                Runtime.getRuntime().exit(0);
+            } else {
+                CustomActivityOnCrash.restartApplication(this, config);
+            }
+        });
     }
 
     private void setCrash() {

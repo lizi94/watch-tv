@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 播放浮层「提示条」背景（live / vod / cast 三处共用）。
+
+     来源：上游 2026 版为配合提示条从画面正中挪到顶部而新增（原来复用 shape_widget）。
+     数值一律取上游原值（black_50 / 圆角 16dp / 内边距 6dp·14dp），**不套 ag_radius_m(12dp)**
+     —— 与 shape_widget 保持圆角 8dp 是同一个道理：令牌值与上游不等价，套上去观感就变了。
+     dp 会随「字号档位」的全局 density 等比缩放，因此缩放仍然是无损的。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+
+    <solid android:color="@color/black_50" />
+
+    <corners android:radius="16dp" />
+
+    <padding
+        android:bottom="6dp"
+        android:left="14dp"
+        android:right="14dp"
+        android:top="6dp" />
+
+</shape>

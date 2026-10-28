@@ -137,7 +137,16 @@ public class Config {
         return item == null ? create(type, url, name) : item.type(type).name(name);
     }
 
+    /**
+     * 按 Config 查库（查不到就按它的 url 建一条）。
+     *
+     * <p>⚠ 入参可能为 null：{@link #objectFrom(String)} 在参数为 null / 空串 / 非 JSON 时
+     * 由 Gson 直接返回 null，而局域网 HTTP 接口（{@code /action?do=cast}、{@code do=sync}）
+     * 的 {@code config} 字段是外部请求带进来的，缺参即 null ⇒ 原实现 NPE。
+     * 该接口跑在 NanoHTTPD 工作线程上，异常会冒到全局兜底 ⇒ 用户观感是闪退。
+     */
     public static Config find(Config config) {
+        if (config == null) return Config.vod();
         return find(config, config.getType());
     }
 

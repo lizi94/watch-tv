@@ -257,7 +257,10 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     }
 
     private int getScale() {
-        return mHistory != null && mHistory.getScale() != -1 ? mHistory.getScale() : PlayerSetting.getScale();
+        // 历史记录里的 scale 是 Room 原始值（旧版本数据 / 改坏的备份可能是 -2、5 或更大），
+        // 直接拿去索引 R.array.select_scale(5 项) 会越界崩 ⇒ 夹到合法区间。
+        if (mHistory != null && mHistory.getScale() != -1) return Math.clamp(mHistory.getScale(), 0, 4);
+        return PlayerSetting.getScale();
     }
 
     private void setScale(int scale) {
@@ -1122,10 +1125,13 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     }
 
     private void onOpeningAdd() {
+        // 详情一直没加载出来时 mHistory 仍为 null；控制条能呼出、按钮也能聚焦 ⇒ 必须判空。
+        if (mHistory == null) return;
         setOpening(Math.max(0, Math.max(0, mHistory.getOpening()) + 1000));
     }
 
     private void onOpeningSub() {
+        if (mHistory == null) return;
         setOpening(Math.max(0, Math.max(0, mHistory.getOpening()) - 1000));
     }
 
@@ -1146,10 +1152,12 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     }
 
     private void onEndingAdd() {
+        if (mHistory == null) return;
         setEnding(Math.max(0, Math.max(0, mHistory.getEnding()) + 1000));
     }
 
     private void onEndingSub() {
+        if (mHistory == null) return;
         setEnding(Math.max(0, Math.max(0, mHistory.getEnding()) - 1000));
     }
 
@@ -1279,6 +1287,8 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     }
 
     private void setArtwork() {
+        // 详情未回来时 mHistory 为 null（推片 renderVodUpdate 会走到这里）⇒ 早退。
+        if (mHistory == null) return;
         ImgUtil.load(this, mHistory.getVodPic(), new CustomTarget<>() {
             @Override
             public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
@@ -1436,8 +1446,15 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         if (event.getType() == RefreshEvent.Type.DETAIL) mVod.requestDetail();
         else if (event.getType() == RefreshEvent.Type.PLAYER) mVod.refresh();
         else if (event.getType() == RefreshEvent.Type.VOD) mVod.updateVod(event.getVod());
-        else if (event.getType() == RefreshEvent.Type.SUBTITLE) player().setSub(Sub.from(event.getPath()));
-        else if (event.getType() == RefreshEvent.Type.DANMAKU) player().setDanmaku(Danmaku.from(event.getPath()));
+        // 字幕/弹幕是网络推送命令，可能在 service 还没连上（或已断开）时到达；
+        // player() = mService.player()，这两条是同函数里唯一没有守卫的分支 ⇒ 补判空。
+        else if (event.getType() == RefreshEvent.Type.SUBTITLE) {
+            if (service() == null || !isOwner()) return;
+            player().setSub(Sub.from(event.getPath()));
+        } else if (event.getType() == RefreshEvent.Type.DANMAKU) {
+            if (service() == null || !isOwner()) return;
+            player().setDanmaku(Danmaku.from(event.getPath()));
+        }
     }
 
     @Override

@@ -46,12 +46,20 @@ public class Url {
         return v(getPosition());
     }
 
+    /**
+     * 按下标取播放地址。
+     *
+     * <p>⚠ 下标可能为负：{@link #set(int)} 在 {@code values} 为空时会算出 {@code Math.min(0, -1) = -1}，
+     * 而 {@code ArrayList.get(-1)} 抛 IndexOutOfBoundsException。站源返回空地址（VIP 集、失效集、
+     * 或 {@code code != 0} 且无 msg）时必走这条路，且恰好落在「本该提示播放地址错误」的兜底分支上
+     * ⇒ 用户看到的是点一下就闪退，而不是提示。故上下界都要判。
+     */
     public String v(int position) {
-        return position >= getValues().size() ? "" : getValues().get(position).getV();
+        return position < 0 || position >= getValues().size() ? "" : getValues().get(position).getV();
     }
 
     public String n(int position) {
-        return position >= getValues().size() ? "" : getValues().get(position).getN();
+        return position < 0 || position >= getValues().size() ? "" : getValues().get(position).getN();
     }
 
     public Url add(String v) {
@@ -65,13 +73,16 @@ public class Url {
     }
 
     public Url replace(String url) {
-        if (getValues().isEmpty()) add(url);
+        // position 是 Gson 直接写字段进来的，可能为负或越界 ⇒ 越界时退化为追加一条。
+        if (getValues().isEmpty() || getPosition() < 0 || getPosition() >= getValues().size()) add(url);
         else getValues().get(getPosition()).setV(url);
         return this;
     }
 
     public Url set(int position) {
-        this.position = Math.min(position, getValues().size() - 1);
+        // values 为空时 size()-1 = -1，会把 position 钳成 -1（见 v(int) 的 javadoc）。
+        if (getValues().isEmpty()) this.position = 0;
+        else this.position = Math.max(0, Math.min(position, getValues().size() - 1));
         return this;
     }
 

@@ -314,7 +314,10 @@ public class Channel {
 
     public String getCurrent() {
         if (getUrls().isEmpty()) return "";
-        String url = getUrls().get(getIndex());
+        // index 是 Gson 直接写字段进来的（不经过 setter 的下界钳制），带越界值的直播 JSON 会让
+        // get(index) 抛越界 ⇒ 取模归一到合法区间。
+        int index = Math.floorMod(getIndex(), getUrls().size());
+        String url = getUrls().get(index);
         return (getDrm() != null) ? url : url.split("\\$")[0];
     }
 

@@ -84,8 +84,17 @@ public class Flag implements Parcelable, Diffable<Flag> {
         return TextUtils.isEmpty(urls) ? "" : urls;
     }
 
+    /**
+     * 集数列表（绝不返回 null）。
+     *
+     * <p>原实现直接返回裸字段，而 {@code episodes} 有三种途径变成 null：
+     * ① Gson 反序列化 JSON 里显式写了 {@code "episodes": null}；
+     * ② {@link #Flag(android.os.Parcel)} 的 {@code createTypedArrayList} 在源为 null 时返回 null；
+     * ③ 推送/历史同步进来的对象。下游有七八处直接 {@code getEpisodes().isEmpty()/contains()/add()}
+     * ⇒ 一进详情页或一收到推送就 NPE（{@code VodPlaybackController} 里曾单独防过一处，治标不治本）。</p>
+     */
     public List<Episode> getEpisodes() {
-        return episodes;
+        return episodes == null ? (episodes = new ArrayList<>()) : episodes;
     }
 
     public void setEpisodes(String url) {

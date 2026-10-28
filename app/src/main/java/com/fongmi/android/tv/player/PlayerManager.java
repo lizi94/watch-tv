@@ -100,6 +100,7 @@ public class PlayerManager implements ParseCallback {
     }
 
     public Tracks getCurrentTracks() {
+        if (isReleased()) return Tracks.EMPTY;
         return player.getCurrentTracks();
     }
 
@@ -120,10 +121,12 @@ public class PlayerManager implements ParseCallback {
     }
 
     public int getPlaybackState() {
+        if (isReleased()) return Player.STATE_IDLE;
         return player.getPlaybackState();
     }
 
     public boolean isPlaying() {
+        if (isReleased()) return false;
         return player.isPlaying();
     }
 
@@ -172,6 +175,7 @@ public class PlayerManager implements ParseCallback {
     }
 
     public float getSpeed() {
+        if (isReleased()) return 1f;
         return player.getPlaybackParameters().speed;
     }
 
@@ -236,6 +240,7 @@ public class PlayerManager implements ParseCallback {
     }
 
     public long getPosition() {
+        if (isReleased()) return 0;
         return player.getCurrentPosition();
     }
 
@@ -288,6 +293,7 @@ public class PlayerManager implements ParseCallback {
     }
 
     public long getDuration() {
+        if (isReleased()) return 0;
         return player.getDuration();
     }
 
@@ -296,6 +302,7 @@ public class PlayerManager implements ParseCallback {
     }
 
     public void setSub(Sub sub) {
+        if (isReleased()) return;
         if (sub == null || sub.isEmpty()) return;
         if (spec != null) spec.setSub(sub);
         if (engine.addSubtitle(sub)) play();
@@ -353,6 +360,7 @@ public class PlayerManager implements ParseCallback {
     }
 
     public float setSpeed(float speed) {
+        if (isReleased()) return 1f;
         if (!player.isCommandAvailable(Player.COMMAND_SET_SPEED_AND_PITCH)) return getSpeed();
         player.setPlaybackParameters(player.getPlaybackParameters().withSpeed(SpeedSetting.clamp(speed)));
         return getSpeed();
@@ -407,23 +415,28 @@ public class PlayerManager implements ParseCallback {
     }
 
     public void play() {
+        if (isReleased()) return;
         player.play();
     }
 
     public void pause() {
+        if (isReleased()) return;
         player.pause();
     }
 
     public void stop() {
+        if (engine == null) return;
         engine.stop();
         stopParse();
     }
 
     public void clearMediaItems() {
+        if (isReleased()) return;
         player.clearMediaItems();
     }
 
     public boolean isRepeatOne() {
+        if (isReleased()) return false;
         return player.getRepeatMode() == Player.REPEAT_MODE_ONE;
     }
 
@@ -432,12 +445,14 @@ public class PlayerManager implements ParseCallback {
     }
 
     public void replay(long positionMs) {
+        if (isReleased()) return;
         if (positionMs == C.TIME_UNSET) player.seekToDefaultPosition();
         else player.seekTo(positionMs);
         player.play();
     }
 
     public void seekTo(long time) {
+        if (isReleased()) return;
         player.seekTo(time);
     }
 

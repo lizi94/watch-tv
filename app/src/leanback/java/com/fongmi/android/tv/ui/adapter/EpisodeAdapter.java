@@ -48,6 +48,8 @@ public class EpisodeAdapter extends RecyclerView.Adapter<EpisodeAdapter.ViewHold
     }
 
     public Episode getNext() {
+        // 空列表时 max = -1 ⇒ mItems.get(-1) 抛越界；这里返回空对象比抛异常安全。
+        if (mItems.isEmpty()) return new Episode();
         int current = getPosition();
         int max = getItemCount() - 1;
         current = ++current > max ? max : current;
@@ -55,6 +57,7 @@ public class EpisodeAdapter extends RecyclerView.Adapter<EpisodeAdapter.ViewHold
     }
 
     public Episode getPrev() {
+        if (mItems.isEmpty()) return new Episode();
         int current = getPosition();
         current = --current < 0 ? 0 : current;
         return mItems.get(current);

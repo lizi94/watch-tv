@@ -233,6 +233,9 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     }
 
     protected boolean seekTo(long deltaMs) {
+        // mController 由 buildControllerAsync() 异步赋值：service 已就绪而 controller 仍为 null 的窗口真实存在；
+        // mService 也可能已断开。两端快进/快退（App.post 延迟任务）都走这里 ⇒ 两个都要判空。
+        if (mService == null || mController == null) return false;
         PlayerManager player = player();
         long targetMs = Math.max(0, player.getPosition() + deltaMs);
         long durationMs = player.getDuration();

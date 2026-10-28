@@ -80,8 +80,12 @@ public class RecordAdapter extends RecyclerView.Adapter<RecordAdapter.ViewHolder
 
         @Override
         public boolean onLongClick(View v) {
-            mItems.remove(getLayoutPosition());
-            notifyItemRemoved(getLayoutPosition());
+            // ViewHolder 失效时位置是 NO_POSITION(-1)：remove(-1) 抛 IndexOutOfBoundsException；
+            // 且两次 getLayoutPosition() 之间若发生重排，删除与通知的下标会不一致。
+            int position = getBindingAdapterPosition();
+            if (position == RecyclerView.NO_POSITION || position >= mItems.size()) return true;
+            mItems.remove(position);
+            notifyItemRemoved(position);
             listener.onDataChanged(getItemCount());
             Setting.putKeyword(App.gson().toJson(mItems));
             return true;

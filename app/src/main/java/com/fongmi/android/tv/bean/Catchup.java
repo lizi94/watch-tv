@@ -89,7 +89,13 @@ public class Catchup {
     }
 
     public boolean match(String url) {
-        return url.contains(getRegex()) || Pattern.compile(getRegex()).matcher(url).find();
+        // 直播源 JSON 里的 catchup.regex 可能是非法正则（如 "["），Pattern.compile 抛
+        // PatternSyntaxException；调用链在主线程（点/长按 EPG）⇒ 必须兜住，按「不匹配」处理。
+        try {
+            return url.contains(getRegex()) || Pattern.compile(getRegex()).matcher(url).find();
+        } catch (Throwable e) {
+            return false;
+        }
     }
 
     public boolean isEmpty() {

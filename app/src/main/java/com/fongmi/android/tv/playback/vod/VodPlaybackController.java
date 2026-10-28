@@ -147,6 +147,8 @@ public class VodPlaybackController {
 
     public void updateVod(Vod item) {
         if (preloader.isRequestPending()) return;
+        // 详情还没回来时 history 仍是 null（推送/YouTube 回调会在这个窗口到达）⇒ 早退，不要解引用。
+        if (state.getHistory() == null) return;
         History history = state.getHistory();
         replaceVodId(history, item.getId());
         mergeFlags(item.getFlags());

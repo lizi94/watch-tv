@@ -64,11 +64,26 @@
          LiveActivity.setWidth(...) 用 Resources.getDimension() 读这里的值换成像素去量列宽，
          与 adapter_group / adapter_channel / adapter_epg_data 里的 android:textSize 引用<b>同一批令牌</b>：
          改字号只需改这一处，列宽会自动跟随，绝不会再出现「字号放大、列宽还按旧字号算 → 文字被裁」。
-         分组 / 频道 = 老人档 22sp（上游是 16sp）；节目单保持上游 16sp / 时间 14sp。 ==== -->
-    <dimen name="ag_live_group_text">22sp</dimen>
-    <dimen name="ag_live_channel_text">22sp</dimen>
+
+         ⚠ **四个值的标称值一律取上游原值**（分组 16 / 频道 16 / 节目名 16 / 节目时间 14）：
+             ① 三列同处一个浮层，字号必须互成比例 —— 曾把分组/频道放大到 22sp 而节目单留 16sp，
+                同一浮层里两组文字大小差 37.5%，观感割裂；
+             ② 分组列只占屏宽 12%，22sp 在档位 4（×2.0）下实际 44sp，一屏只剩 4~5 个字，
+                台组名被 marquee 裁得读不出来。
+           缩放交给「字号档位」：标称 16sp 在档位 0（×1.2）渲染为 19.2sp、档位 4（×2.0）为 32sp，
+           即**上游标称 × 档位倍率** 的无损等比放大 —— 绝不把档位倍率预先乘进令牌值
+           （那会导致档位切换时二次放大、比例失真）。 ==== -->
+    <dimen name="ag_live_group_text">16sp</dimen>
+    <dimen name="ag_live_channel_text">16sp</dimen>
     <dimen name="ag_live_epg_title">16sp</dimen>
     <dimen name="ag_live_epg_time">14sp</dimen>
+
+    <!-- ==== 播放浮层提示条（live / vod / cast 三处同构）====
+         上游 2026 版把提示条从「画面正中」挪到「顶部居中」：居中会压住画面主体，
+         倍速/跳转提示一出现就把正在看的内容挡掉。三个浮层必须同步，否则切页时浮层忽上忽下。
+         数值取上游原值（marginTop 40dp / 文字 16sp），只是收进令牌以便统一管理与随档位缩放。 -->
+    <dimen name="ag_widget_message_top">40dp</dimen>
+    <dimen name="ag_widget_message_text">16sp</dimen>
 
     <!-- ==== 控件尺寸（老人友好下限） ==== -->
     <dimen name="ag_touch_min">64dp</dimen>

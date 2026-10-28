@@ -258,7 +258,9 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     private int getScale() {
-        return mHistory != null && mHistory.getScale() != -1 ? mHistory.getScale() : PlayerSetting.getScale();
+        // 同电视端：历史里的 scale 可能越界，索引 R.array.select_scale(5 项) 前先夹取。
+        if (mHistory != null && mHistory.getScale() != -1) return Math.clamp(mHistory.getScale(), 0, 4);
+        return PlayerSetting.getScale();
     }
 
     private void setScale(int scale) {
@@ -1303,6 +1305,8 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     private void setArtwork() {
+        // 详情未回来时 mHistory 为 null（推片 renderVodUpdate → renderVodMetadata 会走到这里）⇒ 早退。
+        if (mHistory == null) return;
         String url = mHistory.getVodPic();
         // R30 去重：同 URL 不重复提交（见 mArtworkUrl 的 javadoc）。
         if (url == null) url = "";
@@ -1496,8 +1500,14 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         if (event.getType() == RefreshEvent.Type.DETAIL) mVod.requestDetail();
         else if (event.getType() == RefreshEvent.Type.PLAYER) mVod.refresh();
         else if (event.getType() == RefreshEvent.Type.VOD) mVod.updateVod(event.getVod());
-        else if (event.getType() == RefreshEvent.Type.SUBTITLE) player().setSub(Sub.from(event.getPath()));
-        else if (event.getType() == RefreshEvent.Type.DANMAKU) player().setDanmaku(Danmaku.from(event.getPath()));
+        // 同电视端：字幕/弹幕推送可能在 service 未连接时到达，player() 会 NPE。
+        else if (event.getType() == RefreshEvent.Type.SUBTITLE) {
+            if (service() == null || !isOwner()) return;
+            player().setSub(Sub.from(event.getPath()));
+        } else if (event.getType() == RefreshEvent.Type.DANMAKU) {
+            if (service() == null || !isOwner()) return;
+            player().setDanmaku(Danmaku.from(event.getPath()));
+        }
     }
 
     @Override
@@ -1541,10 +1551,13 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     private void onPaused() {
+        // 与电视端同口径：controller 由 buildControllerAsync 异步赋值，存在为 null 的窗口。
+        if (controller() == null) return;
         controller().pause();
     }
 
     private void onPlay() {
+        if (controller() == null) return;
         if (mHistory != null && isEnded()) controller().seekTo(mHistory.getOpening());
         if (!player().isEmpty() && isIdle()) controller().prepare();
         controller().play();

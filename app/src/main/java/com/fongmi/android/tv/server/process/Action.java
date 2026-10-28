@@ -127,6 +127,8 @@ public class Action implements Process {
 
     private void onCast(Map<String, String> params) {
         Config config = Config.objectFrom(params.get("config"));
+        // 缺 config 参数（旧版手机端 / 手工请求）时 Gson 返回 null，往下必然 NPE。
+        if (config == null) return;
         Device device = Device.objectFrom(params.get("device"));
         History history = History.objectFrom(params.get("history"));
         CastEvent.post(Config.find(config), device, history);
@@ -180,7 +182,10 @@ public class Action implements Process {
     }
 
     public void syncHistory(Map<String, String> params, boolean force) {
-        Config config = Config.find(Config.objectFrom(params.get("config")));
+        Config raw = Config.objectFrom(params.get("config"));
+        // 缺 config 参数时 Gson 返回 null，往下必然 NPE（同 onCast）。
+        if (raw == null) return;
+        Config config = Config.find(raw);
         List<History> targets = History.arrayFrom(params.get("targets"));
         if (config.getUrl() == null) return;
         if (config.getUrl().equals(VodConfig.getUrl())) {

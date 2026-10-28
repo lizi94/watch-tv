@@ -144,7 +144,11 @@ public class Download {
 
     private void handleError(Exception error) {
         if (!canceled) Path.clear(file);
-        if (callback == null) throw new RuntimeException(error.getMessage(), error);
+        if (callback == null) {
+            // 无回调时把失败抛给调用方（Task 线程里由各自 catch 兜住）。
+            // ⚠ 不能抛 RuntimeException(null, e)：message 为 null 会让上层日志/提示全空，排查困难。
+            throw new RuntimeException("download failed: " + url, error);
+        }
         postCallback(listener -> listener.error(error.getMessage()));
     }
 

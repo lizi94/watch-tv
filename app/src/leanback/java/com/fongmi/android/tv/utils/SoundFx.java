@@ -52,6 +52,14 @@ public class SoundFx {
     private static void play(int type, int duration) {
         if (!Setting.isKeySound()) return;
         ToneGenerator generator = get();
-        if (generator != null) generator.startTone(type, duration);
+        if (generator == null) return;
+        // 调用点在 BaseActivity.dispatchKeyEvent 与全局焦点监听里：
+        // 音频服务重启（HDMI 重协商、媒体服务崩溃）后 startTone 会抛 RuntimeException，
+        // 异常直接从按键分发冒出 ⇒ 整页闪退。这里吞掉并丢弃实例，下次按键重新构造。
+        try {
+            generator.startTone(type, duration);
+        } catch (Throwable e) {
+            tone = null;
+        }
     }
 }
