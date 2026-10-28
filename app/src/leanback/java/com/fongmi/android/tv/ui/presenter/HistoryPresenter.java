@@ -20,8 +20,6 @@ import java.util.Objects;
 public class HistoryPresenter extends Presenter {
 
     private final OnClickListener listener;
-    /** 封面尺寸（px，[宽, 高]）。null = 尚未计算，见 {@link #spec(ViewGroup)}。 */
-    private int[] spec;
     private boolean delete;
 
     public HistoryPresenter(OnClickListener listener) {
@@ -47,12 +45,11 @@ public class HistoryPresenter extends Presenter {
      * 于是档位越高，本行的左右边距相对越被压缩 —— 封面比分类/搜索那行更宽、更靠左，
      * 与 {@code adapter_vod_rect} 的卡片对不齐（同一个「两个 density 域」坑的残留副本）。</p>
      *
-     * <p>尺寸只依赖 {@code parent.getContext()}（Activity 侧），故首次创建 ViewHolder 时算一次并缓存；
-     * 字号档位变化时调用方会重建 presenter（{@code getHistory(true)}），缓存随之失效。</p>
+     * <p>尺寸<b>每次创建 holder 时重算、不在字段里缓存</b>：与 {@code VodPresenter} 同一模式，
+     * 避免「档位变了但 presenter 被复用」时尺寸不失效（首页在档位变化时不重建 Activity）。</p>
      */
     private int[] spec(ViewGroup parent) {
-        if (spec == null) spec = Product.getSpec(parent.getContext(), Style.rect());
-        return spec;
+        return Product.getSpec(parent.getContext(), Style.rect());
     }
 
     public boolean isDelete() {

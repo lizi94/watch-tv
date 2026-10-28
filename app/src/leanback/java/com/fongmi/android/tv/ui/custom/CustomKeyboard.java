@@ -9,7 +9,6 @@ import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.databinding.ActivitySearchBinding;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.ui.adapter.KeyboardAdapter;
-import com.fongmi.android.tv.utils.ResUtil;
 
 public class CustomKeyboard implements KeyboardAdapter.OnClickListener {
 
@@ -77,6 +76,16 @@ public class CustomKeyboard implements KeyboardAdapter.OnClickListener {
         return binding.keyboard.getResources().getDisplayMetrics().density;
     }
 
+    /** 当前窗口宽（px）——与 {@link #density()} 同源，同样是 Activity 侧。 */
+    private int screenWidth() {
+        return binding.keyboard.getResources().getDisplayMetrics().widthPixels;
+    }
+
+    /** 当前窗口高（px）——同上。 */
+    private int screenHeight() {
+        return binding.keyboard.getResources().getDisplayMetrics().heightPixels;
+    }
+
     private int px(float dp) {
         return Math.round(dp * density());
     }
@@ -87,7 +96,7 @@ public class CustomKeyboard implements KeyboardAdapter.OnClickListener {
 
     /** 布局未完成时的估算：可用高度 ≈ 屏高 − 页上下 padding − 顶部一行 − 键盘上边距。 */
     private int availFromScreen() {
-        return ResUtil.getScreenHeight() - px(RESERVE_DP);
+        return screenHeight() - px(RESERVE_DP);
     }
 
     /** 布局完成后取真实可用高度（左列高度已扣掉页面 padding）。 */
@@ -114,7 +123,7 @@ public class CustomKeyboard implements KeyboardAdapter.OnClickListener {
         int rows = (adapter.getItemCount() + SPAN_COUNT - 1) / SPAN_COUNT;
         // 整块高 = rows*k + (rows-1)*k*ratio = k*(rows + (rows-1)*ratio)
         float byHeight = avail / (rows + (rows - 1) * SPACING_RATIO);
-        float byWidth = ResUtil.getScreenWidth() * COLUMN_WIDTH_RATIO / (SPAN_COUNT + (SPAN_COUNT - 1) * SPACING_RATIO);
+        float byWidth = screenWidth() * COLUMN_WIDTH_RATIO / (SPAN_COUNT + (SPAN_COUNT - 1) * SPACING_RATIO);
         int want = Math.max(px(KEY_CURVE_DP[tier()]), px(MIN_KEY_DP));
         int key = (int) Math.min(want, Math.min(byHeight, byWidth));
         if (key <= 0) return;

@@ -27,7 +27,6 @@ import com.fongmi.android.tv.ui.custom.CustomSelector;
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.ui.presenter.VodPresenter;
 import com.fongmi.android.tv.utils.Notify;
-import com.fongmi.android.tv.utils.ResUtil;
 import com.google.common.collect.Lists;
 
 import java.util.ArrayList;
@@ -85,7 +84,9 @@ public class CollectFragment extends BaseFragment implements CustomScroller.Call
         // 「向下进入第 2 行」时收起 Activity 的结果标题 + 站源行。但 GONE 会让 pager 与其上方
         // 两个兄弟节点的总高变化 → 海报网格整体上下位移，切换站源时表现为「站源行与封面第一行的
         // 上下间距跳变」。现改为「恒显」：两个视图始终显示，网格位置恒定（见 CustomVerticalGridView）。
-        mBinding.recycler.setVerticalSpacing(ResUtil.dp2px(16));
+        // 行间距与首页同源（Activity 侧 density）：原先用 ResUtil.dp2px(16)（Application 侧），
+        // 搜索结果行比首页行更挤，同一份封面在两页的纵向节奏不一致。
+        mBinding.recycler.setVerticalSpacing(Product.gap(requireContext()));
     }
 
     private void setViewModel() {
@@ -129,9 +130,9 @@ public class CollectFragment extends BaseFragment implements CustomScroller.Call
         mAdapter.addAll(mAdapter.size(), rows);
     }
 
-    /** 搜索结果行 Presenter（懒建一次）。presenter 无状态，跨页复用安全。 */
+    /** 搜索结果行 Presenter（懒建一次）。封面尺寸在创建 holder 时按当前档位重算，跨页复用安全。 */
     private VodPresenter vodPresenter() {
-        if (mVodPresenter == null) mVodPresenter = new VodPresenter(requireContext(), this);
+        if (mVodPresenter == null) mVodPresenter = new VodPresenter(this);
         return mVodPresenter;
     }
 

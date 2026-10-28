@@ -1,6 +1,5 @@
 package com.fongmi.android.tv.ui.presenter;
 
-import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
@@ -23,24 +22,14 @@ public class VodPresenter extends Presenter {
 
     private final OnClickListener listener;
     private final Style style;
-    private final int[] size;
 
-    /**
-     * @param context 用于算封面尺寸的 <b>Activity 侧</b> Resources 上下文（见 {@link Product#getSpec}）。
-     *                必须传页面本身而不是 {@code App.get()}，否则边距与列间距会与功能区错开。
-     */
-    public VodPresenter(Context context, OnClickListener listener) {
-        this(context, listener, Style.rect());
+    public VodPresenter(OnClickListener listener) {
+        this(listener, Style.rect());
     }
 
-    /**
-     * @param context 用于算封面尺寸的 <b>Activity 侧</b> Resources 上下文（见 {@link Product#getSpec}）。
-     *                必须传页面本身而不是 {@code App.get()}，否则边距与列间距会与功能区错开。
-     */
-    public VodPresenter(Context context, OnClickListener listener, Style style) {
+    public VodPresenter(OnClickListener listener, Style style) {
         this.listener = listener;
         this.style = style;
-        this.size = Product.getSpec(context, style);
     }
 
     public interface OnClickListener {
@@ -53,6 +42,13 @@ public class VodPresenter extends Presenter {
     @NonNull
     @Override
     public Presenter.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent) {
+        // 尺寸在每次创建 holder 时按当前「图片尺寸」档位重算，不在构造期缓存。
+        // ⛔ 原因：presenter 是页面级复用的（见 HomeActivity#vodPresenter），而首页在档位变化时
+        // 不重建 Activity（autoRecreateOnSizeChange 返回 false，只走 RefreshEvent.SIZE）。
+        // 构造期算一次 + final 缓存的老写法，会让这一行永远停在旧尺寸 —— 用户把「图片尺寸」
+        // 调大或调小，分类与推荐列表毫无变化。Product.getSpec 是纯算术
+        // （一次 getDisplayMetrics + 几次乘法），每个 holder 算一次的开销可忽略。
+        int[] size = Product.getSpec(parent.getContext(), style);
         return switch (style.getViewType()) {
             case ViewType.LIST -> new VodListHolder(AdapterVodListBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false), listener);
             case ViewType.OVAL -> new VodOvalHolder(AdapterVodOvalBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false), listener).size(size);

@@ -84,6 +84,35 @@ public class Product {
     }
 
     /**
+     * 行内 / 列间统一间距（px）——<b>就是 {@link #space} 里按 {@code 16dp × (列数−1)} 预留的那个 16dp</b>。
+     *
+     * <p>{@code context} 必须是 Activity / Fragment 的（{@code BaseActivity#hackResources} 改过的那份 Resources）。
+     * 首页行间距（{@code HomeActivity}）、搜索结果行间距（{@code CollectFragment}）、
+     * 历史 / 收藏网格的 {@code SpaceItemDecoration} 全部走这里，保证「卡片宽度按 16dp 预留」与
+     * 「装饰器实际吃掉的间距」<b>同域同值</b> —— 否则预留与实占不等，行尾就会空出一条。</p>
+     *
+     * <p>⛔ 不要改回 {@code ResUtil.dp2px(16)}：那是 Application 侧 density，比 Activity 侧小一个
+     * 字号档位倍率，档位越高差得越远。</p>
+     */
+    public static int gap(Context context) {
+        return gap(context, 16);
+    }
+
+    /**
+     * 任意 dp 的「Activity 侧」换算（px）。
+     *
+     * <p>凡是「代码把 px 传给 View」的地方都用它：{@code context} 传 Activity / Fragment 的，
+     * 拿到的才是 {@code BaseActivity#hackResources()} 按「字号档位 × 大屏补偿」改过的那一份，
+     * 与 XML 里同一 dp 值的渲染宽度严格相等。</p>
+     *
+     * <p>⛔ 不要用无参的 {@code ResUtil.dp2px} / {@code ResUtil.getScreenWidth}：它们走
+     * {@code App.get()}，落在 Application 侧 —— 不随档位缩放，且 orientation 判定可能取短边。</p>
+     */
+    public static int gap(Context context, int dp) {
+        return Math.round(dp * ResUtil.getDisplayMetrics(context).density);
+    }
+
+    /**
      * 由「屏宽 + 行距占位 + 列数」算出单个封面尺寸（px）。
      *
      * <p>{@code screenWidth} 必须由调用方传入 <b>Activity 侧</b>的真实窗口宽（见 {@link #screenWidth}）——

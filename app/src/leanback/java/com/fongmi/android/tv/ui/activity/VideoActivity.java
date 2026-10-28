@@ -30,6 +30,7 @@ import androidx.viewbinding.ViewBinding;
 import com.bumptech.glide.request.transition.Transition;
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.Constant;
+import com.fongmi.android.tv.Product;
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.api.DanmakuApi;
 import com.fongmi.android.tv.api.SiteApi;
@@ -390,19 +391,22 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     }
 
     private void setRecyclerView() {
-        mBinding.flag.setHorizontalSpacing(ResUtil.dp2px(8));
+        // 行内间距走 Product.gap(this, 8)（Activity 侧 density）：胶囊的内边距来自 XML dimens，
+        // 也随字号档位缩放，两者同域才不会出现「档位越高、胶囊越大、间距越挤」。
+        int gap = Product.gap(this, 8);
+        mBinding.flag.setHorizontalSpacing(gap);
         mBinding.flag.setRowHeight(ViewGroup.LayoutParams.WRAP_CONTENT);
         TouchGridAlign.attach(mBinding.flag);
         mBinding.flag.setAdapter(mFlagAdapter = new FlagAdapter(this));
-        mBinding.episode.setHorizontalSpacing(ResUtil.dp2px(8));
+        mBinding.episode.setHorizontalSpacing(gap);
         mBinding.episode.setRowHeight(ViewGroup.LayoutParams.WRAP_CONTENT);
         TouchGridAlign.attach(mBinding.episode);
         mBinding.episode.setAdapter(mEpisodeAdapter = new EpisodeAdapter(this));
-        mBinding.quality.setHorizontalSpacing(ResUtil.dp2px(8));
+        mBinding.quality.setHorizontalSpacing(gap);
         mBinding.quality.setRowHeight(ViewGroup.LayoutParams.WRAP_CONTENT);
         TouchGridAlign.attach(mBinding.quality);
         mBinding.quality.setAdapter(mQualityAdapter = new QualityAdapter(this));
-        mBinding.array.setHorizontalSpacing(ResUtil.dp2px(8));
+        mBinding.array.setHorizontalSpacing(gap);
         mBinding.array.setRowHeight(ViewGroup.LayoutParams.WRAP_CONTENT);
         TouchGridAlign.attach(mBinding.array);
         mBinding.array.setAdapter(mArrayAdapter = new ArrayAdapter(this));

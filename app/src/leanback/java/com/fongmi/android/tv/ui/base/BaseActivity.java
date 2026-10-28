@@ -123,10 +123,14 @@ public abstract class BaseActivity extends AppCompatActivity {
      * 图片尺寸档位变化后是否自动重建本页以应用新列数（默认 true）。
      *
      * <p>与 {@link #autoRecreateOnFontChange()} 同一机制：图片尺寸在长辈设置页被切换后，
-     * 回前台时按需重建。之所以需要它 —— 卡片宽高由 {@code Product#getColumn()}
-     * （← {@link PlayerSetting#getSize()}）在 presenter / adapter <b>构造时</b>算定并锁定，
-     * 已 inflate 的列表不会自行重排；历史页、收藏页这类只靠 {@code RefreshEvent.SIZE}
-     * 刷新数据的页面，尺寸会一直停在旧档位直到下次冷启动。</p>
+     * 回前台时按需重建。<b>列数</b>（{@code GridLayoutManager} 的 spanCount、
+     * {@code SpaceItemDecoration} 的 spanCount、{@code Lists.partition} 的分组长度）由
+     * {@code Product#getColumn()}（← {@link PlayerSetting#getSize()}）在 {@code initView} 期定下，
+     * 已 inflate 的列表不会自己改列数 —— 所以必须重建。</p>
+     *
+     * <p>注意<b>封面尺寸</b>（{@code Product#getSpec}）已经不靠重建兜底了：presenter / adapter
+     * 改成在每次 {@code onCreateViewHolder} 时按当前档位重算（见 {@code VodPresenter}）。
+     * 但「每行几列」变了必须重新 group 数据，重建仍是唯一正确的做法。</p>
      *
      * <p>播放页覆写为 false 以免打断播放；电视首页覆写为 false —— 它自己响应
      * {@code RefreshEvent.SIZE}（重建推荐区与「最近观看」行），再重建一次只会白丢焦点与滚动位置。</p>

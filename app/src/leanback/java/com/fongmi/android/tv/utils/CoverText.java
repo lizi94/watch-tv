@@ -80,8 +80,19 @@ public final class CoverText {
      */
     public static void clamp(TextView remark, TextView site, int coverWidth) {
         if (coverWidth <= 0) return;
-        if (remark != null) remark.setMaxWidth(Math.max(0, coverWidth - ResUtil.dp2px(REMARK_CLAMP_DP)));
-        if (site != null) site.setMaxWidth(Math.max(0, coverWidth - ResUtil.dp2px(SITE_CLAMP_DP)));
+        if (remark != null) remark.setMaxWidth(Math.max(0, coverWidth - dp(remark, REMARK_CLAMP_DP)));
+        if (site != null) site.setMaxWidth(Math.max(0, coverWidth - dp(site, SITE_CLAMP_DP)));
+    }
+
+    /**
+     * dp → px，按 <b>View 自己的 Resources</b> 换算。
+     *
+     * <p>{@code coverWidth} 来自 {@code Product#getSpec}，是 <b>Activity 侧</b>像素；
+     * 这里若用 {@code ResUtil.dp2px}（Application 侧），扣掉的边距比实际内边距小，
+     * 档位越高框得越松 —— 长角标仍可能溢到相邻列。改用 View 的 Resources 后两端同源。</p>
+     */
+    private static int dp(TextView view, int value) {
+        return Math.round(value * view.getResources().getDisplayMetrics().density);
     }
 
     private static int px(int coverWidth, float ratio, float growMax) {

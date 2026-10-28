@@ -73,7 +73,6 @@ import com.fongmi.android.tv.utils.KeyUtil;
 import com.fongmi.android.tv.utils.NetAwait;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.PermissionUtil;
-import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.Task;
 import com.fongmi.android.tv.utils.TouchGridAlign;
 import com.fongmi.android.tv.utils.UrlUtil;
@@ -443,10 +442,11 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
         selector.addPresenter(ListRow.class, new CustomRowPresenter(16, FocusHighlight.ZOOM_FACTOR_NONE, HorizontalGridView.FOCUS_SCROLL_ALIGNED), HistoryPresenter.class);
         TouchGridAlign.attach(mBinding.recycler);
         mBinding.recycler.setAdapter(new ItemBridgeAdapter(mAdapter = new ArrayObjectAdapter(selector)));
-        // 行间距取「本页 Resources」的密度（BaseActivity#hackResources 保证的那一份），不要用
-        // ResUtil 的无参重载：它走 Application 侧 Resources，历史上会被 AndroidAutoSize 覆写成
-        // 「屏宽/1920」（不含字号档位与大屏补偿），造成首屏行间距与其他组件不同源。
-        mBinding.recycler.setVerticalSpacing(Math.round(16 * ResUtil.getDisplayMetrics(this).density));
+        // 行间距走 Product.gap(this)：取「本页 Resources」的密度（BaseActivity#hackResources 保证的那一份），
+        // 与 Product.getSpec 里按 16dp×(列数−1) 预留的间距同源。⛔ 不要用 ResUtil.dp2px：
+        // 它走 Application 侧 Resources，历史上会被 AndroidAutoSize 覆写成「屏宽/1920」
+        // （不含字号档位与大屏补偿），造成首屏行间距与其他组件不同源。
+        mBinding.recycler.setVerticalSpacing(Product.gap(this));
     }
 
     private void setViewModel() {
@@ -859,8 +859,8 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
 
     /**
      * 图片尺寸变化<b>不</b>重建本页：首页自己响应 {@code RefreshEvent.SIZE}
-     * （{@code getVideo()} + {@code getHistory(true)}，推荐区与「最近观看」行都会重建 presenter），
-     * 内容与尺寸都已刷新；再走一次 recreate 只会白丢焦点与滚动位置 —— 对老人来说
+     * （{@code getVideo()} + {@code getHistory(true)}，推荐区整体重建、历史行换新 presenter，
+     * 封面尺寸在 {@code onCreateViewHolder} 里按当前档位现算），内容与尺寸都已刷新；再走一次 recreate 只会白丢焦点与滚动位置 —— 对老人来说
      * 「焦点无缘无故跑掉」比任何东西都难受。字号档位变化仍走重建（倍率作用于全局 dp/sp，
      * 事件刷新覆盖不到标题栏等静态区）。
      */
@@ -1030,9 +1030,17 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
         mAdapter.addAll(mAdapter.size(), rows);
     }
 
-    /** 内容行 Presenter（懒建一次）。列表档位变化会重建 Activity，所以不必在这里处理失效。 */
+    /**
+     * 内容行 Presenter（懒建一次）。
+     *
+     * <p>⛔ 这里<b>只缓存 presenter 实例本身</b>；封面尺寸由 presenter 在每次创建 holder 时
+     * 按当前「图片尺寸」档位重算（见 {@code VodPresenter#onCreateViewHolder}）。<b>不能连尺寸一起缓存</b> ——
+     * 本页在档位变化时<b>不重建</b>（{@link #autoRecreateOnSizeChange()} 返回 false，
+     * 只走 {@code RefreshEvent.SIZE → getVideo()}），presenter 会被一直复用，
+     * 缓存尺寸的后果就是「改了图片尺寸，分类/推荐列表毫无变化」。</p>
+     */
     private VodPresenter vodPresenter(Style style) {
-        if (mVodPresenter == null) mVodPresenter = new VodPresenter(this, this, style);
+        if (mVodPresenter == null) mVodPresenter = new VodPresenter(this, style);
         return mVodPresenter;
     }
 

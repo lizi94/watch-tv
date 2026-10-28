@@ -63,7 +63,9 @@ public class KeepActivity extends BaseActivity implements KeepAdapter.OnClickLis
         mBinding.recycler.setItemAnimator(null);
         mBinding.recycler.setAdapter(mAdapter = new KeepAdapter(this));
         mBinding.recycler.setLayoutManager(new GridLayoutManager(this, Product.getColumn()));
-        mBinding.recycler.addItemDecoration(new SpaceItemDecoration(Product.getColumn(), 16));
+        // 间距必须与卡片宽度同域（Activity 侧）：Product.getSpec 按 16dp×列数预留了间距，
+        // 这里若用 dp 重载（Application 侧 density）实占会小于预留，差额堆到行尾 → 右边空一条。
+        mBinding.recycler.addItemDecoration(SpaceItemDecoration.ofPx(Product.getColumn(), Product.gap(this)));
     }
 
     private void getKeep() {

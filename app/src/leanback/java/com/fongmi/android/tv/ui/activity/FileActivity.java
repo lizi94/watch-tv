@@ -6,11 +6,11 @@ import android.os.Bundle;
 
 import androidx.viewbinding.ViewBinding;
 
+import com.fongmi.android.tv.Product;
 import com.fongmi.android.tv.databinding.ActivityFileBinding;
 import com.fongmi.android.tv.ui.adapter.FileAdapter;
 import com.fongmi.android.tv.ui.base.BaseActivity;
 import com.fongmi.android.tv.utils.PermissionUtil;
-import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.TouchGridAlign;
 import com.github.catvod.utils.Path;
 
@@ -39,7 +39,8 @@ public class FileActivity extends BaseActivity implements FileAdapter.OnClickLis
 
     private void setRecyclerView() {
         mBinding.recycler.setHasFixedSize(true);
-        mBinding.recycler.setVerticalSpacing(ResUtil.dp2px(16));
+        // 间距走 Product.gap(this)（Activity 侧 density），与首页 / 封面网格同源
+        mBinding.recycler.setVerticalSpacing(Product.gap(this));
         TouchGridAlign.attach(mBinding.recycler);
         mBinding.recycler.setAdapter(mAdapter = new FileAdapter(this));
     }

@@ -19,6 +19,7 @@ import androidx.viewbinding.ViewBinding;
 import androidx.viewpager.widget.ViewPager;
 
 import com.fongmi.android.tv.App;
+import com.fongmi.android.tv.Product;
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.api.config.VodConfig;
 import com.fongmi.android.tv.bean.Collect;
@@ -31,7 +32,6 @@ import com.fongmi.android.tv.ui.base.BaseActivity;
 import com.fongmi.android.tv.ui.fragment.CollectFragment;
 import com.fongmi.android.tv.utils.ElderLock;
 import com.fongmi.android.tv.utils.Notify;
-import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.TouchGridAlign;
 import com.google.gson.reflect.TypeToken;
 
@@ -103,7 +103,9 @@ public class CollectActivity extends BaseActivity {
     }
 
     private void setRecyclerView() {
-        mBinding.recycler.setHorizontalSpacing(ResUtil.dp2px(16));
+        // 间距走 Product.gap(this)（Activity 侧 density），与首页行间距 / 封面网格同源；
+        // ResUtil.dp2px 是 Application 侧，档位越高越挤。
+        mBinding.recycler.setHorizontalSpacing(Product.gap(this));
         mBinding.recycler.setRowHeight(ViewGroup.LayoutParams.WRAP_CONTENT);
         TouchGridAlign.attach(mBinding.recycler);
         mBinding.recycler.setAdapter(mAdapter = new CollectAdapter());

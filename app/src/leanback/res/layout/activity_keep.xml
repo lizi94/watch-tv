@@ -71,7 +71,9 @@
             android:layout_height="match_parent"
             android:clipChildren="false"
             android:clipToPadding="false"
-            android:overScrollMode="never" />
+            android:overScrollMode="never"
+            android:paddingStart="@dimen/ag_space_6"
+            android:paddingEnd="@dimen/ag_space_6" />
 
     </com.fongmi.android.tv.ui.custom.ProgressLayout>
 

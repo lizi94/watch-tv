@@ -358,7 +358,10 @@ public class LiveActivity extends PlaybackActivity implements GroupAdapter.OnCli
      * 换言之<b>不是</b>「按内容宽下发、只在超屏时才封顶」—— 那条路径已被固定比例取代。</p>
      */
     private void applyColumnWidths() {
-        int screen = ResUtil.getScreenWidth();
+        // 屏宽取本页（Activity 侧）metrics：ResUtil.getScreenWidth() 的无参重载走 App.get()，
+        // 靠 isLand(App) 判长短边，部分机型的 Application orientation 不同步时返回短边，
+        // 三列会一起缩到一半宽度、右侧空出一大块（与「大屏少一列」同源）。
+        int screen = ResUtil.getDisplayMetrics(this).widthPixels;
         Live live = getHome();
         Group group = mGroup;
         Epg epg = mEpg;

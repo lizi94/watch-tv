@@ -1,6 +1,5 @@
 package com.fongmi.android.tv.ui.adapter;
 
-import android.content.Context;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -40,19 +39,6 @@ public class HistoryAdapter extends BaseDiffAdapter<History, HistoryAdapter.View
     public interface OnClickListener {
 
         void onItemClick(History item);
-    }
-
-    /**
-     * 封面尺寸（px）：与首页分类 / 搜索结果 / 「最近观看」共用 {@link Product#getSpec}。
-     *
-     * <p>⛔ 原先这里是手写公式，行距占位用 {@code ResUtil.dp2px(48)} —— Application 侧 density，
-     * 不随字号档位与大屏补偿缩放；而分类/搜索封面走 Activity 侧 density。
-     * 档位越高两者差得越远，同屏两种卡片大小不同。详见 {@code HistoryPresenter#spec}。</p>
-     */
-    private void setLayoutSize(Context context) {
-        int[] size = Product.getSpec(context, Style.rect());
-        width = size[0];
-        height = size[1];
     }
 
     public boolean isSelectMode() {
@@ -105,8 +91,11 @@ public class HistoryAdapter extends BaseDiffAdapter<History, HistoryAdapter.View
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        // 尺寸依赖 Activity 侧 density，只能拿到 parent 之后才算（width == 0 表示尚未计算）
-        if (width <= 0) setLayoutSize(parent.getContext());
+        // 封面尺寸与首页分类 / 搜索结果 / 「最近观看」共用 Product.getSpec（Activity 侧 density），
+        // 每次创建 holder 时按当前「图片尺寸」档位重算、不做「只算一次」的缓存。
+        int[] size = Product.getSpec(parent.getContext(), Style.rect());
+        width = size[0];
+        height = size[1];
         ViewHolder holder = new ViewHolder(AdapterVodBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false));
         holder.binding.getRoot().getLayoutParams().width = width;
         holder.binding.image.getLayoutParams().height = height;
