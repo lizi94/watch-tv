@@ -3,6 +3,7 @@ package com.fongmi.android.tv.ui.activity;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.View;
@@ -55,7 +56,6 @@ import com.fongmi.android.tv.ui.base.BaseActivity;
 import com.fongmi.android.tv.ui.custom.CustomRowPresenter;
 import com.fongmi.android.tv.ui.custom.CustomScroller;
 import com.fongmi.android.tv.ui.custom.CustomSelector;
-import com.fongmi.android.tv.ui.custom.CustomTitleView;
 import com.fongmi.android.tv.ui.dialog.ConfirmDialog;
 
 import com.fongmi.android.tv.ui.dialog.HomeFilterDialog;
@@ -68,7 +68,6 @@ import com.fongmi.android.tv.ui.presenter.ProgressPresenter;
 import com.fongmi.android.tv.ui.presenter.VodPresenter;
 import com.fongmi.android.tv.utils.Clock;
 import com.fongmi.android.tv.utils.FileChooser;
-import com.fongmi.android.tv.utils.ImgUtil;
 import com.fongmi.android.tv.utils.KeyUtil;
 import com.fongmi.android.tv.utils.NetAwait;
 import com.fongmi.android.tv.utils.Notify;
@@ -84,12 +83,10 @@ import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
 
-public class HomeActivity extends BaseActivity implements CustomTitleView.Listener, VodPresenter.OnClickListener, FuncPresenter.OnClickListener, HistoryPresenter.OnClickListener, HomeChipPresenter.OnClickListener, HomeFilterDialog.Listener {
+public class HomeActivity extends BaseActivity implements VodPresenter.OnClickListener, FuncPresenter.OnClickListener, HistoryPresenter.OnClickListener, HomeChipPresenter.OnClickListener, HomeFilterDialog.Listener {
 
     /** 内部「按返回键回首页」使用的标记：用于把这种回退和开机/启动器唤起区分开。 */
     public static final String EXTRA_BACK_HOME = "back_home";
@@ -190,6 +187,20 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
     /** 内容区重建后补落焦的延时：等新内容布局完成再判断「焦点是不是真的丢了」。 */
     private static final long HOME_FOCUS_RESTORE_DELAY = 400L;
 
+    /**
+     * {@link #onNewIntent} 里「站点为空就补检一次配置」的最小间隔（2026-10-29 / R99）。
+     *
+     * <p>该补检原先无节流：播放页返回、设置页返回、桌面拉起都会命中，每次都是一轮完整的
+     * 配置网络往返。而 {@code BaseConfig#load} 每轮都会 cancel 上一轮的 future 并自增 taskId
+     * ⇒ 短时间内多轮并发会自己打断自己，反而更容易「拉一半失败」，最后落到空态卡上。
+     * 10 秒是个保守值：既挡住连点/反复返回造成的风暴，又不影响「网络刚恢复就该自己好」的体验
+     *（失败后还有 {@code configAwait} 在网络恢复时立刻重载，不依赖这里）。</p>
+     */
+    private static final long CONFIG_RECHECK_INTERVAL = 10_000L;
+
+    /** 上一次「onNewIntent 补检配置」的时刻（elapsedRealtime）：仅用于上面那条节流。 */
+    private long lastConfigRecheckAt;
+
     private boolean bootInteracted;
 
     /**
@@ -215,6 +226,14 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
     private ArrayObjectAdapter mFuncAdapter;
     private ArrayObjectAdapter mChipAdapter;
     private ArrayObjectAdapter mAdapter;
+    /**
+     * 功能区（首页列表的第 0 行：搜索 / 直播 / 历史 / 收藏 / 设置 五个大按钮）。
+     *
+     * <p>2026-10-29（R100）新增：它是「冷启动 / 退出后重进首页」的**落焦锚点**。
+     * 之前靠 {@code recycler.requestFocus()} 隐式落焦，结果落点由 Leanback 的默认规则决定，
+     * 实测会滑到下面的分类 chips 行（表现为「一进首页就停在『推荐』上」）。</p>
+     */
+    private ListRow mFuncRow;
     private ListRow mChipRow;
     private ListRow mHistoryRow;
     /**
@@ -297,10 +316,6 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
         return VodConfig.get().getHome();
     }
 
-    private Config getConfig() {
-        return VodConfig.get().getConfig();
-    }
-
     @Override
     protected ViewBinding getBinding() {
         return mBinding = ActivityHomeBinding.inflate(getLayoutInflater());
@@ -320,7 +335,12 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
         // 若启动时配置就因无网络失败，首页会一直是空状态且永不恢复 —— 这里补检一次：
         // 站点列表为空（= 配置没加载成功）且现在网络可用，就重载配置并刷新首页。
         // 仅在「确实没加载成功」时触发，正常返回首页（有站点）零开销、不闪。
-        if (VodConfig.get().getSites().isEmpty() && NetAwait.isOnline()) initConfig();
+        // ⛔ 2026-10-29（R99）追加 10 秒节流：本方法在「播放页返回 / 设置页返回 / 桌面拉起」
+        // 都会跑一遍，站点为空时每次都发一轮配置请求 ⇒ 反复进出会短时间内叠出多轮并发拉取，
+        // 而 BaseConfig#load 每轮都会 cancel 上一轮的 future、taskId 自增 ⇒ 自己打断自己，
+        // 反而更容易「拉一半失败」并显示空态。节流后最坏只是「晚 10 秒补检一次」，
+        // 且失败后还有 configAwait（网络恢复即重载）兜底，不丢恢复能力。
+        if (VodConfig.get().getSites().isEmpty() && NetAwait.isOnline() && canRecheckConfig()) initConfig();
         // 不是「从播放页/设置页返回首页」= 用户在软件内重新打开（图标 / 遥控器自定义按键 / 桌面拉起）。
         // 按定下的两层语义：只要软件还活着就允许续播，所以重新判定一次开机直达。
         if (!backHome) {
@@ -370,8 +390,12 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
         // isProgress 守卫 + success/error 回调里的重复调用都幂等，重复裁决无害。
         if (VodConfig.get().loadFromCache()) evaluateBoot();
         initConfig();
-        setTitle();
-        setLogo();
+        // ⛔ 2026-10-29（R100）：这里原本调 setLogo()，即用「数据源配置里的 logo」覆盖软件图标。
+        //   现在整块删掉 —— 首页标题区**恒显示软件自己的 logo**（activity_home.xml 里的
+        //   android:src="@drawable/ic_logo"），代码里再没有任何地方写这个 ImageView，
+        //   与「标题恒为 @string/app_name」是同一个口径：标题区三件套（logo + 软件名 + 时间）
+        //   与数据源、网络状态完全无关。
+        //   更换 logo 的唯一途径 = 换 ic_logo 资源，不需要也不允许运行时按配置切换。
         // 开机直达的资格判定放在这里，而不是等 showContent() 之后再判 ——
         // 现在「数据源没就绪」时首页会保持启动画面继续等，showContent() 可能很晚才被调用；
         // 而续播应当从进入首页那一刻就开始并行等（先等网络、再等数据源），不能拖到那时才起步。
@@ -382,12 +406,15 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
     protected void initEvent() {
         // ⚠ 2026-10-17 取消标题的点击注册：标题与头像一律**纯装饰、无功能**。
         // 换源入口全站唯一 = 「设置 → 长辈设置 → 一键锁定」（ElderLockActivity，入口见 ElderSettingsActivity）。
-        // （原先那句 `mBinding.title.setListener(this)` 指向的 showDialog() 早已是空实现，
-        //   点击本就没有任何反应，属于残留；这里把注册一并去掉，让代码与意图一致。）
+        // ⛔ 2026-10-29（R99）：标题已退化为纯 MaterialTextView（CustomTitleView 整个类已删除），
+        //   连「可注册点击」这个能力都不存在了 —— 标题从此只有展示职责。
         mBinding.recycler.addOnChildViewHolderSelectedListener(new OnChildViewHolderSelectedListener() {
             @Override
             public void onChildViewHolderSelected(@NonNull RecyclerView parent, @Nullable RecyclerView.ViewHolder child, int position, int subposition) {
-                mBinding.toolbar.setVisibility(position == 0 ? View.VISIBLE : View.GONE);
+                // ⛔⛔ 2026-10-29（R99）：删掉 `toolbar.setVisibility(position == 0 ? VISIBLE : GONE)`。
+                //   原逻辑「焦点在第 0 行才显示标题栏」是「无数据源 / 无网络时标题时间区域消失」的
+                //   第二个根因：那两种情况下首行不再是功能区行（是空态卡或 chips 行）⇒ position 永远
+                //   不为 0 ⇒ 标题栏被永久隐藏。标题栏现在**恒显示**，不随选中行变化。
                 if (mPresenter.isDelete()) setHistoryDelete(false);
             }
         });
@@ -502,7 +529,7 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
 
     private void setAdapter() {
         mHistoryAdapter = new ArrayObjectAdapter(mPresenter = new HistoryPresenter(this));
-        mAdapter.add(new ListRow(mFuncAdapter = new ArrayObjectAdapter(new FuncPresenter(this))));
+        mAdapter.add(mFuncRow = new ListRow(mFuncAdapter = new ArrayObjectAdapter(new FuncPresenter(this))));
         mChipRow = new ListRow(mChipAdapter = new ArrayObjectAdapter(mChipPresenter = new HomeChipPresenter(this::onItemClick, this::onItemFocus)));
         mAdapter.add(mChipRow);
         buildChips();
@@ -532,16 +559,29 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
         }
     }
 
-    private void setTitle() {
-        List<String> items = Arrays.asList(getHome().getName(), getConfig().getName(), getString(R.string.app_name));
-        Optional<String> optional = items.stream().filter(s -> !TextUtils.isEmpty(s)).findFirst();
-        optional.ifPresent(s -> mBinding.title.setText(s));
-    }
+    // ⛔⛔ 2026-10-29（R99）：原 setTitle() 已整体删除。它的取值链是
+    //   getHome().getName() → getConfig().getName() → app_name ⇒ 标题会**随站源变动**
+    //   （换源后标题变成站源名、无站源时变成配置名），与「永远只显示软件名」的产品口径冲突。
+    //   现在标题恒为 XML 里的 @string/app_name（activity_home.xml），**代码不再写它**。
+    //   随之删除的私方法：getConfig()（唯一调用点就是 setTitle()）。
 
     private void initConfig() {
         VodConfig.get().init().load(getCallback());
         LiveConfig.get().init().load();
         WallConfig.get().init();
+    }
+
+    /**
+     * {@link #onNewIntent()} 里「站点为空就补检一次配置」的节流闸（见
+     * {@link #CONFIG_RECHECK_INTERVAL}）。
+     *
+     * @return true = 距离上次补检已超过间隔（或从未补检过），本次放行并记账
+     */
+    private boolean canRecheckConfig() {
+        long now = SystemClock.elapsedRealtime();
+        if (now - lastConfigRecheckAt < CONFIG_RECHECK_INTERVAL) return false;
+        lastConfigRecheckAt = now;
+        return true;
     }
 
     private Callback getCallback() {
@@ -902,20 +942,35 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
     private void setFocus() {
         mBinding.title.setSelected(true);
         // ⛔⛔ 2026-10-17 移除「让标题可聚焦」：原先这里 `App.post(() -> mBinding.title.setFocusable(true), 500)`
-        // 会在 500ms 后把标题（CustomTitleView，XML 里本是 focusable="false"）改成可聚焦，于是：
+        // 会在 500ms 后把标题改成可聚焦，于是：
         //   ① 老人在内容区按「上」时焦点会跑到右上角标题上，而标题的焦点态是**闪烁动画**（不是
         //      全站统一的 6dp 描边）⇒ 看着像「焦点消失了」，必须再按「下」才回得来（迷路）；
         //   ② 标题上那两个隐藏操作（「上」键刷新数据源、OK 键打开数据源弹窗）老人根本不会用。
         // ⇒ 现在标题**永不可聚焦**，方向键只在 功能区 ⇄ 分类 chips ⇄ 内容区 之间移动，不会跑丢。
         // ✅ 标题与头像现为**纯装饰**：不注册点击（见 initEvent）、不可聚焦、无任何动作。
         // 换源入口全站唯一 = 「设置 → 长辈设置 → 一键锁定」（ElderLockActivity）。
-        // ⚠ `setSelected(true)` 必须保留：它是 TextUtils.TruncateAt.MARQUEE 跑马灯的开关，与焦点无关
-        // （长站点名仍能完整滚出来给老人看，这是展示行为，不是交互）。
-        // ⛔ 焦点已经落在 recycler 内 ⇒ 原样不动。这是「不跳顶」的关键守卫。
-        View focused = getCurrentFocus();
-        if (focused != null && isDescendantOf(focused, mBinding.recycler)) return;
-        if (focusChipRow()) return;
-        mBinding.recycler.requestFocus();
+        // ⚠ 2026-10-29（R99）：标题已由 CustomTitleView 换成 MaterialTextView（该自定义类已删除），
+        //   `setSelected(true)` 仍然保留 —— 它是 TextUtils.TruncateAt.MARQUEE 跑马灯的开关，
+        //   与焦点无关；标题文字现为固定软件名，通常不超宽，但换语言/超长名称时仍靠它兜底。
+        //
+        // ⛔⛔ 2026-10-29（R100）落焦**改成确定性的**：恒落「功能区」第 0 行。
+        //   旧实现在这里写的是 `if (focusChipRow()) return;` —— 也就是**主动**把焦点送到分类 chips 行，
+        //   于是每次冷启动 / 退出后重进首页，焦点都停在「推荐」那颗 chip 上（用户反馈的现象）。
+        //   为什么老人场景要落功能区、而不是「推荐」chips：
+        //     ① chips 有「移到即加载」的副作用（onItemFocus → loadChip）⇒ 刚进首页就额外发一轮请求，
+        //        和首页自己的 homeContent 撞车，历史上还触发过「chips 重绑 → 焦点抖动 → 再加载」的环；
+        //        功能区是纯入口、点了才有动作，落上去零副作用。
+        //     ② 视觉上焦点从左上标题区往下第一个就是功能区，符合「从上往下」的扫描顺序；
+        //        老人一眼看到高亮的「搜索/直播/历史…」就知道遥控器能按什么。
+        //     ③ 功能区和「推荐内容」只差一次「下」键 —— 代价极小，却换来一个不会误触发加载的锚点。
+        //   守卫也从「焦点在 recycler 内就不动」收窄成「焦点已在**功能区**里才不动」：
+        //   否则「焦点已经滑到 chips 上」这种情况会被原样放行，正是本次要修的现象。
+        //   （本方法只在 showContent() 里被调用，而 showContent 的三个调用点全是「进内容态」的
+        //     一次性转换，此时老人还没有机会在内容里移动焦点 ⇒ 强制落焦不会把他拽走。）
+        if (!isFocusInFuncRow()) {
+            // 功能区还没绑上/还没有项时返回 false ⇒ 退回列表默认落点，至少保证遥控器有反应。
+            if (!focusFuncRow()) mBinding.recycler.requestFocus();
+        }
         // ⚠ 2026-10-22 修「冷启动后焦点在功能区、但视角看不到最上方标题区域」：
         // requestFocus() 只保证「焦点项可见」，**不保证可视区从第 0 行开始**；
         // 内容行又是异步插入的（onContentResult → addAll），插入后重新布局还会再把标题挤出去。
@@ -924,10 +979,44 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
         //    requestFocus 之后焦点到达子项的时机不固定，经常判不到 ⇒ 什么都不做 ⇒ 冷启动仍然看不到标题。
         //    现在改为不看焦点视图，改为看「选中位置」：只要焦点还停在功能区（index 0/1，含 -1 未定），
         //    就把列表回顶；老人一旦往下移动（index >= 2），两次校正都自动失效，不会把他拽回顶部。
-        // ⛔ 只在「焦点原本不在 recycler 内」这条**首次落焦**路径执行：上面两个守卫已把
-        //    「重试 / 网络恢复刷新 / 空态」等路径挡在外面，所以不会重新引入「点重试后视角跳顶」。
         mBinding.recycler.post(this::scrollHomeToTop);
         mBinding.recycler.postDelayed(this::scrollHomeToTop, HOME_TOP_DELAY);
+    }
+
+    /** 焦点是否正停在第 0 行「功能区」里（含「行视图本身获得焦点」这种情形）。 */
+    private boolean isFocusInFuncRow() {
+        if (mFuncRow == null) return false;
+        View focused = getCurrentFocus();
+        if (focused == null) return false;
+        View row = findAttachedRow(mFuncRow);
+        return row != null && isDescendantOf(focused, row);
+    }
+
+    /**
+     * 把焦点送到功能区（第 0 行）的第一项。
+     *
+     * <p>与 {@link #focusChipRow()} 同一套「行没绑上就滚动+下一帧再落焦」的处理：
+     * {@code scrollToPosition} 触发的布局尚未完成，此刻取不到行视图，必须 post 到下一帧。</p>
+     *
+     * @return true = 落焦已发出（含已安排到下一帧）；false = 功能区此刻没有可落焦的项，调用方需兜底
+     */
+    private boolean focusFuncRow() {
+        if (mFuncRow == null || mFuncAdapter == null || mFuncAdapter.size() <= 0) return false;
+        View row = findAttachedRow(mFuncRow);
+        if (row == null) {
+            int index = mAdapter.indexOf(mFuncRow);
+            if (index < 0) return false;
+            mBinding.recycler.scrollToPosition(index);
+            mBinding.recycler.post(() -> {
+                View target = firstFocusableIn(findAttachedRow(mFuncRow));
+                if (target != null) target.requestFocus();
+            });
+            return true;
+        }
+        View target = firstFocusableIn(row);
+        if (target == null) return false;
+        target.requestFocus();
+        return true;
     }
 
     /**
@@ -1210,19 +1299,36 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
     private void showContentEmpty() {
         if (mAdapter.indexOf(mChipRow) == -1) return;
         removeContent();
-        // 用户把所有站源都关掉了：配置本身是好的，只是没有「能看的站」——
-        // 不能说成「还没有设置数据源」（那是没导入过），要指路到站源选择。
+        // ⛔⛔ 2026-10-29（R99）：判据从「rawSites 是否为空」改为「配置里到底有没有数据源地址」。
+        //   原实现用 `getRawSites().isEmpty()` 区分「从没导入过」与「导入过但都被关掉」。
+        //   但**配置拉取失败**时 config 为 null（BaseConfig#getConfig 回落 defaultConfig()）
+        //   ⇒ rawSites 同样为空 ⇒ 被误判成「还没有设置数据源」。这就是那条假报的真正根因：
+        //   冷启动（depot 型配置不落本地缓存，见 VodConfig#loadFromCache）必须走一次网络往返，
+        //   这一趟失败就会走到这里；「反复退出 / 反复冷启动」只是把命中概率放大。
+        //   真实判据只有一个：getConfig().getUrl() 为空 ⇒ 从来没配置过数据源地址。
         if (VodConfig.get().getSites().isEmpty()) {
-            mEmptyItem = EmptyCardPresenter.Item.plain(VodConfig.get().getRawSites().isEmpty() ? R.string.home_empty_no_source : R.string.home_empty_no_site);
+            int textRes;
+            if (TextUtils.isEmpty(VodConfig.get().getConfig().getUrl())) {
+                // 从没导入过数据源 —— 唯一的出路是去设置里添加，措辞必须指向设置页。
+                textRes = R.string.home_empty_no_source;
+            } else if (VodConfig.get().getRawSites().isEmpty()) {
+                // 地址是有的，只是这一趟没解析出站点（拉取失败 / 网络不通）⇒
+                // 说「暂时连接不上，会自动重试」，绝不能说「还没有设置数据源」（会误导老人去重配）。
+                textRes = R.string.home_empty_source;
+            } else {
+                // 配置完好，是用户把所有站源都关掉了 —— 不能说成「没设置过」，要指路到站源选择。
+                textRes = R.string.home_empty_no_site;
+            }
+            mEmptyItem = EmptyCardPresenter.Item.plain(textRes);
             mAdapter.add(mEmptyItem);
             return;
         }
         if (configFailed) {
-            // 数据源拿不到。2026-10-17 起文案分两种、且不再显示「重新加载」按钮（按钮必然无效）：
-            //   · 从来没导入过数据源 → 直接指路去设置里导入（这是唯一能让页面有内容的动作）；
-            //   · 有数据源但这次没连上 → 说明会自动重试，老人不用做任何事。
-            boolean noSource = VodConfig.get().getSites().isEmpty();
-            mEmptyItem = EmptyCardPresenter.Item.plain(noSource ? R.string.home_empty_no_source : R.string.home_empty_source);
+            // 数据源拿到过（sites 非空），但这次内容请求失败 ⇒ 「暂时连接不上」。
+            // ⚠ 原先这里还留了一句 `noSource = getSites().isEmpty()` 的三元判断，但上面
+            //   `sites.isEmpty()` 已经 return ⇒ 该变量恒为 false、三元恒取 home_empty_source，
+            //   属于死逻辑，一并清掉。
+            mEmptyItem = EmptyCardPresenter.Item.plain(R.string.home_empty_source);
         } else {
             // 推荐为空 → 「暂无推荐内容」；分类为空 → 「该分类暂无数据」（三语言）
             int textRes = (mShownChip instanceof Class) ? R.string.home_empty_category : R.string.home_empty_recommend;
@@ -1472,10 +1578,6 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
         });
     }
 
-    private void setLogo() {
-        ImgUtil.logo(mBinding.logo);
-    }
-
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onConfigEvent(ConfigEvent event) {
         switch (event.type()) {
@@ -1487,7 +1589,8 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
                 evaluateBoot();
                 RefreshEvent.history();
                 RefreshEvent.home();
-                setLogo();
+                // ⛔ 2026-10-29（R100）：这里原本还有一句 setLogo()（换源后把标题区 logo 换成新站源的）。
+                //   标题区恒显示软件自己的 logo，换源不再影响它 ⇒ 该调用已删除，别再补回来。
                 break;
             case COMMON:
                 setFunc();
@@ -1503,7 +1606,6 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
         switch (event.getType()) {
             case HOME:
                 getVideo();
-                setTitle();
                 break;
             case HISTORY:
                 getHistory();
@@ -1610,14 +1712,6 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
         return true;
     }
 
-    @Override
-    public void showDialog() {
-        // ⛔ 2026-10-17：本页**不提供任何换源入口**（标题、头像、菜单键全部无功能）。
-        // 换源入口全站唯一 = 「设置 → 长辈设置 → 一键锁定」（ElderLockActivity）。
-        // 本方法仅为满足 CustomTitleView.Listener 的接口契约而保留（空实现）。
-        // ⚠ 菜单键已改为「筛选」（见 dispatchKeyEvent），与换源无关。
-    }
-
     /**
      * 打开当前分类的「筛选」面板。
      *
@@ -1684,11 +1778,6 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
     }
 
     @Override
-    public void onRefresh() {
-        getVideo();
-    }
-
-    @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
         // 2026-10-17：菜单键 = 打开「筛选」弹窗（复刻手机端首页的筛选能力）。
         // · 只在当前是**真实分类**且该分类带 filters 时才弹；推荐页 / 无 filters 的分类只提示一句。
@@ -1701,6 +1790,8 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
             // ⚠ 2026-10-17 起这是**保留的兜底分支**：标题已不再可聚焦（见 setFocus 的说明），
             // 正常情况下 getCurrentFocus() 不会是 title，此分支不会命中；保留它是为了万一
             // 将来恢复「标题可聚焦」时，这条「按『下』把焦点交回内容区第一行」的出路仍在。
+            // 2026-10-29（R99）标题换成 MaterialTextView 后依然 focusable="false"，本分支仍不命中，
+            // 但判据只看 mBinding.title 是否存在，与具体控件类型无关 ⇒ 无需随 CustomTitleView 一并改动。
             // 网格还没有任何子项（数据加载中）时 child 为 null，先判空再聚焦，避免空指针闪退
             View first = mBinding.recycler.getChildAt(0);
             if (first != null) return first.requestFocus();
@@ -1724,15 +1815,17 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
 
     @Override
     protected void onBackInvoked() {
-        // ① 连按计数：2.5 秒内第三次按，任何状态都直接退出
+        // ① 连按计数：窗口期内第三次按，任何状态都直接退出
         int taps = countBackTap();
         if (taps == 0) {
             finish();
             return;
         }
-        // ② 启动画面：第一次按只是「别等了，进首页」，不计入退出
+        // ② 启动画面：这一按只是「别等了，进首页」，但仍**计入**退出连按
+        //（2026-10-29 / R99 改：原先这里 resetBackTaps() 把计数清零，导致「无数据源、一直停在
+        //  启动画面」时每按一次都被清零 ⇒ 永远不会退出。启动画面按一次就进内容态，不存在
+        //  「按多了误退出」的风险，计数没必要作废。）
         if (mBinding.progressLayout.isProgress()) {
-            resetBackTaps();
             bootInteracted = true;
             showContent();
             return;

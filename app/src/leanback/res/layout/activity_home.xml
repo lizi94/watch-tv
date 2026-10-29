@@ -26,6 +26,11 @@
             android:paddingEnd="@dimen/ag_space_6"
             android:paddingBottom="@dimen/ag_space_2">
 
+            <!-- ⛔⛔ 2026-10-29（R100）：logo 恒为**软件自己的图标**（这里的 ic_logo），
+                 代码里没有任何地方再写这个 ImageView（原 HomeActivity#setLogo() 已整块删除）。
+                 它曾经会被「数据源配置里的 logo」覆盖 —— 换源后标题区图标跟着变，与
+                 「标题区 = 软件 logo + 软件名 + 时间、与数据源无关」的口径冲突。
+                 ⇒ 想换 logo 只能换 @drawable/ic_logo 资源，不要在代码里 setImageXXX。 -->
             <androidx.appcompat.widget.AppCompatImageView
                 android:id="@+id/logo"
                 android:layout_width="@dimen/ag_icon_48"
@@ -33,7 +38,14 @@
                 android:layout_marginEnd="@dimen/ag_space_3"
                 android:src="@drawable/ic_logo" />
 
-            <com.fongmi.android.tv.ui.custom.CustomTitleView
+            <!-- ⛔⛔ 2026-10-29（R99）：标题由 CustomTitleView（自定义类已整体删除）改为纯 MaterialTextView。
+                 两条硬规则（别再改回去）：
+                 ① 文字恒为 @string/app_name，**代码里不再 setText** ⇒ 不随站源 / 配置 / 网络状态变动；
+                 ② 本控件与整条 toolbar **恒显示**，不得再按列表选中位置切换 visibility。
+                 这样「没有数据源 / 没有网络」时标题与时间区域也一定在（原先就是被 toggle 隐藏掉的）。
+                 ellipsize=marquee + singleLine 保留：换语言后软件名可能超宽，靠跑马灯兜底
+                 （跑马灯开关是 setFocus 里的 setSelected(true)，与焦点无关）。 -->
+            <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/title"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"

@@ -48,8 +48,14 @@ public abstract class BaseActivity extends AppCompatActivity {
     private static final float DESIGN_WIDTH = 1920f;
 
     private long lastBackTime;
-    /** 首页「连按三次返回键退出」：单次按键的最大间隔（超过则重新计数）。 */
-    private static final long EXIT_TAP_WINDOW = 2500L;
+    /**
+     * 首页「连按三次返回键退出」：**相邻两次**按键的最大间隔（超过则重新计数）。
+     *
+     * <p>2026-10-29（R99）由 2500ms 放宽到 4000ms：老人按遥控器本来就慢，2.5 秒的间隔
+     * 常常「第二下还没按下去计数就清零了」，体感就是「连着按返回键根本不退出」。
+     * 三次 × 4 秒 = 最长 12 秒的宽容窗口，而误触触发三次连按仍然极不可能。</p>
+     */
+    private static final long EXIT_TAP_WINDOW = 4000L;
     /** 退出所需连按次数。 */
     private static final int EXIT_TAPS = 3;
     /** 已连按次数。 */

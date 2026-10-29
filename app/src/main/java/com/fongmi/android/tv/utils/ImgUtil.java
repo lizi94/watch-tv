@@ -60,12 +60,38 @@ public class ImgUtil {
     /** 台标 logo 的解码上限（2026-10-26 低配卡死治理 P0-3）：配置里塞一张超大 logo 时兜底。 */
     private static final int LOGO_MAX_DP = 256;
 
+    /**
+     * 首页标题区的软件 logo。
+     *
+     * <p><b>⛔⛔ 2026-10-29（R99）logo 必须「恒显示」</b>：首页标题区的产品口径是
+     * <b>「永远只显示 软件 logo + 软件名 + 时间」</b>，它与数据源、网络状态**无关**。
+     * 原实现无条件把 {@code config.getLogo()} 交给 Glide，只在加载失败时才走
+     * {@code .error(R.drawable.ic_logo)}；而「配置里没写 logo 字段 / 还没有配置 / 配置拉取失败」
+     * 这三种情况拿到的 url 是 null 或空串 —— null 直接让 Glide 抛
+     * {@code IllegalArgumentException}，被外层 catch 吞掉后 ImageView 保持**空白**，
+     * 于是无数据源 / 无网时首页左上角是空的（这正是「标题时间区域显示不出来」的第三个根因）。</p>
+     *
+     * <p>现在改为：<b>先判空走本地兜底</b>（同步 {@code setImageResource}，一定生效），
+     * 只有 url 非空才走远程 Glide；Glide 同步抛出时也回落到本地图。</p>
+     */
     public static void logo(ImageView view) {
+        if (view == null) return;
+        String url = null;
         try {
-            int size = ResUtil.dp2px(LOGO_MAX_DP);
-            Glide.with(view).load(UrlUtil.convert(VodConfig.get().getConfig().getLogo())).circleCrop().override(size, size).error(R.drawable.ic_logo).into(view);
+            url = VodConfig.get().getConfig().getLogo();
         } catch (Throwable e) {
             e.printStackTrace();
+        }
+        if (TextUtils.isEmpty(url)) {
+            view.setImageResource(R.drawable.ic_logo);
+            return;
+        }
+        try {
+            int size = ResUtil.dp2px(LOGO_MAX_DP);
+            Glide.with(view).load(UrlUtil.convert(url)).circleCrop().override(size, size).error(R.drawable.ic_logo).into(view);
+        } catch (Throwable e) {
+            e.printStackTrace();
+            view.setImageResource(R.drawable.ic_logo);
         }
     }
 
