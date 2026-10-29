@@ -207,6 +207,62 @@ public class Setting {
     }
 
     /**
+     * 开机自启动（适老化）：电视开机后是否自动打开「看电视」。默认开启。
+     *
+     * <p><b>门控点 = {@code BootReceiver#launchHome}</b>：关闭后开机不再拉起 HomeActivity，
+     * 停留在电视原桌面。</p>
+     *
+     * <p>与 {@link #isAutoResume()} 分工：本项决定「开机要不要打开 App」，
+     * {@code isAutoResume} 决定「打开后要不要直接进上次观看」，两者互不干扰。</p>
+     */
+    public static boolean isBootAutostart() {
+        return Prefers.getBoolean("boot_autostart", true);
+    }
+
+    public static void putBootAutostart(boolean bootAutostart) {
+        Prefers.put("boot_autostart", bootAutostart);
+    }
+
+    /**
+     * 接管 Home 键（桌面守护）：开启后按主页键回到电视桌面时，自动切回本软件。
+     *
+     * <p>默认开启。关闭后 {@code HomeGuardService} 不做任何干预，主页键正常回到电视桌面。
+     * 适用场景：想临时用电视自带的桌面 / 应用商店时先关掉它。</p>
+     */
+    public static boolean isHomeGuard() {
+        return Prefers.getBoolean("home_guard", true);
+    }
+
+    public static void putHomeGuard(boolean homeGuard) {
+        Prefers.put("home_guard", homeGuard);
+    }
+
+    /**
+     * 用户是否**主动退出**过本软件（2026-10-29 / R99 新增）。
+     *
+     * <p><b>为什么需要它</b>：{@link #isHomeGuard()} 打开时，{@code HomeGuardService} 只要看到
+     * TCL 桌面窗口回到前台，就立刻把本软件拉回来 —— 这会让首页「连按三次返回键退出」**永远退不出去**：
+     * {@code finish()} → 桌面窗口事件到达（800ms 防抖后）→ 被拉回，而且是**全新冷启动**的实例
+     * （正是「反复退出几次后偶发显示还没有设置数据源」的放大器）。用户主动连按三次返回键是一次
+     * 明确无误的意图，必须被尊重。</p>
+     *
+     * <p><b>语义</b>：置位期间桌面守护**不再自动拉起**；直到用户下一次真正打开本软件
+     * （桌面图标 / 遥控器快捷键 / 开机自启的 {@code BootReceiver}）时，由
+     * {@code HomeActivity#initView} 清零，守护随即恢复正常接管。</p>
+     *
+     * <p><b>为什么用 Prefers 持久化而不是内存静态标记</b>：退出后进程随时可能被系统回收，
+     * 内存标记会跟着消失 ⇒ 守护下一次又把人拉回来。持久化才能真正「记住用户不想用了」。
+     * 读写都在主线程，值只有一个 boolean，开销可忽略。</p>
+     */
+    public static boolean isUserExited() {
+        return Prefers.getBoolean("user_exited", false);
+    }
+
+    public static void putUserExited(boolean userExited) {
+        Prefers.put("user_exited", userExited);
+    }
+
+    /**
      * 遥控器按键音（适老化操作反馈音）：焦点移动、按确定、出错时是否发出提示音。
      * 适老化默认开启（老人靠声音确认「遥控器收到了」）；关闭后
      * {@link com.fongmi.android.tv.utils.SoundFx} 的三类音效全部静音。

@@ -358,6 +358,12 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
     @Override
     protected void initView(Bundle savedInstanceState) {
         mResult = Result.empty();
+        // ⛔ 2026-10-29（R99）：走到 initView 就说明「本软件被真正打开了一次」——
+        // 桌面图标、遥控器快捷键、开机自启（BootReceiver）、或桌面守护拉起，都会走到这里。
+        // 所以上一次「用户主动退出」的抑制标记必须在这里清零，让桌面守护恢复正常接管。
+        // ⚠ 本行是 HomeGuardService 那条 `if (Setting.isUserExited()) return;` 的唯一解药，
+        //   不能挪到别处（例如 onResume）：onResume 在退出前的生命周期里也会跑，会提前解掉标记。
+        Setting.putUserExited(false);
         mClock = Clock.create(mBinding.clock);
         mBinding.progressLayout.showProgress();
         // 电视端只申请通知权限：本端 FileChooser 走自带 FileActivity（useInternal 恒 true），
@@ -1304,7 +1310,7 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
         //   但**配置拉取失败**时 config 为 null（BaseConfig#getConfig 回落 defaultConfig()）
         //   ⇒ rawSites 同样为空 ⇒ 被误判成「还没有设置数据源」。这就是那条假报的真正根因：
         //   冷启动（depot 型配置不落本地缓存，见 VodConfig#loadFromCache）必须走一次网络往返，
-        //   这一趟失败就会走到这里；「反复退出 / 反复冷启动」只是把命中概率放大。
+        //   这一趟失败就会走到这里；「反复退出被守护拉回、反复冷启动」只是把命中概率放大。
         //   真实判据只有一个：getConfig().getUrl() 为空 ⇒ 从来没配置过数据源地址。
         if (VodConfig.get().getSites().isEmpty()) {
             int textRes;
@@ -1818,6 +1824,12 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
         // ① 连按计数：窗口期内第三次按，任何状态都直接退出
         int taps = countBackTap();
         if (taps == 0) {
+            // ⛔⛔ 2026-10-29（R99）：退出前必须先置「用户主动退出」标记，否则桌面守护会在
+            // 800ms 后把软件重新拉起（全新冷启动），用户体感就是「连按返回键根本退不出去」。
+            // 标记由 HomeGuardService 读取、由 initView 在下次真正打开本软件时清零。
+            // ⚠ 顺序必须是「先置位、后 finish」：finish() 会同步走到 onPause/onStop，
+            // 桌面窗口事件可能紧接着在同一主线程队列里到达，晚一点写就来不及。
+            Setting.putUserExited(true);
             finish();
             return;
         }

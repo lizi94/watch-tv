@@ -33,6 +33,19 @@
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
 
+            <!-- 作为系统桌面候选（2026-10-29 新增）。
+                 目的不是「抢默认桌面」（TCL 固件只认自家桌面，设了也会被无视），
+                 而是让系统在开机「启动桌面」那一步就把本 App 当作候选进程加载 ——
+                 实测不声明时本 App 要到开机后 30 秒才被无障碍服务绑定拉起，
+                 而桌面（Launcher）在 11 秒就绪；有桌面身份才有机会提前到同一量级。
+                 不执行 set-home-activity，因此默认桌面仍是 TCL 自家桌面。 -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -183,6 +196,34 @@
             android:name=".service.DLNARendererService"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />
+
+        <!-- 桌面守护（2026-10-29）：按主页键回到电视桌面时自动切回本软件。
+             必须 exported=true + BIND_ACCESSIBILITY_SERVICE 权限，否则系统无法绑定。 -->
+        <service
+            android:name=".service.HomeGuardService"
+            android:exported="true"
+            android:label="@string/accessibility_home_guard_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_home_guard" />
+        </service>
+
+        <!-- 通知监听保活（2026-10-29）：不读通知内容，只借系统绑定把进程留住 / 拉回。
+             需要用户在「通知使用权」里授权，或用 adb：
+             cmd notification allow_listener com.fongmi.android.tv/com.fongmi.android.tv.service.RevivalListener -->
+        <service
+            android:name=".service.RevivalListener"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
 
         <receiver
             android:name=".receiver.BootReceiver"

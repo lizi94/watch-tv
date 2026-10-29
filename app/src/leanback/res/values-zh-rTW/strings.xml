@@ -94,6 +94,10 @@
     <string name="elder_setting_lock_entry">一鍵鎖定</string>
     <string name="elder_setting_full_entry">隨選自動全螢幕</string>
     <string name="elder_setting_resume_entry">退出自動續播</string>
+    <string name="elder_setting_boot_entry">開機自啟動</string>
+    <string name="elder_setting_home_guard_entry">接管 Home 鍵</string>
+    <string name="accessibility_home_guard_label">看電視 · 桌面守護</string>
+    <string name="accessibility_home_guard_desc">按主頁鍵回到電視桌面時，自動切回「看電視」。在長輩設定裡可以關閉；關閉後主頁鍵正常回到電視桌面。</string>
     <string name="elder_setting_sound_entry">按鍵音</string>
     <string name="elder_setting_index_search_entry">首頁快速搜尋</string>
     <string name="elder_setting_font_entry">字號大小</string>

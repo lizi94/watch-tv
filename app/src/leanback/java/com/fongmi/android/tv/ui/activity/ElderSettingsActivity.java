@@ -60,6 +60,8 @@ public class ElderSettingsActivity extends BaseActivity {
         mBinding.lock.setOnClickListener(this::onLock);
         mBinding.full.setOnClickListener(this::setAutoFullscreen);
         mBinding.resume.setOnClickListener(this::setAutoResume);
+        mBinding.bootAutostart.setOnClickListener(this::setBootAutostart);
+        mBinding.homeGuard.setOnClickListener(this::setHomeGuard);
         mBinding.sound.setOnClickListener(this::setKeySound);
         mBinding.indexSearch.setOnClickListener(this::setIndexQuickSearch);
         mBinding.siteManage.setOnClickListener(this::onSiteManage);
@@ -81,6 +83,8 @@ public class ElderSettingsActivity extends BaseActivity {
         mBinding.lockText.setText(locked == null ? getString(R.string.elder_lock_none) : getString(R.string.elder_lock_on, locked.getName()));
         mBinding.fullText.setText(Setting.getSwitch(Setting.isAutoFullscreen()));
         mBinding.resumeText.setText(Setting.getSwitch(Setting.isAutoResume()));
+        mBinding.bootAutostartText.setText(Setting.getSwitch(Setting.isBootAutostart()));
+        mBinding.homeGuardText.setText(Setting.getSwitch(Setting.isHomeGuard()));
         mBinding.soundText.setText(Setting.getSwitch(Setting.isKeySound()));
         mBinding.indexSearchText.setText(Setting.getSwitch(Setting.isIndexQuickSearch()));
         // 设置行右侧只放计数（行标题已经是「站源管理」，再写「已启用」会重复）
@@ -115,6 +119,24 @@ public class ElderSettingsActivity extends BaseActivity {
     private void setAutoResume(View view) {
         Setting.putAutoResume(!Setting.isAutoResume());
         mBinding.resumeText.setText(Setting.getSwitch(Setting.isAutoResume()));
+    }
+
+    /** 开机自启动开关：关闭后开机不再自动打开本软件，停留在电视原桌面。 */
+    private void setBootAutostart(View view) {
+        Setting.putBootAutostart(!Setting.isBootAutostart());
+        mBinding.bootAutostartText.setText(Setting.getSwitch(Setting.isBootAutostart()));
+    }
+
+    /**
+     * 接管 Home 键开关：开启后按主页键回到电视桌面会被自动切回本软件
+     * （实现在 {@code HomeGuardService}，门控实时读偏好，因此立即生效）。
+     *
+     * <p>注意：本开关只控制「抢不抢」，服务本身能否运行取决于系统无障碍设置里是否已开启
+     * 本软件的无障碍服务 —— 仅靠这里打开开关不会生效。</p>
+     */
+    private void setHomeGuard(View view) {
+        Setting.putHomeGuard(!Setting.isHomeGuard());
+        mBinding.homeGuardText.setText(Setting.getSwitch(Setting.isHomeGuard()));
     }
 
     /**

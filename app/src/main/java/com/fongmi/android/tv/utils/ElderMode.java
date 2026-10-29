@@ -43,6 +43,8 @@ public class ElderMode {
      *       / {@code elder_lock_search} / {@code elder_lock_route} —— 一键锁定与其下各项；</li>
      *   <li>{@code auto_fullscreen} —— 点播自动全屏；</li>
      *   <li>{@code auto_resume} —— 退出自动续播；</li>
+     *   <li>{@code boot_autostart} —— 开机自启动（开机是否自动打开 App）；</li>
+     *   <li>{@code home_guard} —— 接管 Home 键（按主页键回到电视桌面时是否自动切回 App）；</li>
      *   <li>{@code index_quick_search} —— 首页快速搜索（index 站源点击是否跳搜索）；</li>
      *   <li>{@code elder_key_sound} —— 按键音；</li>
      *   <li>{@code elder_font_size} —— 字号档位；</li>
@@ -59,6 +61,8 @@ public class ElderMode {
             "elder_lock_route",
             "auto_fullscreen",
             "auto_resume",
+            "boot_autostart",
+            "home_guard",
             "index_quick_search",
             "elder_key_sound",
             "elder_font_size",

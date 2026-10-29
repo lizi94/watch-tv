@@ -95,6 +95,10 @@
     <string name="elder_setting_lock_entry">One-tap lock</string>
     <string name="elder_setting_full_entry">Auto fullscreen on play</string>
     <string name="elder_setting_resume_entry">Auto-resume after exit</string>
+    <string name="elder_setting_boot_entry">Auto-start on boot</string>
+    <string name="elder_setting_home_guard_entry">Take over Home key</string>
+    <string name="accessibility_home_guard_label">Watch TV · Home guard</string>
+    <string name="accessibility_home_guard_desc">Switches back to Watch TV when the TV\'s own launcher comes to the front after you press Home. You can turn this off in Senior Settings; when off, the Home key returns to the TV launcher as usual.</string>
     <string name="elder_setting_sound_entry">Remote key sound</string>
     <string name="elder_setting_index_search_entry">Quick search on home</string>
     <string name="elder_setting_font_entry">Font size</string>

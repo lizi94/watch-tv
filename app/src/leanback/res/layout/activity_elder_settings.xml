@@ -151,7 +151,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/ag_space_2"
-            android:nextFocusDown="@id/indexSearch"
+            android:nextFocusDown="@id/bootAutostart"
             android:orientation="horizontal">
 
             <com.google.android.material.textview.MaterialTextView
@@ -163,6 +163,57 @@
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/resumeText"
+                style="@style/Ag.Text.Value"
+                android:layout_height="wrap_content"
+                tools:text="开启" />
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <!-- 6.5 开机自启动（适老化）：关闭后开机不再自动打开本软件，停在原桌面。
+             门控在 BootReceiver#launchHome（读 Setting.isBootAutostart）。 -->
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/bootAutostart"
+            style="@style/Ag.ListItem"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ag_space_2"
+            android:nextFocusDown="@id/homeGuard"
+            android:orientation="horizontal">
+
+            <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Body"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/ag_space_4"
+                android:text="@string/elder_setting_boot_entry" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/bootAutostartText"
+                style="@style/Ag.Text.Value"
+                android:layout_height="wrap_content"
+                tools:text="开启" />
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <!-- 6.6 接管 Home 键（2026-10-29）：按主页键回到电视桌面时自动切回本软件。
+             实现在 HomeGuardService（无障碍服务），门控读 Setting.isHomeGuard()。
+             需要用户在系统无障碍设置里开启本服务才生效，仅靠此处开关不够。 -->
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/homeGuard"
+            style="@style/Ag.ListItem"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ag_space_2"
+            android:nextFocusDown="@id/indexSearch"
+            android:orientation="horizontal">
+
+            <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Body"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/ag_space_4"
+                android:text="@string/elder_setting_home_guard_entry" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/homeGuardText"
                 style="@style/Ag.Text.Value"
                 android:layout_height="wrap_content"
                 tools:text="开启" />

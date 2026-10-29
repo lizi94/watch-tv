@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  桌面守护的声明式配置（2026-10-29）
+
+  只订阅 typeWindowStateChanged：桌面回到前台时一定会产生该事件，
+  且频率远低于 typeWindowContentChanged，对低内存电视负担最小。
+  故意不写 android:packageNames —— 固件升级若改了桌面包名仍能工作，
+  实际过滤在 HomeGuardService#onAccessibilityEvent 里做。
+
+  canRetrieveWindowContent=false：本服务不需要读取任何界面内容（不碰隐私），仅凭包名判断。
+-->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeWindowStateChanged"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:accessibilityFlags="flagDefault"
+    android:canRetrieveWindowContent="false"
+    android:description="@string/accessibility_home_guard_desc"
+    android:notificationTimeout="100" />
