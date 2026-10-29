@@ -235,7 +235,7 @@ A：可以。配置和收藏/历史都存在本机，同签名覆盖安装不会
 | 分支 | 内容 | 版本 |
 |---|---|---|
 | `main` | **标准版**：不含开机自启、不含无障碍守护 | 6.0.3 / 603 |
-| `autostart` | **自启版**：在 main 基础上多 3 个新文件 + 8 处改动 | 6.0.4 / 604 |
+| `autostart` | **自启版**：在 main 基础上多 3 个新文件 + 11 处改动 | 6.0.4 / 604 |
 
 两个分支的差别只有这些（其余逐字节相同）：
 
@@ -245,11 +245,12 @@ A：可以。配置和收藏/历史都存在本机，同签名覆盖安装不会
 新增  app/src/leanback/res/xml/accessibility_home_guard.xml              只订阅 typeWindowStateChanged
 改动  app/src/leanback/AndroidManifest.xml                               两个 service + HOME/DEFAULT 候选
 改动  app/src/leanback/java/.../receiver/BootReceiver.java               开机拉起 + 3/8/15/30s 补偿重试
+改动  app/src/leanback/java/.../ui/activity/HomeActivity.java            「用户主动退出」抑制标记（防退出后被守护拉回）
 改动  app/src/leanback/java/.../ui/activity/ElderSettingsActivity.java   两个新开关
 改动  app/src/leanback/res/layout/activity_elder_settings.xml            两个新行 + 焦点链
 改动  app/src/leanback/res/values{,-zh-rCN,-zh-rTW}/strings.xml          三语文案
-改动  app/src/main/java/.../setting/Setting.java                         boot_autostart / home_guard
-改动  app/src/main/java/.../utils/ElderMode.java                         恢复默认要能复位这两个 key
+改动  app/src/main/java/.../setting/Setting.java                         boot_autostart / home_guard / user_exited
+改动  app/src/main/java/.../utils/ElderMode.java                         恢复默认要能复位这几个 key
 改动  app/build.gradle                                                   版本号（603 → 604）
 ```
 
