@@ -225,13 +225,29 @@
             </intent-filter>
         </service>
 
+        <!-- 开机自启（2026-10-29 新增；2026-10-30 R100 补早期路径）
+             directBootAware=true 是 LOCKED_BOOT_COMPLETED 的必要条件：这条广播在用户解锁前就发，
+             实测 TCL 上它比 BOOT_COMPLETED（被固件拖到开机约 80 秒）早得多。
+             三个 action 各自的作用：
+               LOCKED_BOOT_COMPLETED —— 最早的一次机会，预热进程；已解锁则立刻拉起界面
+               USER_UNLOCKED         —— 未解锁时先挂着，解锁瞬间再拉（仅开机 5 分钟内有效）
+               BOOT_COMPLETED        —— 原来的兜底路径，保留不动 -->
         <receiver
             android:name=".receiver.BootReceiver"
+            android:directBootAware="true"
             android:exported="true"
             android:priority="999">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.USER_UNLOCKED" />
             </intent-filter>
         </receiver>
 

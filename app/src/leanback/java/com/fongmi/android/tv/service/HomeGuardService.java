@@ -2,10 +2,13 @@ package com.fongmi.android.tv.service;
 
 import android.accessibilityservice.AccessibilityService;
 import android.content.Intent;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.SystemClock;
 import android.util.Log;
 import android.view.accessibility.AccessibilityEvent;
 
+import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.ui.activity.HomeActivity;
 
@@ -42,10 +45,47 @@ public class HomeGuardService extends AccessibilityService {
 
     private long lastLaunchAt;
 
+    private final Handler handler = new Handler(Looper.getMainLooper());
+
+    /**
+     * 「服务一连上就主动拉起一次」。
+     *
+     * <p><b>为什么需要</b>（2026-10-30 实测）：开机时本服务被系统绑定、进程被创建是开机后 28.6 秒，
+     * 但界面直到 41 秒才显示 —— 中间 5~10 秒是在等下一条「TCL 桌面窗口状态变化」事件。
+     * 开机那一刻桌面早就在前台，不会因为我们的到来再发一次状态变化，只能干等它下一次抖动。</p>
+     *
+     * <p>所以绑定成功即主动补一枪。用 {@link App#activity()} 判「已在前台」在这里是安全的：
+     * 这是连接回调、不是窗口事件回调，不存在「onPause 与事件同队列」的竞态
+     *（那个竞态只影响 {@link #onAccessibilityEvent}，见那里的注释）。</p>
+     */
+    private final Runnable pullBackOnConnect = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                if (!Setting.isHomeGuard()) return;
+                if (Setting.isUserExited()) return;
+                if (App.activity() != null) return;
+                lastLaunchAt = SystemClock.elapsedRealtime();
+                launchHome();
+            } catch (Throwable t) {
+                Log.w(TAG, "连接后主动拉起失败", t);
+            }
+        }
+    };
+
     @Override
     protected void onServiceConnected() {
         super.onServiceConnected();
         Log.i(TAG, "桌面守护已连接");
+        // 稍等 600ms 让系统把窗口栈稳定下来，再决定要不要拉；期间若已有界面则上面会自行跳过
+        handler.removeCallbacks(pullBackOnConnect);
+        handler.postDelayed(pullBackOnConnect, 600L);
+    }
+
+    @Override
+    public void onDestroy() {
+        handler.removeCallbacks(pullBackOnConnect);
+        super.onDestroy();
     }
 
     @Override

@@ -7,6 +7,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.Network;
+import android.os.SystemClock;
+import android.os.UserManager;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -22,6 +24,16 @@ public class BootReceiver extends BroadcastReceiver {
     /** 内部重试 action：显式 Intent 自派发，不需要在 Manifest 里声明。 */
     private static final String ACTION_RETRY = "com.fongmi.android.tv.action.BOOT_RETRY";
     private static final String EXTRA_STEP = "step";
+    /** 用户解锁完成（相当于「已经能显示界面了」），见 Manifest 里给本 Receiver 加的 filter。 */
+    private static final String ACTION_USER_UNLOCKED = "android.intent.action.USER_UNLOCKED";
+    /**
+     * 解锁后拉起只在这个时间窗内生效（毫秒）。
+     *
+     * <p>USER_UNLOCKED 不只在开机时发：切换用户、重装、某些固件刷新用户状态都会再发一次。
+     * 若不加窗口限制，用户半夜正在看别的应用时会突然被拉进本软件。5 分钟内属于「开机期」，
+     * 超过就当普通运行期，交给 {@code HomeGuardService} 的桌面守护处理。</p>
+     */
+    private static final long UNLOCK_WINDOW_MS = 5 * 60 * 1000L;
     /**
      * 首次尝试之后的补偿重试时间表（毫秒，累进延迟）。
      *
@@ -43,17 +55,75 @@ public class BootReceiver extends BroadcastReceiver {
         if (intent == null) return;
         String action = intent.getAction();
         boolean retry = ACTION_RETRY.equals(action);
-        if (!retry && !isBootAction(action)) return;
+        boolean lockedBoot = Intent.ACTION_LOCKED_BOOT_COMPLETED.equals(action);
+        boolean userUnlocked = ACTION_USER_UNLOCKED.equals(action);
+        if (!retry && !lockedBoot && !userUnlocked && !isBootAction(action)) return;
+        // ★2026-10-30（R100）实测：TCL 把 BOOT_COMPLETED 拖到开机约 79~81 秒才处理完，
+        //   「桌面 11.5 秒就绪、本进程 28.6 秒才被无障碍绑定创建、界面 41 秒才显示」。
+        //   所以补一条更早的路径：LOCKED_BOOT_COMPLETED（directBootAware，开机十几秒就发）
+        //   → 若用户已解锁就立刻拉起；未解锁则等 USER_UNLOCKED 再拉。
+        //   注意：解锁前读不到凭据加密存储（SharedPreferences 会抛 IllegalStateException），
+        //   因此这条路径上的所有 Setting 读取都必须 try/catch 兜住。
+        if (lockedBoot) {
+            Log.i(TAG, "LOCKED_BOOT_COMPLETED，提前预热进程");
+            if (isUserUnlocked(context)) launchEarly(context);
+            return;
+        }
+        if (userUnlocked) {
+            // 只在开机时间窗内响应，避免运行期切用户时把用户从别的应用里拽走
+            if (SystemClock.elapsedRealtime() > UNLOCK_WINDOW_MS) return;
+            launchEarly(context);
+            return;
+        }
         // 直播配置预加载只做一次；重试不再重复注册网络回调，否则每次都会多挂一个 Callback
         if (!retry) registerCallback();
         // 「开机自启动」开关（长辈设置）：关闭后开机不再拉起界面，停留在电视原桌面。
         // 与「退出自动续播」（Setting.isAutoResume）分工不同：那项只管拉起后是否直进上次观看。
-        if (!Setting.isBootAutostart()) return;
+        if (!isBootAutostartEnabled()) return;
         int step = retry ? intent.getIntExtra(EXTRA_STEP, 0) : 0;
         // 已经有可见界面就不再抢，避免用户刚进软件又被重复拉起
         if (hasVisibleUi()) Log.i(TAG, "界面已在前台，跳过 step=" + step);
         else launchHome(context, step);
         scheduleNext(context, step);
+    }
+
+    /**
+     * 开机早期的拉起（LOCKED_BOOT_COMPLETED / USER_UNLOCKED 两条路径共用）。
+     *
+     * <p>与 {@link #launchHome} 的区别：这里不做重试排程、不做网络回调注册，
+     * 只判断「开关允许 + 界面不在前台」就拉一次；失败也不会影响后面的
+     * 无障碍绑定拉起与 BOOT_COMPLETED 补偿重试。</p>
+     */
+    private void launchEarly(Context context) {
+        if (!isBootAutostartEnabled()) return;
+        if (hasVisibleUi()) {
+            Log.i(TAG, "解锁拉起跳过：界面已在前台");
+            return;
+        }
+        launchHome(context, 0);
+    }
+
+    /**
+     * 读「开机自启动」开关。解锁前 SharedPreferences（凭据加密存储）不可读，
+     * 会抛 IllegalStateException —— 此时按「开」处理，保持与默认值一致。
+     */
+    private boolean isBootAutostartEnabled() {
+        try {
+            return Setting.isBootAutostart();
+        } catch (Throwable t) {
+            Log.w(TAG, "解锁前读不到开机自启动开关，按默认(开)处理", t);
+            return true;
+        }
+    }
+
+    /** 用户是否已解锁（解锁后才能安全读偏好、也才能正常显示界面）。 */
+    private boolean isUserUnlocked(Context context) {
+        try {
+            UserManager um = (UserManager) context.getSystemService(Context.USER_SERVICE);
+            return um == null || um.isUserUnlocked();
+        } catch (Throwable t) {
+            return false;
+        }
     }
 
     /**
@@ -75,7 +145,13 @@ public class BootReceiver extends BroadcastReceiver {
             // 而标记还留着，{@code HomeGuardService} 也会跟着一直不开火 ⇒ 两个兜底手段同时失效，
             // 电视会停在桌面且再也回不去本软件。清理放在这里（launchHome 每次重试都会走到，幂等）。
             // 标记的语义与置位/清零全链路见 Setting#isUserExited()。
-            Setting.putUserExited(false);
+            // ⚠️ 2026-10-30（R100）：解锁前的 LOCKED_BOOT 路径也会走到这里，此时凭据加密存储不可读，
+            //    putUserExited 会抛 IllegalStateException —— 必须单独 try，绝不能因此中断 startActivity。
+            try {
+                Setting.putUserExited(false);
+            } catch (Throwable ignore) {
+                // 解锁前读不到偏好属正常，忽略即可
+            }
             Intent i = new Intent(context, HomeActivity.class);
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
             context.startActivity(i);
