@@ -11,6 +11,18 @@
 
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
+    <!-- 桌面守护用：Android 11+ 默认有包可见性过滤，未在 queries 里声明的包查不到。
+         没有这一段，DesktopResolver 的 queryIntentActivities(MAIN+HOME) 在 Android 12/13
+         的电视与盒子上会返回空集 —— 被误判成「本应用就是默认桌面」⇒ 主页键接管静默失效。
+         这里只是「可见」，不需要任何运行时权限，也不会增加弹窗。声明在 leanback 源集里，
+         手机端不受影响。 -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.HOME" />
+        </intent>
+    </queries>
+
     <application android:banner="@mipmap/ic_banner">
 
         <!-- 这里原有 design_width_in_dp=1920 / design_height_in_dp=1080 两条 meta-data（供
@@ -33,18 +45,18 @@
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
 
-            <!-- 作为系统桌面候选（2026-10-29 新增）。
-                 目的不是「抢默认桌面」（TCL 固件只认自家桌面，设了也会被无视），
-                 而是让系统在开机「启动桌面」那一步就把本 App 当作候选进程加载 ——
-                 实测不声明时本 App 要到开机后 30 秒才被无障碍服务绑定拉起，
-                 而桌面（Launcher）在 11 秒就绪；有桌面身份才有机会提前到同一量级。
-                 不执行 set-home-activity，因此默认桌面仍是 TCL 自家桌面。 -->
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.HOME" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
+            <!-- ⛔ 这里曾有一段「作为系统桌面候选」的 intent-filter（ACTION_MAIN + CATEGORY_HOME），
+                 2026-10-29 加入、2026-10-30（R103）删除。删除理由：
+                 ① 它的预期收益（让系统在开机「启动桌面」那一步把本 App 当候选进程加载）**不成立** ——
+                    系统 startHomeActivity 只解析并启动唯一一个默认桌面，不会加载所有候选；
+                    开机提前量实际来自 LOCKED_BOOT_COMPLETED 与无障碍服务绑定。
+                 ② 代价却是实打实的：多一个 HOME 候选 ⇒ 若某台机器的默认桌面记录为空
+                    （刷机 / 恢复出厂未走完 / 原桌面被精简禁用），按主页键会弹出「选择桌面」，
+                    老人一旦选了「看电视」并勾「始终」，就变成默认桌面 —— 系统自带应用进不去、
+                    主页键与续播打架、finish 后回到自己退不出去。
+                 ③ 桌面守护与开机自启都不依赖它：守护靠无障碍事件 + resolveActivity(查别人的默认桌面)，
+                    自启靠显式 Intent(context, HomeActivity.class)。
+                 若将来要恢复，必须同时把 DesktopResolver 里「排除自己」的注释与本条一起更新。 -->
 
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
@@ -225,13 +237,15 @@
             </intent-filter>
         </service>
 
-        <!-- 开机自启（2026-10-29 新增；2026-10-30 R100 补早期路径）
+        <!-- 开机自启（2026-10-29 新增；2026-10-30 R100 补早期路径、R103 补预热入口）
              directBootAware=true 是 LOCKED_BOOT_COMPLETED 的必要条件：这条广播在用户解锁前就发，
              实测 TCL 上它比 BOOT_COMPLETED（被固件拖到开机约 80 秒）早得多。
-             三个 action 各自的作用：
+             四个 action 各自的作用：
                LOCKED_BOOT_COMPLETED —— 最早的一次机会，预热进程；已解锁则立刻拉起界面
                USER_UNLOCKED         —— 未解锁时先挂着，解锁瞬间再拉（仅开机 5 分钟内有效）
-               BOOT_COMPLETED        —— 原来的兜底路径，保留不动 -->
+               BOOT_COMPLETED        —— 原来的兜底路径，保留不动
+               BOOT_PREHEAT          —— 本应用自发信号：媒体库服务被系统绑定说明进程已被拉起，
+                                        用于厂商拦掉 BOOT_COMPLETED 的机型（仅开机 120 秒内有效） -->
         <receiver
             android:name=".receiver.BootReceiver"
             android:directBootAware="true"
@@ -248,6 +262,12 @@
 
             <intent-filter>
                 <action android:name="android.intent.action.USER_UNLOCKED" />
+            </intent-filter>
+
+            <!-- 2026-10-30（R103）：包内预热广播，由 PlaybackService#onCreate 用 setPackage 发出，
+                 外部应用无法伪造。对应常量 App#ACTION_PREHEAT，两处字符串必须一致。 -->
+            <intent-filter>
+                <action android:name="${applicationId}.action.BOOT_PREHEAT" />
             </intent-filter>
         </receiver>
 

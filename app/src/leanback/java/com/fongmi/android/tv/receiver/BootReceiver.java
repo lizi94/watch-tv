@@ -15,9 +15,22 @@ import androidx.annotation.NonNull;
 
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.api.config.LiveConfig;
-import com.fongmi.android.tv.setting.Setting;
-import com.fongmi.android.tv.ui.activity.HomeActivity;
+import com.fongmi.android.tv.utils.BootLauncher;
 
+/**
+ * 开机拉起界面（2026-10-29 新增，2026-10-30 / R103 收敛为「四入口之一」）。
+ *
+ * <p>本 Receiver 现在只负责「把某条系统事件翻译成一次拉起请求」，真正的拉起动作统一交给
+ * {@link BootLauncher}。四条件入口的分工：</p>
+ *
+ * <ul>
+ *   <li>{@code LOCKED_BOOT_COMPLETED} —— 解锁前最早的一次机会，进程先起来；已解锁则直接拉起。</li>
+ *   <li>{@code USER_UNLOCKED} —— 解锁完成，此时才能安全读偏好、正常显示界面。</li>
+ *   <li>{@code BOOT_COMPLETED} / {@code QUICKBOOT_POWERON} —— 传统兜底，部分固件会拖到很久之后。</li>
+ *   <li>{@link App#ACTION_PREHEAT} —— 本应用自己的媒体库服务被系统绑定时发出的预热信号，
+ *       用于「广播被厂商拦掉」的机型（详见 {@code PlaybackService#onCreate}）。</li>
+ * </ul>
+ */
 public class BootReceiver extends BroadcastReceiver {
 
     private static final String TAG = "BootRetry";
@@ -57,63 +70,39 @@ public class BootReceiver extends BroadcastReceiver {
         boolean retry = ACTION_RETRY.equals(action);
         boolean lockedBoot = Intent.ACTION_LOCKED_BOOT_COMPLETED.equals(action);
         boolean userUnlocked = ACTION_USER_UNLOCKED.equals(action);
-        if (!retry && !lockedBoot && !userUnlocked && !isBootAction(action)) return;
+        boolean preheat = App.ACTION_PREHEAT.equals(action);
+        if (!retry && !lockedBoot && !userUnlocked && !preheat && !isBootAction(action)) return;
         // ★2026-10-30（R100）实测：TCL 把 BOOT_COMPLETED 拖到开机约 79~81 秒才处理完，
         //   「桌面 11.5 秒就绪、本进程 28.6 秒才被无障碍绑定创建、界面 41 秒才显示」。
         //   所以补一条更早的路径：LOCKED_BOOT_COMPLETED（directBootAware，开机十几秒就发）
         //   → 若用户已解锁就立刻拉起；未解锁则等 USER_UNLOCKED 再拉。
         //   注意：解锁前读不到凭据加密存储（SharedPreferences 会抛 IllegalStateException），
-        //   因此这条路径上的所有 Setting 读取都必须 try/catch 兜住。
+        //   这条路径上的所有开关读取都已在 BootLauncher 内部 try/catch 兜住。
         if (lockedBoot) {
             Log.i(TAG, "LOCKED_BOOT_COMPLETED，提前预热进程");
-            if (isUserUnlocked(context)) launchEarly(context);
+            if (isUserUnlocked(context)) BootLauncher.forBoot(context, "LOCKED_BOOT");
             return;
         }
         if (userUnlocked) {
             // 只在开机时间窗内响应，避免运行期切用户时把用户从别的应用里拽走
             if (SystemClock.elapsedRealtime() > UNLOCK_WINDOW_MS) return;
-            launchEarly(context);
+            BootLauncher.forBoot(context, "USER_UNLOCKED");
+            return;
+        }
+        if (preheat) {
+            // 进程已被系统绑定媒体库服务拉起，趁这次机会把界面顶上（窗口比解锁窄，见 BootLauncher 注释）
+            if (SystemClock.elapsedRealtime() > BootLauncher.BOOT_WINDOW_MS) return;
+            BootLauncher.forBoot(context, "媒体库绑定");
             return;
         }
         // 直播配置预加载只做一次；重试不再重复注册网络回调，否则每次都会多挂一个 Callback
         if (!retry) registerCallback();
-        // 「开机自启动」开关（长辈设置）：关闭后开机不再拉起界面，停留在电视原桌面。
+        // 「开机自启动」开关（长辈设置）：关闭后不再拉起，也就不必再排补偿重试。
         // 与「退出自动续播」（Setting.isAutoResume）分工不同：那项只管拉起后是否直进上次观看。
-        if (!isBootAutostartEnabled()) return;
+        if (!BootLauncher.isBootAutostartEnabled()) return;
         int step = retry ? intent.getIntExtra(EXTRA_STEP, 0) : 0;
-        // 已经有可见界面就不再抢，避免用户刚进软件又被重复拉起
-        if (hasVisibleUi()) Log.i(TAG, "界面已在前台，跳过 step=" + step);
-        else launchHome(context, step);
+        BootLauncher.forBoot(context, (retry ? "补偿重试 step=" : "BOOT_COMPLETED step=") + step);
         scheduleNext(context, step);
-    }
-
-    /**
-     * 开机早期的拉起（LOCKED_BOOT_COMPLETED / USER_UNLOCKED 两条路径共用）。
-     *
-     * <p>与 {@link #launchHome} 的区别：这里不做重试排程、不做网络回调注册，
-     * 只判断「开关允许 + 界面不在前台」就拉一次；失败也不会影响后面的
-     * 无障碍绑定拉起与 BOOT_COMPLETED 补偿重试。</p>
-     */
-    private void launchEarly(Context context) {
-        if (!isBootAutostartEnabled()) return;
-        if (hasVisibleUi()) {
-            Log.i(TAG, "解锁拉起跳过：界面已在前台");
-            return;
-        }
-        launchHome(context, 0);
-    }
-
-    /**
-     * 读「开机自启动」开关。解锁前 SharedPreferences（凭据加密存储）不可读，
-     * 会抛 IllegalStateException —— 此时按「开」处理，保持与默认值一致。
-     */
-    private boolean isBootAutostartEnabled() {
-        try {
-            return Setting.isBootAutostart();
-        } catch (Throwable t) {
-            Log.w(TAG, "解锁前读不到开机自启动开关，按默认(开)处理", t);
-            return true;
-        }
     }
 
     /** 用户是否已解锁（解锁后才能安全读偏好、也才能正常显示界面）。 */
@@ -123,41 +112,6 @@ public class BootReceiver extends BroadcastReceiver {
             return um == null || um.isUserUnlocked();
         } catch (Throwable t) {
             return false;
-        }
-    }
-
-    /**
-     * 开机拉起主界面（2026-10-29 新增）：实现「开机自启动看电视」。
-     *
-     * <p><b>为什么放在这里</b>：HomeActivity 已内置「开机直达」门控
-     * （HomeActivity#checkBootDirect，受 Setting.isAutoResume() 控制、默认开启），
-     * 但它只会被「用户打开软件」触发；而本 Receiver 原本收到 BOOT_COMPLETED 后仅做直播配置预加载，
-     * 不会拉起界面。补上这一次 startActivity，开机直达链路才真正生效。</p>
-     *
-     * <p><b>Intent 必须是「普通启动」</b>：不带 data、不带 EXTRA_BACK_HOME/EXTRA_REFRESH，
-     * 否则 HomeActivity#isPlainLaunch 会拒绝 ⇒ 开机直达失效。用 NEW_TASK 是 Receiver 启 Activity
-     * 的硬性要求；CLEAR_TOP + SINGLE_TOP 避免重复实例、复用已有首页实例。</p>
-     */
-    private void launchHome(Context context, int step) {
-        try {
-            // ⛔ 2026-10-29（R99）：开机是「全新开始」，必须清掉「用户主动退出」的抑制标记。
-            // 理由：万一这次 startActivity 被固件扣住（本 Receiver 的重试机制处理的就是这种情况），
-            // 而标记还留着，{@code HomeGuardService} 也会跟着一直不开火 ⇒ 两个兜底手段同时失效，
-            // 电视会停在桌面且再也回不去本软件。清理放在这里（launchHome 每次重试都会走到，幂等）。
-            // 标记的语义与置位/清零全链路见 Setting#isUserExited()。
-            // ⚠️ 2026-10-30（R100）：解锁前的 LOCKED_BOOT 路径也会走到这里，此时凭据加密存储不可读，
-            //    putUserExited 会抛 IllegalStateException —— 必须单独 try，绝不能因此中断 startActivity。
-            try {
-                Setting.putUserExited(false);
-            } catch (Throwable ignore) {
-                // 解锁前读不到偏好属正常，忽略即可
-            }
-            Intent i = new Intent(context, HomeActivity.class);
-            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            context.startActivity(i);
-            Log.i(TAG, "startActivity 已发出 step=" + step);
-        } catch (Throwable t) {
-            Log.w(TAG, "startActivity 失败 step=" + step, t);
         }
     }
 
@@ -184,15 +138,6 @@ public class BootReceiver extends BroadcastReceiver {
             am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + RETRY_DELAYS[step], pi);
         } catch (Throwable t) {
             Log.w(TAG, "挂重试失败 step=" + step, t);
-        }
-    }
-
-    /** 本软件是否已经有可见界面（App 在 Activity 生命周期回调里维护当前前台 Activity）。 */
-    private boolean hasVisibleUi() {
-        try {
-            return App.activity() != null;
-        } catch (Throwable t) {
-            return false;
         }
     }
 

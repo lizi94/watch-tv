@@ -22,6 +22,25 @@ import com.google.gson.Gson;
 
 public class App extends Application implements Application.ActivityLifecycleCallbacks {
 
+    /**
+     * 「进程已被系统拉起」的包内预热广播（2026-10-30 新增 / R103）。
+     *
+     * <p><b>为什么需要</b>：部分厂商固件会拦掉第三方应用的 {@code BOOT_COMPLETED}，
+     * 但系统仍会主动绑定本应用的媒体库服务（{@code MediaLibraryService}，见 {@code PlaybackService}）。
+     * 绑定发生时进程已经被拉起，正好是「抢界面」的时机。{@code PlaybackService} 在 {@code onCreate}
+     * 里发出这条广播，电视端的 {@code BootReceiver} 收到后走统一的开机拉起流程。</p>
+     *
+     * <p><b>为什么是包内广播</b>：发送时用 {@code setPackage(getPackageName())} 限定本应用，
+     * 外部应用无法伪造/监听；且显式指定 package 的广播不受 Android 8+ 隐式广播限制。
+     * 手机端（{@code mobile} flavor）没有接收者，发送方已用 {@code BuildConfig.FLAVOR} 跳过。</p>
+     *
+     * <p><b>为什么用 {@code APPLICATION_ID} 拼接而不是写字面量</b>：Manifest 里声明的是
+     * {@code ${applicationId}.action.BOOT_PREHEAT}，两边必须严格一致；写死字面量在将来
+     * 改包名（例如做双版本共存加后缀）时会静默失配，且这类失配极难排查。与
+     * {@code PlaybackService#LOCAL_BIND_ACTION} 保持同一种写法。</p>
+     */
+    public static final String ACTION_PREHEAT = BuildConfig.APPLICATION_ID.concat(".action.BOOT_PREHEAT");
+
     private static volatile App instance;
 
     private final Handler handler;

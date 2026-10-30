@@ -169,7 +169,9 @@
         </androidx.appcompat.widget.LinearLayoutCompat>
 
         <!-- 6.5 开机自启动（适老化）：关闭后开机不再自动打开本软件，停在原桌面。
-             门控在 BootReceiver#launchHome（读 Setting.isBootAutostart）。 -->
+             门控在 BootLauncher#forBoot（读 Setting.isBootAutostart），
+             四条开机入口（BOOT_COMPLETED / LOCKED_BOOT / USER_UNLOCKED / 媒体库绑定）
+             统一从这里出，见 R103。 -->
         <androidx.appcompat.widget.LinearLayoutCompat
             android:id="@+id/bootAutostart"
             style="@style/Ag.ListItem"

@@ -50,6 +50,7 @@ import com.fongmi.android.tv.model.SiteViewModel;
 import com.fongmi.android.tv.player.extractor.Source;
 import com.fongmi.android.tv.server.Server;
 import com.fongmi.android.tv.service.DLNARendererService;
+import com.fongmi.android.tv.service.HomeGuardService;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.ui.adapter.BaseDiffCallback;
 import com.fongmi.android.tv.ui.base.BaseActivity;
@@ -327,6 +328,10 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
         // 首页是 singleTop：实例被复用时 getIntent() 会一直停在「创建那一刻」的那份，
         // 必须同步过来，否则后面所有基于 getIntent() 的判断（含开机直达）都在拿旧数据。
         setIntent(intent);
+        // 2026-10-30（R103）：用户主动回来了 ⇒ 恢复守护接管，清掉「连按主页键」的放行期。
+        // 这段安全的前提：放行期内守护自己不会拉起本页面，所以能走到这里的 onNewIntent
+        // 只可能来自图标 / 遥控器快捷键 / 用户主动点击。
+        HomeGuardService.onUserOpened();
         // 回退标记必须在这里消费掉：实例复用不会走 checkBootDirect，留着的标记会污染下一次真正冷启动。
         boolean backHome = consumeBackHome() || intent.getBooleanExtra(EXTRA_BACK_HOME, false);
         consumeInternalRecreate();
@@ -364,6 +369,9 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
         // ⚠ 本行是 HomeGuardService 那条 `if (Setting.isUserExited()) return;` 的唯一解药，
         //   不能挪到别处（例如 onResume）：onResume 在退出前的生命周期里也会跑，会提前解掉标记。
         Setting.putUserExited(false);
+        // 2026-10-30（R103）：同理，用户主动打开本软件也应当解除「连按主页键」的放行期 ——
+        // 冷启动走到这里就是「我要用软件」的明确信号，守护应当立刻恢复接管。
+        HomeGuardService.onUserOpened();
         mClock = Clock.create(mBinding.clock);
         mBinding.progressLayout.showProgress();
         // 电视端只申请通知权限：本端 FileChooser 走自带 FileActivity（useInternal 恒 true），
@@ -892,6 +900,15 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
         if (intent.getBooleanExtra(EXTRA_REFRESH, false)) return false;
         if (intent.getData() != null) return false;
         String action = intent.getAction();
+        // ⛔ 2026-10-30（R103）：按主页键落到本应用，不算「用户主动打开软件」。
+        // ⚠ 2026-10-30 晚：本应用已**不再声明 CATEGORY_HOME**（见 leanback/AndroidManifest.xml 里的删除说明：
+        //   多一个桌面候选会在「默认桌面为空」的机器上弹选择器，老人误选就变成默认桌面、退不出去）。
+        //   所以这一行现在是**防呆**而非主路径：正常不会再收到带 HOME 的启动。
+        //   保留它的理由只有一条 —— 万一将来重新声明 HOME，或不 root 的机器上有人用
+        //   「把 HOME 指向本应用」的方式启动，也不能把「想回首页」当成「想继续上次那部剧」。
+        // ⚠ 只排除 HOME，不动 LAUNCHER：图标 / 遥控器快捷键启动（ACTION_MAIN + CATEGORY_LAUNCHER）
+        //   仍然要续播，那是「用户主动打开软件」的正常语义。
+        if (Intent.ACTION_MAIN.equals(action) && intent.hasCategory(Intent.CATEGORY_HOME)) return false;
         return !Intent.ACTION_SEND.equals(action)
                 && !Intent.ACTION_SENDTO.equals(action)
                 && !Intent.ACTION_SEARCH.equals(action);

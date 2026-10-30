@@ -209,8 +209,9 @@ public class Setting {
     /**
      * 开机自启动（适老化）：电视开机后是否自动打开「看电视」。默认开启。
      *
-     * <p><b>门控点 = {@code BootReceiver#launchHome}</b>：关闭后开机不再拉起 HomeActivity，
-     * 停留在电视原桌面。</p>
+     * <p><b>门控点 = {@code BootLauncher#forBoot}</b>（2026-10-30 / R103 起收敛到单一出口，
+     * 调用方有 {@code BootReceiver} 的四条开机入口与 {@code RevivalListener}）：
+     * 关闭后开机不再拉起 HomeActivity，停留在电视原桌面。</p>
      *
      * <p>与 {@link #isAutoResume()} 分工：本项决定「开机要不要打开 App」，
      * {@code isAutoResume} 决定「打开后要不要直接进上次观看」，两者互不干扰。</p>
@@ -241,7 +242,8 @@ public class Setting {
      * 用户是否**主动退出**过本软件（2026-10-29 / R99 新增）。
      *
      * <p><b>为什么需要它</b>：{@link #isHomeGuard()} 打开时，{@code HomeGuardService} 只要看到
-     * TCL 桌面窗口回到前台，就立刻把本软件拉回来 —— 这会让首页「连按三次返回键退出」**永远退不出去**：
+     * 桌面窗口回到前台（2026-10-30 / R103 起按系统 HOME 名单动态识别，不再写死某个品牌），
+     * 就立刻把本软件拉回来 —— 这会让首页「连按三次返回键退出」**永远退不出去**：
      * {@code finish()} → 桌面窗口事件到达（800ms 防抖后）→ 被拉回，而且是**全新冷启动**的实例
      * （正是「反复退出几次后偶发显示还没有设置数据源」的放大器）。用户主动连按三次返回键是一次
      * 明确无误的意图，必须被尊重。</p>

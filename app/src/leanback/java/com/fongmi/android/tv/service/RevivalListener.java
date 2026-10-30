@@ -1,7 +1,10 @@
 package com.fongmi.android.tv.service;
 
+import android.os.SystemClock;
 import android.service.notification.NotificationListenerService;
 import android.util.Log;
+
+import com.fongmi.android.tv.utils.BootLauncher;
 
 /**
  * 通知监听保活（2026-10-29 新增，思路来自 aerial-tv 的 {@code RevivalListener}）。
@@ -25,5 +28,10 @@ public class RevivalListener extends NotificationListenerService {
     public void onListenerConnected() {
         super.onListenerConnected();
         Log.i(TAG, "通知监听已连接（仅用于保活，不读取通知内容）");
+        // 2026-10-30（R103）：开机阶段顺手把界面顶上 —— 这条绑定早于 BOOT_COMPLETED，
+        // 且是「系统主动来找我」，不依赖厂商自启白名单。运行期重连（切换通知使用权、
+        // 服务被清理后系统重连）只保留保活意义，绝不抢屏，否则用户正看着别的应用会被弹走。
+        if (SystemClock.elapsedRealtime() > BootLauncher.BOOT_WINDOW_MS) return;
+        BootLauncher.forBoot(this, "通知监听连接");
     }
 }

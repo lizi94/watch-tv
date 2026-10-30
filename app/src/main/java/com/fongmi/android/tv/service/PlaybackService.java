@@ -6,6 +6,7 @@ import android.net.Uri;
 import android.os.Binder;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -53,6 +54,7 @@ public class PlaybackService extends MediaLibraryService implements MediaLibrary
 
     public static final String LOCAL_BIND_ACTION = BuildConfig.APPLICATION_ID.concat(".LOCAL_BIND");
 
+    private static final String TAG = "PlaybackService";
     private static final SessionCommand COMMAND_REPEAT = new SessionCommand(ActionEvent.REPEAT, Bundle.EMPTY);
     private static final String ACTION_MEDIA_BROWSER_SERVICE = "android.media.browse.MediaBrowserService";
 
@@ -110,6 +112,32 @@ public class PlaybackService extends MediaLibraryService implements MediaLibrary
         EventBus.getDefault().register(this);
         Server.get().setService(this);
         setupNotification();
+        notifyBootPreheat();
+    }
+
+    /**
+     * 电视端：系统绑定媒体库服务 = 「本进程已被拉起」的一次免费信号（2026-10-30 新增 / R103）。
+     *
+     * <p><b>解决什么问题</b>：部分厂商固件会拦掉第三方应用的 {@code BOOT_COMPLETED}
+     * （小米 / 海信 / 创维等都有各自的自启动管理），此时本应用拿不到任何开机广播。
+     * 但 {@code MediaLibraryService} 是系统为了「媒体浏览 / 语音检索 / 首页推荐」主动来绑的，
+     * 绑定必然拉起本进程 —— 这正好是抢界面的时机。这里只负责发一条包内广播，
+     * 由电视端的 {@code BootReceiver} 继续走统一的开机拉起流程（含时间窗与开关判断）。</p>
+     *
+     * <p><b>为什么手机端不发</b>：{@code BootReceiver} 只存在于 leanback 源集，手机端没有接收者。
+     * 用 {@code BuildConfig.FLAVOR} 在编译期就排除掉，避免每次播放都发一条没人收的广播。</p>
+     *
+     * <p><b>为什么加 try/catch</b>：本方法在 {@code onCreate} 里调用，任何异常都会导致整个播放服务
+     * 起不来（用户点播放直接失败）。广播只是「锦上添花」的副产物，绝不能让它反噬主流程。</p>
+     */
+    private void notifyBootPreheat() {
+        if (!"leanback".equals(BuildConfig.FLAVOR)) return;
+        try {
+            sendBroadcast(new Intent(App.ACTION_PREHEAT).setPackage(getPackageName()));
+            Log.i(TAG, "已发出开机预热广播（媒体库服务被绑定）");
+        } catch (Throwable t) {
+            Log.w(TAG, "开机预热广播发送失败", t);
+        }
     }
 
     private PendingIntent buildDefaultIntent() {
