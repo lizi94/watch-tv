@@ -44,6 +44,7 @@
 
     <!-- Push -->
     <string name="push_clip">Push clipboard content</string>
+    <string name="push_clip_empty">Nothing in the clipboard yet</string>
     <string name="push_info">Scan QR Code or enter the URL in browser\n<xliff:g name="name">%s</xliff:g></string>
 
     <!-- Elder friendly -->
@@ -91,12 +92,11 @@
     <string name="keep_none_selected">Select favorites to delete first</string>
 
     <string name="elder_setting_entry">Elder settings</string>
+    <string name="setting_page_title">Settings</string>
     <string name="elder_setting_title">Elder settings</string>
     <string name="elder_setting_lock_entry">One-tap lock</string>
     <string name="elder_setting_full_entry">Auto fullscreen on play</string>
-    <string name="elder_setting_resume_entry">Auto-resume after exit</string>
-    <string name="elder_setting_boot_entry">Auto-start on boot</string>
-    <string name="elder_setting_home_guard_entry">Take over Home key</string>
+    <string name="elder_setting_resume_entry">Resume VOD after exit</string>
     <string name="accessibility_home_guard_label">Watch TV · Home guard</string>
     <string name="accessibility_home_guard_desc">Switches back to Watch TV when the TV\'s own launcher comes to the front after you press Home. You can turn this off in Senior Settings; when off, the Home key returns to the TV launcher as usual.</string>
     <string name="elder_setting_sound_entry">Remote key sound</string>
@@ -149,4 +149,50 @@
     <string name="error_exit_hint">Press Back to exit</string>
     <string name="site_pick_close_hint">Press Back to close</string>
     <string name="player_service_lost">Playback stopped. Press Back to return</string>
+
+    <!-- ===== R101：应用列表 + 桌面闭环 ===== -->
+    <string name="app_title">Apps</string>
+    <string name="app_system_settings">System settings</string>
+    <string name="app_chip_all">All</string>
+    <string name="app_chip_mine">My apps</string>
+    <string name="app_chip_hidden">Hidden (%1$d)</string>
+    <string name="app_switch_home">Switch back to the TV home</string>
+    <string name="app_open_settings">Open system settings</string>
+    <string name="app_switch_home_failed">Change it on this TV under Settings &gt; Apps &gt; Default apps</string>
+    <string name="app_empty">No other apps found on this TV</string>
+    <string name="app_empty_hidden">No hidden apps yet</string>
+    <string name="app_menu_pin">Put first</string>
+    <string name="app_menu_unpin">Unpin</string>
+    <string name="app_menu_hide">Hide</string>
+    <string name="app_menu_unhide">Show</string>
+    <string name="app_menu_info">App info</string>
+    <string name="app_manage_target">Managing “%1$s”</string>
+    <string name="app_pin_hint">Up to 6 apps can be put first. Unpin one first.</string>
+    <string name="app_hide_confirm">After hiding, it can only be found under Hidden. Hide “%1$s”?</string>
+    <string name="app_open_failed">This app won\'t open</string>
+    <string name="app_info_failed">This TV can\'t open the App info page</string>
+    <string name="home_live_empty">No live source yet. Press OK to add one, or ask your family for help.</string>
+    <string name="warn_single_home">No other home app on this TV. You can restore the TV\'s own home in system settings.</string>
+    <string name="warn_single_home_go">Settings</string>
+    <string name="warn_single_home_failed">Open Settings on this TV and restore the TV\'s own home</string>
+
+    <!-- ===== R101：启动与桌面体检 ===== -->
+    <string name="self_check_title">Startup &amp; home check</string>
+    <string name="self_check_subtitle">Ask your family to go through these once after setup.</string>
+    <string name="self_check_boot">Open on startup</string>
+    <string name="self_check_battery">Keep the TV from closing it</string>
+    <string name="self_check_guard">Home button brings it back</string>
+    <string name="self_check_guard_by_home">Handled by the TV home, no need to turn on</string>
+    <string name="self_check_home">Make it the TV home (not all TVs)</string>
+    <string name="self_check_fix">Check and fix</string>
+    <string name="self_check_ok">Done</string>
+    <string name="self_check_todo">Not set</string>
+    <string name="self_check_off">Off</string>
+    <string name="self_check_only_home">This TV now has only this app as home (not recommended)</string>
+    <string name="self_check_all_ok">All set</string>
+    <string name="self_check_need_manual">This TV doesn\'t support the shortcut. Please change it in system settings.</string>
+    <string name="a11y_guide">To make the Home button bring this app back, turn on this app\'s switch in the system.</string>
+    <string name="home_apps">Apps</string>
+    <string name="elder_setting_self_check_entry">Startup &amp; home check</string>
+    <string name="elder_setting_self_check_value">%1$d / %2$d ready</string>
 </resources>

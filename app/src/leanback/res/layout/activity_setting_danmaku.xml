@@ -13,125 +13,112 @@
         android:orientation="vertical"
         android:padding="@dimen/ag_space_6">
 
+        <com.google.android.material.textview.MaterialTextView
+            style="@style/Ag.Text.Title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/ag_space_4"
+            android:text="@string/setting_danmaku" />
+
         <androidx.appcompat.widget.LinearLayoutCompat
             android:id="@+id/danmakuLoad"
+            style="@style/Ag.ListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@drawable/selector_item"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
             android:orientation="horizontal">
 
             <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Body"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="@dimen/ag_space_4"
-                android:text="@string/danmaku_load"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_body" />
+                android:text="@string/danmaku_load" />
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/danmakuLoadText"
-                android:layout_width="match_parent"
+                style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:gravity="end"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_body"
                 tools:text="關" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 
         <androidx.appcompat.widget.LinearLayoutCompat
             android:id="@+id/danmakuApi"
+            style="@style/Ag.ListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/ag_space_4"
-            android:background="@drawable/selector_item"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
             android:orientation="horizontal"
             android:visibility="gone"
             tools:visibility="visible">
 
             <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Body"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="@dimen/ag_space_4"
-                android:text="@string/danmaku_api"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_body" />
+                android:text="@string/danmaku_api" />
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/danmakuApiText"
-                android:layout_width="match_parent"
+                style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:ellipsize="middle"
-                android:gravity="end"
                 android:singleLine="true"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_body"
                 tools:text="https://" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 
         <androidx.appcompat.widget.LinearLayoutCompat
             android:id="@+id/danmakuAuto"
+            style="@style/Ag.ListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/ag_space_4"
-            android:background="@drawable/selector_item"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
             android:orientation="horizontal"
             android:visibility="gone"
             tools:visibility="visible">
 
             <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Body"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="@dimen/ag_space_4"
-                android:text="@string/danmaku_auto_load"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_body" />
+                android:text="@string/danmaku_auto_load" />
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/danmakuAutoText"
-                android:layout_width="match_parent"
+                style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:gravity="end"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_body"
                 tools:text="關" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 
         <androidx.appcompat.widget.LinearLayoutCompat
             android:id="@+id/danmakuSpider"
+            style="@style/Ag.ListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/ag_space_4"
-            android:background="@drawable/selector_item"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
             android:orientation="horizontal"
             android:visibility="gone"
             tools:visibility="visible">
 
             <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Body"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="@dimen/ag_space_4"
-                android:text="@string/danmaku_spider_first"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_body" />
+                android:text="@string/danmaku_spider_first" />
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/danmakuSpiderText"
-                android:layout_width="match_parent"
+                style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:gravity="end"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_body"
                 tools:text="關" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>

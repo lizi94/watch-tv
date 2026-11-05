@@ -13,151 +13,133 @@
         android:orientation="vertical"
         android:padding="@dimen/ag_space_6">
 
+        <com.google.android.material.textview.MaterialTextView
+            style="@style/Ag.Text.Title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/ag_space_4"
+            android:text="@string/player_preload_setting" />
+
         <androidx.appcompat.widget.LinearLayoutCompat
             android:id="@+id/preload"
+            style="@style/Ag.ListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@drawable/selector_item"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
             android:orientation="horizontal">
 
             <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Body"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="@dimen/ag_space_4"
-                android:text="@string/player_preload"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_body" />
+                android:text="@string/player_preload" />
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/preloadText"
+                style="@style/Ag.Text.Value"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:gravity="end"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_body"
                 tools:text="Off" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 
         <androidx.appcompat.widget.LinearLayoutCompat
             android:id="@+id/preloadNext"
+            style="@style/Ag.ListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/ag_space_4"
-            android:background="@drawable/selector_item"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
             android:orientation="horizontal">
 
             <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Body"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="@dimen/ag_space_4"
-                android:text="@string/player_preload_next"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_body" />
+                android:text="@string/player_preload_next" />
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/preloadNextText"
+                style="@style/Ag.Text.Value"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:gravity="end"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_body"
                 tools:text="Off" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 
         <androidx.appcompat.widget.LinearLayoutCompat
             android:id="@+id/preloadThread"
+            style="@style/Ag.ListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/ag_space_4"
-            android:background="@drawable/selector_item"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
             android:orientation="horizontal">
 
             <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Body"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="@dimen/ag_space_4"
-                android:text="@string/player_preload_threads"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_body" />
+                android:text="@string/player_preload_threads" />
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/preloadThreadText"
+                style="@style/Ag.Text.Value"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:gravity="end"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_body"
                 tools:text="1" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 
         <androidx.appcompat.widget.LinearLayoutCompat
             android:id="@+id/preloadSize"
+            style="@style/Ag.ListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/ag_space_4"
-            android:background="@drawable/selector_item"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
             android:orientation="horizontal">
 
             <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Body"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="@dimen/ag_space_4"
-                android:text="@string/player_preload_size"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_body" />
+                android:text="@string/player_preload_size" />
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/preloadSizeText"
+                style="@style/Ag.Text.Value"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:gravity="end"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_body"
                 tools:text="512 MB" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 
         <androidx.appcompat.widget.LinearLayoutCompat
             android:id="@+id/preloadTime"
+            style="@style/Ag.ListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/ag_space_4"
-            android:background="@drawable/selector_item"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
             android:orientation="horizontal">
 
             <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Body"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="@dimen/ag_space_4"
-                android:text="@string/player_preload_time"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_body" />
+                android:text="@string/player_preload_time" />
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/preloadTimeText"
+                style="@style/Ag.Text.Value"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:gravity="end"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_body"
                 tools:text="60 s" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>

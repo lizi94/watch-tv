@@ -12,25 +12,19 @@
         android:layout_height="wrap_content"
         android:layout_marginEnd="@dimen/ag_space_4"
         android:layout_weight="1"
-        android:background="@null"
+        style="@style/Ag.Field"
         android:hint="@string/live_pass"
         android:imeOptions="actionDone"
         android:inputType="textPassword"
         android:maxLength="20"
-        android:singleLine="true"
-        android:textSize="@dimen/ag_text_label" />
+        android:singleLine="true" />
 
     <com.google.android.material.textview.MaterialTextView
         android:id="@+id/positive"
+        style="@style/Ag.Button.Primary"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:background="@drawable/selector_button"
-        android:focusable="true"
-        android:focusableInTouchMode="true"
-        android:gravity="center"
+        android:layout_height="@dimen/ag_button_h"
         android:singleLine="true"
-        android:text="@string/dialog_positive"
-        android:textColor="@color/ag_text"
-        android:textSize="@dimen/ag_text_body" />
+        android:text="@string/dialog_positive" />
 
 </androidx.appcompat.widget.LinearLayoutCompat>

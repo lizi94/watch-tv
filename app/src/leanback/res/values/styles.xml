@@ -1,5 +1,20 @@
 <resources>
 
+    <!-- ================================================================
+         ⛔⛔ 铁律（2026-11-05 R108）：**布局属性（layout_width / layout_height /
+         layout_margin* / layout_weight）一律写在布局 XML 里，不要写进 style。**
+
+         原因：ViewGroup.LayoutParams 是从 AttributeSet 直接读的，
+         `obtainStyledAttributes` 那套只作用于 View 自身的属性和子类 LayoutParams 的专有项
+         （weight / gravity / singleLine 等）—— 所以写进 style 的 layout_width / layout_height
+         会**静默失效**，控件退化成 MATCH_PARENT。
+
+         代价实例：Ag.Button.* 曾在 style 里写 layout_height=72dp，一键锁定页那个按钮落在竖向容器里
+         ⇒ 高度变 MATCH_PARENT ⇒ 吃掉整块剩余空间。而 layout_weight 写在 style 里反而是生效的，
+         一失效一生效，最难排查。
+         ================================================================ -->
+
+
     <!-- 电视版老人友好浅色主题：所有界面统一使用，播放/直播画面浮层保持深色（功能性要求，非风格混搭） -->
     <style name="Theme.Base" parent="Theme.Material3.Light.NoActionBar">
         <item name="colorPrimary">@color/ag_primary</item>
@@ -52,8 +67,6 @@
 
     <!-- 播放器控制条按钮（位于视频画面上，使用浅色文字 + 大字号） -->
     <style name="Control">
-        <item name="android:layout_width">wrap_content</item>
-        <item name="android:layout_height">wrap_content</item>
         <!-- 深色控制条专用芯片：普通深灰面/聚焦主色面，白字全程高对比 -->
         <item name="android:background">@drawable/selector_chip_dark</item>
         <item name="android:focusable">true</item>
@@ -90,10 +103,12 @@
         <item name="android:textColor">@color/ag_text_sub</item>
         <item name="android:paddingStart">@dimen/ag_space_6</item>
         <item name="android:paddingEnd">@dimen/ag_space_6</item>
-        <item name="android:layout_marginBottom">@dimen/ag_space_1</item>
     </style>
 
     <!-- 通用可聚焦列表项 / 卡片 -->
+    <!-- 行高恒定 64dp：minHeight = touch_min，上下各 8dp（R105 由 12dp 下调）。
+         图标按钮 Ag.IconButton 同步降到 48dp ⇒ 带图标的行 = max(64, 48+16) = 64，
+         与纯文字行等高。上下 12dp 时带图标的行会被撑到 88dp（比邻行高 24dp）。 -->
     <style name="Ag.ListItem" parent="Ag">
         <item name="android:minHeight">@dimen/ag_touch_min</item>
         <item name="android:background">@drawable/selector_item</item>
@@ -101,20 +116,20 @@
         <item name="android:focusableInTouchMode">true</item>
         <item name="android:paddingStart">@dimen/ag_space_4</item>
         <item name="android:paddingEnd">@dimen/ag_space_4</item>
-        <item name="android:paddingTop">@dimen/ag_space_3</item>
-        <item name="android:paddingBottom">@dimen/ag_space_3</item>
+        <item name="android:paddingTop">@dimen/ag_space_2</item>
+        <item name="android:paddingBottom">@dimen/ag_space_2</item>
         <item name="android:gravity">center_vertical</item>
     </style>
 
     <!-- 圆角列表项（面板 / 弹窗内使用） -->
-    <style name="Ag.ListItem.Round">
-        <item name="android:background">@drawable/selector_item_round</item>
-    </style>
+
 
     <!-- 图标按钮（设置页行尾小图标）：48dp 最小触控 + 图标居中，与列表行视觉协调 -->
+    <!-- 图标按钮：24dp 图标 + 12dp padding = 48dp，正好等于 ag_icon_48；
+         原来 minHeight = touch_min(64) 会把宿主行撑到 88dp。 -->
     <style name="Ag.IconButton" parent="Ag">
-        <item name="android:minWidth">@dimen/ag_touch_min</item>
-        <item name="android:minHeight">@dimen/ag_touch_min</item>
+        <item name="android:minWidth">@dimen/ag_icon_48</item>
+        <item name="android:minHeight">@dimen/ag_icon_48</item>
         <item name="android:background">@drawable/selector_item</item>
         <item name="android:focusable">true</item>
         <item name="android:focusableInTouchMode">true</item>
@@ -134,7 +149,6 @@
          必须用 selector_button_primary —— 若沿用浅色 selector_button，
          白底配白字会彻底看不见（这正是「按钮像不存在」的根因之一）。 -->
     <style name="Ag.Button.Primary" parent="Ag.Button">
-        <item name="android:layout_height">@dimen/ag_button_h</item>
         <item name="android:background">@drawable/selector_button_primary</item>
         <item name="android:textColor">@color/white</item>
         <item name="android:textSize">@dimen/ag_text_body</item>
@@ -145,7 +159,6 @@
 
     <!-- 次要按钮（浅底深字，用于并列的次级操作） -->
     <style name="Ag.Button.Secondary" parent="Ag.Button">
-        <item name="android:layout_height">@dimen/ag_button_h</item>
         <item name="android:background">@drawable/selector_button</item>
         <item name="android:textColor">@color/ag_text</item>
         <item name="android:textSize">@dimen/ag_text_body</item>
@@ -155,7 +168,6 @@
 
     <!-- 危险按钮（删除/清空等不可逆操作）：淡红面红字，聚焦红实底白字 -->
     <style name="Ag.Button.Danger" parent="Ag.Button">
-        <item name="android:layout_height">@dimen/ag_button_h</item>
         <item name="android:background">@drawable/selector_button_danger</item>
         <item name="android:textColor">@color/danger_button_text</item>
         <item name="android:textSize">@dimen/ag_text_body</item>
@@ -165,57 +177,36 @@
 
     <!-- 分组卡片内的「当前取值」：靠右、单行省略、主色加粗 -->
     <style name="Ag.Text.Value" parent="Ag.Text.Primary">
-        <item name="android:layout_width">0dp</item>
         <item name="android:layout_weight">1</item>
         <item name="android:gravity">end</item>
         <item name="android:singleLine">true</item>
         <item name="android:ellipsize">middle</item>
     </style>
 
-    <!-- 分割线（统一 1dp + ag_divider） -->
-    <style name="Ag.Divider" parent="Ag">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">@dimen/ag_stroke_hairline</item>
-        <item name="android:background">@color/ag_divider</item>
+    <!-- ================================================================
+         弹窗输入框（2026-11-05 R107）
+         原来五处输入框三种做法：selector_ag_field / shape_danmaku_search_keyword /
+         background=@null（连框都没有，老人不知道这里能打字）。统一走这一条。
+         ================================================================ -->
+    <style name="Ag.Field">
+        <item name="android:background">@drawable/selector_ag_field</item>
+        <item name="android:textSize">@dimen/ag_text_body</item>
+        <item name="android:textColor">@color/ag_text</item>
+        <item name="android:textColorHint">@color/ag_text_hint</item>
     </style>
 
-    <!-- 数字小键盘按键（解锁口令 / 电视遥控器输入用）。
-         文字必须单行不省略：原方案没写 singleLine，2 个汉字的「确定」在 4 列
-         布局里宽度不够，被折行/截断，看起来就像按钮不见了。 -->
-    <!-- 键盘样式树的中间节点。AAPT2 推导隐式父样式时会来找 Ag.Keypad，
-         此处显式声明，保证 Ag.Keypad.Key / .Back / .Confirm 三级链条完整。 -->
-    <style name="Ag.Keypad" parent="Ag" />
-
-    <style name="Ag.Keypad.Key" parent="Ag.Keypad">
-        <item name="android:layout_width">0dp</item>
-        <item name="android:layout_height">@dimen/ag_button_h</item>
-        <item name="android:layout_weight">1</item>
-        <item name="android:background">@drawable/selector_button</item>
+    <!-- 胶囊 chip（2026-11-05 R107）：横向单选（播放器内核 / 筛选值等）。
+         三态背景由 selector_chip_round 提供，四态文字色由 @color/text 提供。
+         ⛔ 不在这里加 padding / minHeight —— chip 的 shape 已自带 12/8 内边距，
+            再加一层会把它撑胖，改变现有观感。 -->
+    <style name="Ag.Chip.Round" parent="Ag">
+        <item name="android:background">@drawable/selector_chip_round</item>
+        <item name="android:textColor">@color/text</item>
+        <item name="android:textSize">@dimen/ag_text_body</item>
         <item name="android:focusable">true</item>
         <item name="android:focusableInTouchMode">true</item>
         <item name="android:gravity">center</item>
-        <item name="android:singleLine">true</item>
-        <item name="android:ellipsize">none</item>
-        <item name="android:includeFontPadding">false</item>
-        <item name="android:textColor">@color/ag_text</item>
-        <item name="android:textSize">@dimen/ag_text_headline</item>
     </style>
-
-    <!-- 键盘功能键 · 退格（中性面，与数字键同族但文字用次级色） -->
-    <style name="Ag.Keypad.Key.Back" parent="Ag.Keypad.Key">
-        <item name="android:textColor">@color/ag_text_sub</item>
-        <item name="android:textSize">@dimen/ag_text_label</item>
-    </style>
-
-    <!-- 键盘功能键 · 确定（主色实底 + 白字）。
-         原方案退格与确定共用同一个浅色样式，在白色弹窗上完全看不出边界，
-         这里把确定做成主色实底 —— 老人一眼就能找到「怎么确认」。 -->
-    <style name="Ag.Keypad.Key.Confirm" parent="Ag.Keypad.Key">
-        <item name="android:background">@drawable/selector_button_primary</item>
-        <item name="android:textColor">@color/white</item>
-        <item name="android:textSize">@dimen/ag_text_label</item>
-    </style>
-
 
     <!-- 站源管理页标题（电视版）：与手机版同名同结构，颜色/字号走本端 ag_* 令牌。
          flavor 各自一份定义，SiteManageActivity 才能一份代码双端复用。 -->
@@ -224,4 +215,5 @@
         <item name="android:textColor">@color/ag_text</item>
         <item name="titleTextColor">@color/ag_text</item>
     </style>
+
 </resources>

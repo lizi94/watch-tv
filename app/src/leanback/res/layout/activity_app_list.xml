@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 应用列表页（R101）：默认桌面形态下**唯一的出口** —— 第一格固定「系统设置」，
+     保证「进了第三方桌面也回得去系统」。骨架与 KeepActivity / HistoryActivity 同构
+     （标题 + 操作行 + ProgressLayout 包 RecyclerView），尺寸与配色全部走 ag_* 令牌。
+
+     焦点顺序（自上而下，遥控器可预期）：
+       筛选 chips（全部/我的应用/已隐藏） → 管理行按钮（仅管理模式下出现） → 网格
+     ⚠ 管理行的按钮**只在管理模式出现**：平时不占高度、不进焦点链，避免老人误按。
+        这是「两步式防误触」的同一套交互（先长按进入管理模式，再选动作），与收藏页批量删除一致。 -->
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="@dimen/ag_space_6">
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/title"
+        style="@style/Ag.Text.Title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/app_title" />
+
+    <!-- 筛选 chips + 右上角桌面胶囊 -->
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/ag_space_4"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/chipAll"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/selector_home_chip"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:gravity="center"
+            android:minHeight="@dimen/ag_touch_min"
+            android:nextFocusDown="@id/recycler"
+            android:paddingStart="@dimen/ag_space_5"
+            android:paddingEnd="@dimen/ag_space_5"
+            android:text="@string/app_chip_all"
+            android:textColor="@color/selector_home_chip_text"
+            android:textSize="@dimen/ag_text_label" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/chipMine"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/ag_space_3"
+            android:background="@drawable/selector_home_chip"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:gravity="center"
+            android:minHeight="@dimen/ag_touch_min"
+            android:nextFocusDown="@id/recycler"
+            android:paddingStart="@dimen/ag_space_5"
+            android:paddingEnd="@dimen/ag_space_5"
+            android:text="@string/app_chip_mine"
+            android:textColor="@color/selector_home_chip_text"
+            android:textSize="@dimen/ag_text_label" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/chipHidden"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/ag_space_3"
+            android:background="@drawable/selector_home_chip"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:gravity="center"
+            android:minHeight="@dimen/ag_touch_min"
+            android:nextFocusDown="@id/recycler"
+            android:paddingStart="@dimen/ag_space_5"
+            android:paddingEnd="@dimen/ag_space_5"
+            android:text="@string/app_chip_hidden"
+            android:textColor="@color/selector_home_chip_text"
+            android:textSize="@dimen/ag_text_label"
+            android:visibility="gone"
+            tools:visibility="visible" />
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <!-- 右上角桌面胶囊：**只在「本应用是默认主页」时出现**。
+             常态「换回电视自带的主页」；若本机只剩我们一个 HOME 候选，文案改成「打开系统设置」
+             （那时候「换回默认主页」无处可选，见 LauncherCapability#isOnlyHome）。 -->
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/homeSwitch"
+            style="@style/Ag.Button.Secondary"
+            android:layout_height="@dimen/ag_button_h"
+            android:layout_width="wrap_content"
+            android:singleLine="true"
+            android:text="@string/app_switch_home"
+            android:visibility="gone"
+            tools:visibility="visible" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+    <!-- 管理模式操作行：长按某一格后出现，作用于「长按的那个应用」 -->
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/manageRow"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/ag_space_3"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/manageText"
+            style="@style/Ag.Text.Body.Sub"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:singleLine="true"
+            android:ellipsize="end"
+            tools:text="正在管理「电视管家」" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/pinButton"
+            style="@style/Ag.Button.Secondary"
+            android:layout_height="@dimen/ag_button_h"
+            android:layout_width="wrap_content"
+            android:layout_marginStart="@dimen/ag_space_4"
+            android:singleLine="true"
+            android:text="@string/app_menu_pin" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/hideButton"
+            style="@style/Ag.Button.Secondary"
+            android:layout_height="@dimen/ag_button_h"
+            android:layout_width="wrap_content"
+            android:layout_marginStart="@dimen/ag_space_3"
+            android:singleLine="true"
+            android:text="@string/app_menu_hide" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/infoButton"
+            style="@style/Ag.Button.Secondary"
+            android:layout_height="@dimen/ag_button_h"
+            android:layout_width="wrap_content"
+            android:layout_marginStart="@dimen/ag_space_3"
+            android:singleLine="true"
+            android:text="@string/app_menu_info" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+    <!-- 空态说明：不用 EmptyCardPresenter（那是首页内容流里的占位卡，本页没有 ListRow 骨架），
+         直接一行居中说明文字，恒在网格为空时显示。 -->
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/empty"
+        style="@style/Ag.Text.Body.Sub"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/ag_space_6"
+        android:gravity="center"
+        android:text="@string/app_empty"
+        android:visibility="gone"
+        tools:visibility="visible" />
+
+    <com.fongmi.android.tv.ui.custom.ProgressLayout
+        android:id="@+id/progressLayout"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="@dimen/ag_space_4"
+        android:layout_weight="1">
+
+        <!-- ⛔ 这里**不要再加** paddingStart/paddingEnd：外层 LinearLayoutCompat 已经有了
+             ag_space_6（24dp）内边距，网格再缩进一次会让「格宽公式预留的 24dp×2」与实际可用宽度
+             对不上，行尾会空出半格。格宽公式见 AppPresenter#onCreateViewHolder。 -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recycler"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:overScrollMode="never" />
+
+    </com.fongmi.android.tv.ui.custom.ProgressLayout>
+
+</androidx.appcompat.widget.LinearLayoutCompat>

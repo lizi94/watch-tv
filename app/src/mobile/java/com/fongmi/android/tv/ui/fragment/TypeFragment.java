@@ -124,6 +124,10 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
 
     private void setViewModel() {
         mViewModel = new ViewModelProvider(this).get(SiteViewModel.class);
+        // ⛔ 2026-11-05（R111）：与 VodFragment 同一口径 —— 注册 observe 之前先清掉
+        //   「上次请求失败留下的空壳」。否则同进程重建后 observe 会立即重放它，
+        //   分类页也画出一张「这里什么都没有」。
+        mViewModel.clearResultIfEmpty();
         mViewModel.getResult().observe(getViewLifecycleOwner(), this::setAdapter);
         mViewModel.getAction().observe(getViewLifecycleOwner(), result -> Notify.show(result.getMsg()));
     }

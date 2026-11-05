@@ -101,7 +101,7 @@
     <string name="elder_setting_title">長輩設定</string>
     <string name="elder_setting_lock_entry">一鍵鎖定</string>
     <string name="elder_setting_full_entry">隨選自動全螢幕</string>
-    <string name="elder_setting_resume_entry">退出自動續播</string>
+    <string name="elder_setting_resume_entry">點播退出自動續播</string>
     <string name="elder_setting_index_search_entry">首頁快速搜尋</string>
     <string name="elder_setting_size_entry">圖片尺寸</string>
     <string name="elder_setting_restore_entry">恢復預設設定</string>

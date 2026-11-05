@@ -58,13 +58,87 @@
                 android:textColor="@color/ag_text"
                 android:textSize="@dimen/ag_text_title" />
 
+            <!-- ⛔⛔ R101：设置入口从功能行移到标题栏（与时间并排、紧邻其左）。
+                 为什么必须显式写 nextFocusDown：VerticalGridView 会自己处理 DPAD 方向键，
+                 几何相邻在部分 ROM 上不足以把焦点交回来 —— 写死 id 就与 ROM 无关。
+                 视觉全部复用既有令牌：ag_icon_48 容器 + ag_space_2 内边距（图标实际 32dp，
+                 与右侧 32sp 的时间视觉等高）+ selector_item_round（白胶囊 / 获焦 ag_primary_bg + 6dp 环）。
+                 ⛔ 不要换成「无底图标」：全站块状组件就是白卡 + hairline 这一套，
+                    无底图标会变成全站唯一例外，而且老人容易把它当装饰。 -->
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/setting"
+                android:layout_width="@dimen/ag_icon_48"
+                android:layout_height="@dimen/ag_icon_48"
+                android:layout_marginEnd="@dimen/ag_space_4"
+                android:background="@drawable/selector_item_round"
+                android:contentDescription="@string/home_setting"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:nextFocusDown="@id/recycler"
+                android:padding="@dimen/ag_space_2"
+                android:src="@drawable/ic_home_setting"
+                app:tint="@color/ag_text" />
+
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/clock"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:fontFeatureSettings="tnum"
                 android:textColor="@color/ag_text"
                 android:textSize="@dimen/ag_text_title"
-                tools:text="09:20:00" />
+                tools:text="09:20" />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <!-- 安全阀提示条（R101）：只在「本应用已是默认主页，且本机除自己以外再没有任何 HOME 候选」
+             时显示 —— 那正是各类「第三方桌面把电视困住」事故的现场（原厂桌面被禁用 / 卸载）。
+             恒占位（GONE 时不占高度），不进 ProgressLayout，避免被注册成「内容视图」（同 bootHint 的坑）。
+
+             令牌口径：底/描边/圆角 = shape_item_normal（ag_card + ag_stroke hairline + ag_radius_m），
+             图标 = ic_widget_error + tint ag_warn_text(#A35A00)，按钮 = Ag.Button.Secondary。
+             ⛔ 不要新造 ag_warn / ag_warn_bg —— ag_warn_bg 在 2026-10-13 的死资源清理中已删除，
+                造回来等于复活死资源。 -->
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/warnBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/ag_space_6"
+            android:layout_marginEnd="@dimen/ag_space_6"
+            android:layout_marginBottom="@dimen/ag_space_2"
+            android:background="@drawable/shape_item_normal"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="@dimen/ag_space_4"
+            android:paddingTop="@dimen/ag_space_3"
+            android:paddingEnd="@dimen/ag_space_4"
+            android:paddingBottom="@dimen/ag_space_3"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <androidx.appcompat.widget.AppCompatImageView
+                android:layout_width="@dimen/ag_icon_36"
+                android:layout_height="@dimen/ag_icon_36"
+                android:layout_marginEnd="@dimen/ag_space_3"
+                android:src="@drawable/ic_widget_error"
+                app:tint="@color/ag_warn_text" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/warnText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/warn_single_home"
+                android:textColor="@color/ag_text"
+                android:textSize="@dimen/ag_text_body" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/warnGo"
+                style="@style/Ag.Button.Secondary"
+                android:layout_height="@dimen/ag_button_h"
+                android:layout_width="wrap_content"
+                android:layout_marginStart="@dimen/ag_space_4"
+                android:singleLine="true"
+                android:text="@string/warn_single_home_go" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 

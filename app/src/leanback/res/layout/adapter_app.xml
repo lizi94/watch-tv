@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 应用列表的一格（R101）：图标 + 名称，纵向居中。
+     尺寸**不在这里写死** —— 格宽/图标边长由 AppPresenter#onCreateViewHolder 按当前列数与
+     「图片尺寸」档位现算（与 KeepAdapter / VodPresenter 同口径），这里只给默认值兜底。
+     ⛔ 不要给图标再加独立的背景/圆角容器：那会出现「双层圆角」，还得上 clipToOutline。
+     ⛔ 不要用 Glide 加载应用图标：它已经是适配好的 mipmap，二次解码纯属浪费，
+        还会引入异步回填导致的错位 —— 图标在 presenter 里直接取 + LruCache。 -->
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:background="@drawable/selector_item"
+    android:focusable="true"
+    android:focusableInTouchMode="true"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="@dimen/ag_space_3">
+
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/icon"
+        android:layout_width="@dimen/ag_icon_48"
+        android:layout_height="@dimen/ag_icon_48"
+        android:scaleType="fitCenter"
+        tools:src="@mipmap/ic_launcher" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/text"
+        style="@style/Ag.Text.Body"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/ag_space_2"
+        android:ellipsize="end"
+        android:gravity="center"
+        android:maxLines="1"
+        android:singleLine="true"
+        tools:text="电视管家" />
+
+</androidx.appcompat.widget.LinearLayoutCompat>

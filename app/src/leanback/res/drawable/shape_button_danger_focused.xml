@@ -5,10 +5,16 @@
 
     <solid android:color="@color/ag_danger" />
 
-    <corners android:radius="@dimen/ag_radius_s" />
+    <corners android:radius="@dimen/ag_radius_l" />
 
     <stroke
         android:width="@dimen/ag_stroke_focus"
         android:color="@color/ag_danger_stroke" />
+
+    <padding
+        android:bottom="@dimen/ag_space_2"
+        android:left="@dimen/ag_space_3"
+        android:right="@dimen/ag_space_3"
+        android:top="@dimen/ag_space_2" />
 
 </shape>

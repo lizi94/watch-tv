@@ -92,7 +92,9 @@ public class ElderLockActivity extends BaseActivity implements LiveListener {
         mBinding.liveText.setText(liveName());
         // 按钮合一：未锁=「一键锁定」可点；已锁=同一按钮变「解锁」，点击即解
         mBinding.apply.setText(locked ? R.string.elder_lock_unlock_entry : R.string.elder_lock_apply);
-        mBinding.apply.setTextColor(getColor(locked ? R.color.ag_text_sub : R.color.ag_primary_text));
+        // ⛔ 2026-11-05（R108）：这一行原本把按钮文字改成 ag_primary_text(#0842A0) / ag_text_sub(#5A616C)，
+        //   而按钮底是 ag_primary(#0B57D0) —— 实测对比度只有 1.40:1 / 0.97:1，字基本读不出来
+        //   （其余主按钮是白字，6.46:1）。字色由 Ag.Button.Primary 提供，锁定态靠文字本身区分（一键锁定 ↔ 解锁）。
         mBinding.hint.setText(locked ? R.string.elder_lock_hint_on : R.string.elder_lock_hint_off);
     }
 

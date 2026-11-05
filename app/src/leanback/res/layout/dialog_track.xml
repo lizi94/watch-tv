@@ -19,9 +19,8 @@
             android:id="@+id/title"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            style="@style/Ag.Text.Body"
             android:layout_weight="1"
-            android:textColor="@color/ag_text"
-            android:textSize="@dimen/ag_text_label"
             tools:text="選擇字幕" />
 
         <androidx.appcompat.widget.AppCompatImageView
@@ -30,6 +29,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="@dimen/ag_space_4"
+            style="@style/Ag.IconButton"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:focusable="true"
             android:src="@drawable/ic_action_search"
@@ -42,6 +42,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="@dimen/ag_space_4"
+            style="@style/Ag.IconButton"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:focusable="true"
             android:src="@drawable/ic_action_choose"
@@ -53,6 +54,7 @@
             app:tint="@color/ag_primary"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            style="@style/Ag.IconButton"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:focusable="true"
             android:src="@drawable/ic_action_setting"

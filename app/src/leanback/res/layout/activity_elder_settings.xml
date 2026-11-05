@@ -44,6 +44,7 @@
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/lockText"
                 style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 tools:text="未锁定" />
         </androidx.appcompat.widget.LinearLayoutCompat>
@@ -54,7 +55,7 @@
             style="@style/Ag.ListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/ag_space_2"
+            android:layout_marginTop="@dimen/ag_space_4"
             android:nextFocusDown="@id/font"
             android:orientation="horizontal">
 
@@ -68,6 +69,7 @@
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/siteManageText"
                 style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 tools:text="20 / 80" />
         </androidx.appcompat.widget.LinearLayoutCompat>
@@ -78,7 +80,7 @@
             style="@style/Ag.ListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/ag_space_2"
+            android:layout_marginTop="@dimen/ag_space_4"
             android:nextFocusDown="@id/size"
             android:orientation="horizontal">
 
@@ -92,6 +94,7 @@
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/fontText"
                 style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 tools:text="标准" />
         </androidx.appcompat.widget.LinearLayoutCompat>
@@ -102,7 +105,7 @@
             style="@style/Ag.ListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/ag_space_2"
+            android:layout_marginTop="@dimen/ag_space_4"
             android:nextFocusDown="@id/full"
             android:orientation="horizontal">
 
@@ -116,6 +119,7 @@
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/sizeText"
                 style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 tools:text="中" />
         </androidx.appcompat.widget.LinearLayoutCompat>
@@ -126,7 +130,7 @@
             style="@style/Ag.ListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/ag_space_2"
+            android:layout_marginTop="@dimen/ag_space_4"
             android:nextFocusDown="@id/resume"
             android:orientation="horizontal">
 
@@ -140,6 +144,7 @@
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/fullText"
                 style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 tools:text="开启" />
         </androidx.appcompat.widget.LinearLayoutCompat>
@@ -150,8 +155,8 @@
             style="@style/Ag.ListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/ag_space_2"
-            android:nextFocusDown="@id/bootAutostart"
+            android:layout_marginTop="@dimen/ag_space_4"
+            android:nextFocusDown="@id/selfCheck"
             android:orientation="horizontal">
 
             <com.google.android.material.textview.MaterialTextView
@@ -164,46 +169,20 @@
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/resumeText"
                 style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 tools:text="开启" />
         </androidx.appcompat.widget.LinearLayoutCompat>
 
-        <!-- 6.5 开机自启动（适老化）：关闭后开机不再自动打开本软件，停在原桌面。
-             门控在 BootLauncher#forBoot（读 Setting.isBootAutostart），
-             四条开机入口（BOOT_COMPLETED / LOCKED_BOOT / USER_UNLOCKED / 媒体库绑定）
-             统一从这里出，见 R103。 -->
+        <!-- 6.5 启动与桌面体检（R101）：四行状态 + 「一键检查并修复」，
+             把「开机自启 / 后台不被清理 / 按主页键回到看电视 / 设为电视主页」四件事收在一页，
+             子女帮老人装机时按顺序点一遍即可。 -->
         <androidx.appcompat.widget.LinearLayoutCompat
-            android:id="@+id/bootAutostart"
+            android:id="@+id/selfCheck"
             style="@style/Ag.ListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/ag_space_2"
-            android:nextFocusDown="@id/homeGuard"
-            android:orientation="horizontal">
-
-            <com.google.android.material.textview.MaterialTextView
-                style="@style/Ag.Text.Body"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="@dimen/ag_space_4"
-                android:text="@string/elder_setting_boot_entry" />
-
-            <com.google.android.material.textview.MaterialTextView
-                android:id="@+id/bootAutostartText"
-                style="@style/Ag.Text.Value"
-                android:layout_height="wrap_content"
-                tools:text="开启" />
-        </androidx.appcompat.widget.LinearLayoutCompat>
-
-        <!-- 6.6 接管 Home 键（2026-10-29）：按主页键回到电视桌面时自动切回本软件。
-             实现在 HomeGuardService（无障碍服务），门控读 Setting.isHomeGuard()。
-             需要用户在系统无障碍设置里开启本服务才生效，仅靠此处开关不够。 -->
-        <androidx.appcompat.widget.LinearLayoutCompat
-            android:id="@+id/homeGuard"
-            style="@style/Ag.ListItem"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/ag_space_2"
+            android:layout_marginTop="@dimen/ag_space_4"
             android:nextFocusDown="@id/indexSearch"
             android:orientation="horizontal">
 
@@ -212,13 +191,14 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="@dimen/ag_space_4"
-                android:text="@string/elder_setting_home_guard_entry" />
+                android:text="@string/elder_setting_self_check_entry" />
 
             <com.google.android.material.textview.MaterialTextView
-                android:id="@+id/homeGuardText"
+                android:id="@+id/selfCheckText"
                 style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                tools:text="开启" />
+                tools:text="4 项" />
         </androidx.appcompat.widget.LinearLayoutCompat>
 
         <!-- 7. 首页快速搜索 -->
@@ -227,7 +207,7 @@
             style="@style/Ag.ListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/ag_space_2"
+            android:layout_marginTop="@dimen/ag_space_4"
             android:nextFocusDown="@id/sound"
             android:orientation="horizontal">
 
@@ -241,6 +221,7 @@
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/indexSearchText"
                 style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 tools:text="关闭" />
         </androidx.appcompat.widget.LinearLayoutCompat>
@@ -251,7 +232,7 @@
             style="@style/Ag.ListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/ag_space_2"
+            android:layout_marginTop="@dimen/ag_space_4"
             android:nextFocusDown="@id/restore"
             android:orientation="horizontal">
 
@@ -265,6 +246,7 @@
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/soundText"
                 style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 tools:text="开启" />
         </androidx.appcompat.widget.LinearLayoutCompat>

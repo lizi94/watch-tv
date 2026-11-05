@@ -56,9 +56,8 @@
                     android:focusable="true"
                     android:lineSpacingExtra="@dimen/ag_space_1"
                     android:maxLines="5"
+                    style="@style/Ag.Text.Body"
                     android:nextFocusDown="@id/text"
-                    android:textColor="@color/ag_text"
-                    android:textSize="@dimen/ag_text_body"
                     tools:text="@string/push_info" />
 
                 <com.google.android.material.textview.MaterialTextView
@@ -75,7 +74,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/ag_space_4"
-                android:background="@drawable/selector_ag_field"
+                style="@style/Ag.Field"
                 android:gravity="center_vertical"
                 android:hint="@string/dialog_config_hint"
                 android:imeOptions="actionDone"
@@ -84,8 +83,7 @@
                 android:minHeight="@dimen/ag_touch_min"
                 android:nextFocusDown="@id/positive"
                 android:nextFocusUp="@id/info"
-                android:singleLine="true"
-                android:textSize="@dimen/ag_text_body" />
+                android:singleLine="true" />
         </androidx.appcompat.widget.LinearLayoutCompat>
     </androidx.core.widget.NestedScrollView>
 
@@ -100,6 +98,7 @@
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/choose"
             style="@style/Ag.Button.Secondary"
+            android:layout_height="@dimen/ag_button_h"
             android:layout_width="0dp"
             android:layout_marginEnd="@dimen/ag_space_4"
             android:layout_weight="1"
@@ -110,6 +109,7 @@
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/positive"
             style="@style/Ag.Button.Primary"
+            android:layout_height="@dimen/ag_button_h"
             android:layout_width="0dp"
             android:layout_marginEnd="@dimen/ag_space_4"
             android:layout_weight="1"
@@ -121,6 +121,7 @@
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/negative"
             style="@style/Ag.Button.Secondary"
+            android:layout_height="@dimen/ag_button_h"
             android:layout_width="0dp"
             android:layout_weight="1"
             android:nextFocusLeft="@id/positive"

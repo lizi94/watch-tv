@@ -52,6 +52,22 @@ public class SiteViewModel extends ViewModel {
         return this;
     }
 
+    /**
+     * 清掉「上一次失败留下的空壳结果」。
+     *
+     * <p>2026-11-05（R110）：{@link #execute} 在请求失败 / 超时时会 {@code postValue(Result.empty())}，
+     * 于是空结果会**沉淀**在 LiveData 里。同进程重建（切主题色 / 改图片尺寸）时 ViewModel 被保留，
+     * 新页面的 observe 一注册就会立即重放这个空壳，把「暂时没取到」画成「这里没有内容」——
+     * 首页推荐的空态卡就是这么来的（分类页用的是 Fragment 作用域的另一个实例，所以不空）。</p>
+     *
+     * <p>必须在 observe **注册之前**调用：那时还没有观察者，{@code setValue(null)} 不会触发任何回调。
+     * 之后由调用方按「没有数据」走正常请求流程（转圈 → 内容），而不是先闪一下空态。</p>
+     */
+    public void clearResultIfEmpty() {
+        Result value = result.getValue();
+        if (value != null && value.getList().isEmpty()) result.setValue(null);
+    }
+
     public void homeContent() {
         execute(TaskType.RESULT, result, () -> SiteApi.homeContent(VodConfig.get().getHome()));
     }
@@ -78,9 +94,15 @@ public class SiteViewModel extends ViewModel {
 
     private void execute(TaskType type, MutableLiveData<Result> liveData, Callable<Result> callable) {
         tasks.execute(type, Constant.TIMEOUT_VOD, callable, liveData::postValue, error -> {
-            if (error instanceof ExtractException) liveData.postValue(Result.error(error.getMessage()));
-            else liveData.postValue(Result.empty());
-            error.printStackTrace();
+            // ⛔ 2026-11-05（R111）：失败必须**带原因**，不能 postValue(Result.empty())。
+            //   ① empty 与「源侧确实没内容」在 UI 上无法区分 ⇒ 首页会把「没取到」显示成
+            //      「这里什么都没有」，把老人劝退（实际再点一次就好了）。
+            //   ② 这个空壳会**沉淀**在 LiveData 里，同进程重建（切主题色 / 改字号）时
+            //      被新页面的 observe 立即重放 ⇒ 重建后直接看到空态。
+            //   改成 Result.error(msg)：列表仍为空，但 getMsg() 非空，UI 据此走「暂时连接不上 + 重试」。
+            String msg = error == null ? "" : (error.getMessage() == null ? error.getClass().getSimpleName() : error.getMessage());
+            liveData.postValue(Result.error(msg));
+            if (error != null) error.printStackTrace();
         });
     }
 

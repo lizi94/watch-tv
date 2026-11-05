@@ -101,7 +101,7 @@
     <string name="elder_setting_title">Elder settings</string>
     <string name="elder_setting_lock_entry">One-tap lock</string>
     <string name="elder_setting_full_entry">Auto fullscreen on play</string>
-    <string name="elder_setting_resume_entry">Auto-resume after exit</string>
+    <string name="elder_setting_resume_entry">Resume VOD after exit</string>
     <string name="elder_setting_index_search_entry">Quick search on home</string>
     <string name="elder_setting_size_entry">Image size</string>
     <string name="elder_setting_restore_entry">Restore default settings</string>

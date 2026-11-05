@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 启动与桌面体检（R101）：老人 / 子女能看懂的一页。
+     四行 = 开机自动打开 / 后台不被清理 / 按主页键回到看电视 / 设为电视主页，
+     每行「标题 + 当前状态」，点一下就去做那一件事；顶部一颗「一键检查并修复」按顺序引导。
+
+     文案零技术词：不出现「无障碍服务」「电池优化」「默认启动器」——那些词只出现在跳过去的
+     系统页面上（那是系统自己的字）。尺寸与配色全部走 ag_* 令牌，行样式走 Ag.ListItem。 -->
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="@dimen/ag_space_6">
+
+        <com.google.android.material.textview.MaterialTextView
+            style="@style/Ag.Text.Title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/self_check_title" />
+
+        <com.google.android.material.textview.MaterialTextView
+            style="@style/Ag.Text.Caption"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ag_space_4"
+            android:text="@string/self_check_subtitle" />
+
+        <!-- 一键检查并修复：按「设为电视主页 → 按主页键回到看电视 → 后台不被清理」的顺序，
+             每步只做一件事，做完回本页刷新。已是默认主页时第一步直接跳过（那时无障碍那步也没意义）。 -->
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/fix"
+            style="@style/Ag.Button.Primary"
+            android:layout_height="@dimen/ag_button_h"
+            android:layout_width="match_parent"
+            android:layout_marginTop="@dimen/ag_space_5"
+            android:nextFocusDown="@id/boot"
+            android:text="@string/self_check_fix" />
+
+        <!-- 1. 开机自动打开 -->
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/boot"
+            style="@style/Ag.ListItem"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ag_space_4"
+            android:nextFocusDown="@id/battery"
+            android:orientation="horizontal">
+
+            <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Body"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/ag_space_4"
+                android:text="@string/self_check_boot" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/bootText"
+                style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                tools:text="开启" />
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <!-- 2. 后台不被系统清理 -->
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/battery"
+            style="@style/Ag.ListItem"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ag_space_4"
+            android:nextFocusDown="@id/guard"
+            android:orientation="horizontal">
+
+            <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Body"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/ag_space_4"
+                android:text="@string/self_check_battery" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/batteryText"
+                style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                tools:text="已允许" />
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <!-- 3. 按主页键回到看电视（默认桌面形态下这一行是空转的 —— 必须明说，否则又是一个骗人的开关） -->
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/guard"
+            style="@style/Ag.ListItem"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ag_space_4"
+            android:nextFocusDown="@id/home"
+            android:orientation="horizontal">
+
+            <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Body"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/ag_space_4"
+                android:text="@string/self_check_guard" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/guardText"
+                style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                tools:text="已开启" />
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <!-- 4. 设为电视主页 -->
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/home"
+            style="@style/Ag.ListItem"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ag_space_4"
+            android:orientation="horizontal">
+
+            <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Body"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/ag_space_4"
+                android:text="@string/self_check_home" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/homeText"
+                style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                tools:text="已设置" />
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <!-- 安全阀说明：本机只剩我们一个桌面候选时，这行才出现 -->
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/warn"
+            style="@style/Ag.Text.Danger"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ag_space_4"
+            android:text="@string/self_check_only_home"
+            android:visibility="gone"
+            tools:visibility="visible" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+</androidx.core.widget.NestedScrollView>

@@ -13,6 +13,7 @@ import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.databinding.ActivityPushBinding;
 import com.fongmi.android.tv.server.Server;
 import com.fongmi.android.tv.ui.base.BaseActivity;
+import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.QRCode;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.Sniffer;
@@ -55,7 +56,13 @@ public class PushActivity extends BaseActivity {
 
     private void onClip(View view) {
         CharSequence text = Util.getClipText();
-        if (!TextUtils.isEmpty(text)) VideoActivity.start(this, Sniffer.getUrl(text.toString()));
+        // 2026-11-05（R107）：原来剪贴板为空时静默 return —— 遥控器按下毫无反应，
+        // 老人只会以为「这个按钮坏了」。空的时候必须给一句提示。
+        if (TextUtils.isEmpty(text)) {
+            Notify.show(R.string.push_clip_empty);
+            return;
+        }
+        VideoActivity.start(this, Sniffer.getUrl(text.toString()));
     }
 
     private void onCode(View view) {

@@ -306,4 +306,37 @@ public class Setting {
             default -> 1.2f;
         };
     }
+
+    /**
+     * 应用列表的<b>置顶</b>包名（R101），逗号分隔、**顺序即展示顺序**。
+     *
+     * <p><b>为什么存字符串而不是 Set</b>：置顶是有序的（「放到最前」的第一个真正排第一），
+     * 而 {@code HashSet} 会把顺序吃掉 —— 老人点了「放到最前」却发现它排到了第二个，
+     * 这属于「操作了但看起来没生效」。读写都在主线程、条目上限 6 个，字符串开销可忽略。</p>
+     *
+     * <p>上限 6 个由调用方（应用列表页）保证：一排正好一格不多，超出时先把最早置顶的挤掉
+     * 并提示一次，避免老人反复按却看不到变化。</p>
+     */
+    public static String getPinnedApps() {
+        return Prefers.getString("app_pinned", "");
+    }
+
+    public static void putPinnedApps(String csv) {
+        Prefers.put("app_pinned", csv == null ? "" : csv);
+    }
+
+    /**
+     * 应用列表里被<b>隐藏</b>的包名（R101），逗号分隔、无顺序语义。
+     *
+     * <p>⚠ 只影响「应用列表」里可不可见，<b>不禁用、不卸载、不进系统桌面</b>。
+     * 「已隐藏」筛选页是唯一的恢复入口 —— 这样它天然顶掉「家长锁」的一半用途
+     *（把游戏 / 购物类藏起来），又不会造成「应用不见了」的恐慌。</p>
+     */
+    public static String getHiddenApps() {
+        return Prefers.getString("app_hidden", "");
+    }
+
+    public static void putHiddenApps(String csv) {
+        Prefers.put("app_hidden", csv == null ? "" : csv);
+    }
 }

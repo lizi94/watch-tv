@@ -11,15 +11,36 @@
 
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
-    <!-- 桌面守护用：Android 11+ 默认有包可见性过滤，未在 queries 里声明的包查不到。
-         没有这一段，DesktopResolver 的 queryIntentActivities(MAIN+HOME) 在 Android 12/13
-         的电视与盒子上会返回空集 —— 被误判成「本应用就是默认桌面」⇒ 主页键接管静默失效。
+    <!-- 电池优化白名单（R101）：体检页「让电视别把看电视关掉」用它一口气跳到系统的
+         「是否允许后台运行」确认框（ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS），
+         比让老人自己去「设置 → 电池 → 白名单」里翻要省事得多。这是普通权限（无弹窗、
+         无隐私面），真正的授权动作由系统弹框完成，用户随时可拒。
+         ⚠ 若某台电视的固件裁掉了这个确认页，跳转会失败 —— 体检页里已有兜底（见 SelfCheckActivity）。 -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
+    <!-- Android 11+ 默认有包可见性过滤，未在 queries 里声明的包查不到。
+         ① MAIN+HOME：桌面守护用。没有它，DesktopResolver 的 queryIntentActivities(MAIN+HOME)
+            在 Android 12/13 的电视与盒子上会返回空集 —— 被误判成「本应用就是默认桌面」
+            ⇒ 主页键接管静默失效。
+         ② MAIN+LAUNCHER / MAIN+LEANBACK_LAUNCHER（R101 应用列表）：缺了这两条，
+            AppQuery 在 Android 11+ 上会直接返回空列表（应用页一片空白）。
+            电视应用多数只声明 LEANBACK_LAUNCHER，手机应用只声明 LAUNCHER，两者都要。
          这里只是「可见」，不需要任何运行时权限，也不会增加弹窗。声明在 leanback 源集里，
-         手机端不受影响。 -->
+         手机端不受影响。
+         ⛔ 不要图省事改成 QUERY_ALL_PACKAGES：那是给「枚举没有启动入口的应用」用的，
+            而这类应用本来也点不开；多一个敏感权限只多一处 OEM 差异。 -->
     <queries>
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.HOME" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
         </intent>
     </queries>
 
@@ -34,7 +55,7 @@
             android:name=".ui.activity.HomeActivity"
             android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation"
             android:exported="true"
-            android:launchMode="singleTop"
+            android:launchMode="singleTask"
             android:screenOrientation="sensorLandscape"
             android:theme="@style/Theme.App">
 
@@ -45,18 +66,32 @@
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
 
-            <!-- ⛔ 这里曾有一段「作为系统桌面候选」的 intent-filter（ACTION_MAIN + CATEGORY_HOME），
-                 2026-10-29 加入、2026-10-30（R103）删除。删除理由：
-                 ① 它的预期收益（让系统在开机「启动桌面」那一步把本 App 当候选进程加载）**不成立** ——
-                    系统 startHomeActivity 只解析并启动唯一一个默认桌面，不会加载所有候选；
-                    开机提前量实际来自 LOCKED_BOOT_COMPLETED 与无障碍服务绑定。
-                 ② 代价却是实打实的：多一个 HOME 候选 ⇒ 若某台机器的默认桌面记录为空
-                    （刷机 / 恢复出厂未走完 / 原桌面被精简禁用），按主页键会弹出「选择桌面」，
-                    老人一旦选了「看电视」并勾「始终」，就变成默认桌面 —— 系统自带应用进不去、
-                    主页键与续播打架、finish 后回到自己退不出去。
-                 ③ 桌面守护与开机自启都不依赖它：守护靠无障碍事件 + resolveActivity(查别人的默认桌面)，
-                    自启靠显式 Intent(context, HomeActivity.class)。
-                 若将来要恢复，必须同时把 DesktopResolver 里「排除自己」的注释与本条一起更新。 -->
+            <!-- ⛔⛔ 2026-10-29 加入、2026-10-30（R103）删除、**2026-11-04（R101）恢复**。
+                 恢复的理由（与 R103 删除的理由逐条对照，缺一不可）：
+                   R103 说「多一个 HOME 候选 ⇒ 默认桌面为空时会弹「选择桌面」，老人误选后出不去」。
+                   R101 用「应用列表 + 标题栏设置 + 状态表出口」解掉了「出不去」那一半：
+                     · 首页按返回键在默认桌面形态下**无动作**（不再 finish 后又被系统拉回来）；
+                     · 应用列表第一格固定「系统设置」，列表右上胶囊给出「换回电视自带的主页」；
+                     · 体检页 + 安全阀（本机只剩自己一个 HOME 候选时首页常驻告警条）。
+                   而 R103 保留的另一半理由「提前加载」确实不成立 —— 所以这一条**只买个桌面身份**，
+                   不指望它带来任何启动加速。
+                 ⚠ 若将来要再删掉它，上述三个出口必须一起评估，不能只删声明。
+                 ⚠ `launchMode` 必须同时是 singleTask（见下面 HomeActivity 上的注释）。 -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
+            <!-- ⛔ `launchMode` 是 **singleTask**（R101 从 singleTop 改来），这条与上面的 HOME
+                 intent-filter 是一对，不能只改一个：
+                 singleTop 下，用户在「应用列表」或「播放页」（同一 task 里压在首页之上）按主页键时，
+                 HOME 意图会在栈顶**再建一个首页实例** ⇒ 看着对了，但按返回又回到应用列表，
+                 而且实例会越叠越多（内存与生命周期都乱）。
+                 singleTask 才是桌面的正确语义：HOME 意图投递给已有实例（走 onNewIntent）并清掉它上面的页面。
+                 迁移面已核对：BootLauncher 用 NEW_TASK|CLEAR_TOP|SINGLE_TOP、BaseActivity#goHome() 用
+                 CLEAR_TOP|SINGLE_TOP —— 两种标志在 singleTask 下语义不变或更严格，不会退化。 -->
 
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
@@ -135,6 +170,20 @@
 
         <activity
             android:name=".ui.activity.KeepActivity"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation"
+            android:screenOrientation="sensorLandscape" />
+
+        <!-- 应用列表（R101）：首页功能行「应用」的落点，也是默认桌面形态下唯一的出口。
+             第一格固定「系统设置」，保证「进了第三方桌面也能回到系统」。
+             它是首页之上的一个普通页面，返回键回首页（覆写 backToHome() 返回 false）。 -->
+        <activity
+            android:name=".ui.activity.AppListActivity"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation"
+            android:screenOrientation="sensorLandscape" />
+
+        <!-- 启动与桌面体检（R101）：长辈设置里的一行入口，四行状态 + 「一键检查并修复」。 -->
+        <activity
+            android:name=".ui.activity.SelfCheckActivity"
             android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation"
             android:screenOrientation="sensorLandscape" />
 

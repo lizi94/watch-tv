@@ -7,6 +7,7 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.leanback.widget.Presenter;
 
+import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.bean.Func;
 import com.fongmi.android.tv.databinding.AdapterFuncBinding;
 import com.fongmi.android.tv.utils.ResUtil;
@@ -53,6 +54,12 @@ public class FuncPresenter extends Presenter {
         ViewHolder holder = (ViewHolder) viewHolder;
         holder.binding.text.setText(item.getText());
         holder.binding.icon.setImageResource(item.getDrawable());
+        // 功能行按「上」必须确定性地落到标题栏的设置按钮（R101）。
+        // ⛔ 不能靠几何相邻：VerticalGridView 自己会处理 DPAD_UP 的滚动与焦点，
+        //    只在「恰好几何相邻」时才把焦点交出去，而各 ROM 的 focusScrollStrategy 行为不一致 ——
+        //    这正是「同一个 APK 在 A 电视能上到标题栏、在 B 电视上不去」的典型来源。写死 id 与之无关。
+        // ⚠ leanback 的 Presenter.ViewHolder 暴露的视图字段是 view（不是 itemView）。
+        holder.view.setNextFocusUpId(R.id.setting);
         setOnClickListener(holder, view -> listener.onItemClick(item));
     }
 

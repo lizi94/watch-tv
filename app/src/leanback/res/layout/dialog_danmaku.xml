@@ -20,9 +20,8 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="@string/danmaku_select"
-            android:textColor="@color/ag_text"
-            android:textSize="@dimen/ag_text_label" />
+            style="@style/Ag.Text.Body"
+            android:text="@string/danmaku_select" />
 
         <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/search"
@@ -30,6 +29,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="@dimen/ag_space_4"
+            style="@style/Ag.IconButton"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:focusable="true"
             android:src="@drawable/ic_action_search"
@@ -40,6 +40,7 @@
             app:tint="@color/ag_primary"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            style="@style/Ag.IconButton"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:focusable="true"
             android:src="@drawable/ic_action_choose" />
@@ -50,6 +51,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="@dimen/ag_space_4"
+            style="@style/Ag.IconButton"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:focusable="true"
             android:src="@drawable/ic_danmaku_setting" />

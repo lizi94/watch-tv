@@ -43,6 +43,7 @@
 
     <!-- Push -->
     <string name="push_clip">推送剪貼簿內容</string>
+    <string name="push_clip_empty">剪貼簿裡還沒有內容</string>
     <string name="push_info">使用手機掃描 QR Code，或於瀏覽器輸入網址\n<xliff:g name="name">%s</xliff:g></string>
 
     <!-- 老人友善 -->
@@ -90,12 +91,11 @@
     <string name="keep_none_selected">請先點選要刪除的收藏</string>
 
     <string name="elder_setting_entry">長輩設定</string>
+    <string name="setting_page_title">設定</string>
     <string name="elder_setting_title">長輩設定</string>
     <string name="elder_setting_lock_entry">一鍵鎖定</string>
     <string name="elder_setting_full_entry">隨選自動全螢幕</string>
-    <string name="elder_setting_resume_entry">退出自動續播</string>
-    <string name="elder_setting_boot_entry">開機自啟動</string>
-    <string name="elder_setting_home_guard_entry">接管 Home 鍵</string>
+    <string name="elder_setting_resume_entry">點播退出自動續播</string>
     <string name="accessibility_home_guard_label">看電視 · 桌面守護</string>
     <string name="accessibility_home_guard_desc">按主頁鍵回到電視桌面時，自動切回「看電視」。在長輩設定裡可以關閉；關閉後主頁鍵正常回到電視桌面。</string>
     <string name="elder_setting_sound_entry">按鍵音</string>
@@ -148,4 +148,50 @@
     <string name="error_exit_hint">按「返回」鍵退出</string>
     <string name="site_pick_close_hint">按「返回」鍵關閉</string>
     <string name="player_service_lost">播放已停止，按「返回」鍵退出</string>
+
+    <!-- ===== R101：應用列表 + 桌面閉環 ===== -->
+    <string name="app_title">應用</string>
+    <string name="app_system_settings">系統設定</string>
+    <string name="app_chip_all">全部</string>
+    <string name="app_chip_mine">我的應用</string>
+    <string name="app_chip_hidden">已隱藏（%1$d）</string>
+    <string name="app_switch_home">換回電視自帶的主頁</string>
+    <string name="app_open_settings">開啟系統設定</string>
+    <string name="app_switch_home_failed">這台電視要自己到「設定 → 應用 → 預設應用」裡改</string>
+    <string name="app_empty">這台電視上沒找到別的應用</string>
+    <string name="app_empty_hidden">這裡還沒有隱藏的應用</string>
+    <string name="app_menu_pin">放到最前</string>
+    <string name="app_menu_unpin">取消置頂</string>
+    <string name="app_menu_hide">隱藏起來</string>
+    <string name="app_menu_unhide">顯示出來</string>
+    <string name="app_menu_info">應用資訊</string>
+    <string name="app_manage_target">正在管理「%1$s」</string>
+    <string name="app_pin_hint">最多只能把 6 個應用放到最前，先取消一個吧。</string>
+    <string name="app_hide_confirm">隱藏後要按「已隱藏」才找得回來，確定隱藏「%1$s」嗎？</string>
+    <string name="app_open_failed">這個應用打不開</string>
+    <string name="app_info_failed">這台電視打不開「應用資訊」頁</string>
+    <string name="home_live_empty">還沒有新增直播源。點「確定」去新增，也可以讓家裡人幫忙設定。</string>
+    <string name="warn_single_home">本機沒有其它主頁，可以在系統設定裡恢復電視自帶的桌面</string>
+    <string name="warn_single_home_go">去設定</string>
+    <string name="warn_single_home_failed">請到系統設定裡恢復電視自帶的桌面</string>
+
+    <!-- ===== R101：啟動與桌面健檢 ===== -->
+    <string name="self_check_title">啟動與桌面健檢</string>
+    <string name="self_check_subtitle">建議家裡人裝好後按順序點一遍。</string>
+    <string name="self_check_boot">開機就開啟看電視</string>
+    <string name="self_check_battery">讓電視別把看電視關掉</string>
+    <string name="self_check_guard">按主頁鍵回到看電視</string>
+    <string name="self_check_guard_by_home">已由電視主頁接管，不用開</string>
+    <string name="self_check_home">把看電視設為電視主頁（部分電視不支援）</string>
+    <string name="self_check_fix">一鍵檢查並修復</string>
+    <string name="self_check_ok">已設定</string>
+    <string name="self_check_todo">需要設定</string>
+    <string name="self_check_off">已關閉</string>
+    <string name="self_check_only_home">本機只有看電視一個桌面（不建議）</string>
+    <string name="self_check_all_ok">都設定好了</string>
+    <string name="self_check_need_manual">這台電視不支援直接跳轉，請到系統設定裡改</string>
+    <string name="a11y_guide">要讓「按主頁鍵回到看電視」生效，需要在系統裡開啟看電視的開關。</string>
+    <string name="home_apps">應用</string>
+    <string name="elder_setting_self_check_entry">啟動與桌面健檢</string>
+    <string name="elder_setting_self_check_value">%1$d / %2$d 已就緒</string>
 </resources>

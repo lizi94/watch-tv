@@ -8,11 +8,10 @@
 
     <com.google.android.material.textview.MaterialTextView
         android:id="@+id/message"
+        style="@style/Ag.Text.Body"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:lineSpacingExtra="8dp"
-        android:textColor="@color/ag_text"
-        android:textSize="@dimen/ag_text_body"
+        android:lineSpacingExtra="@dimen/ag_space_2"
         tools:text="确定要删除这条收藏吗？" />
 
     <androidx.appcompat.widget.LinearLayoutCompat
@@ -23,32 +22,22 @@
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/cancel"
-            android:layout_width="0dp"
+            style="@style/Ag.Button.Secondary"
             android:layout_height="@dimen/ag_button_h"
+            android:layout_width="0dp"
             android:layout_marginEnd="@dimen/ag_space_5"
             android:layout_weight="1"
-            android:background="@drawable/selector_button"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
-            android:gravity="center"
             android:singleLine="true"
-            android:text="@string/dialog_negative"
-            android:textColor="@color/ag_text"
-            android:textSize="@dimen/ag_text_body" />
+            android:text="@string/dialog_negative" />
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/positive"
-            android:layout_width="0dp"
+            style="@style/Ag.Button.Primary"
             android:layout_height="@dimen/ag_button_h"
+            android:layout_width="0dp"
             android:layout_weight="1"
-            android:background="@drawable/selector_button"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
-            android:gravity="center"
             android:singleLine="true"
-            android:text="@string/dialog_positive"
-            android:textColor="@color/ag_primary_text"
-            android:textSize="@dimen/ag_text_body" />
+            android:text="@string/dialog_positive" />
 
     </androidx.appcompat.widget.LinearLayoutCompat>
 

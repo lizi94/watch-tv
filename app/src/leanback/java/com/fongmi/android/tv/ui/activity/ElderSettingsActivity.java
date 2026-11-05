@@ -22,6 +22,7 @@ import com.fongmi.android.tv.ui.dialog.ConfirmDialog;
 import com.fongmi.android.tv.utils.SiteVisibility;
 import com.fongmi.android.tv.utils.ElderLock;
 import com.fongmi.android.tv.utils.ElderMode;
+import com.fongmi.android.tv.utils.LauncherCapability;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.SoundFx;
@@ -60,8 +61,7 @@ public class ElderSettingsActivity extends BaseActivity {
         mBinding.lock.setOnClickListener(this::onLock);
         mBinding.full.setOnClickListener(this::setAutoFullscreen);
         mBinding.resume.setOnClickListener(this::setAutoResume);
-        mBinding.bootAutostart.setOnClickListener(this::setBootAutostart);
-        mBinding.homeGuard.setOnClickListener(this::setHomeGuard);
+        mBinding.selfCheck.setOnClickListener(view -> SelfCheckActivity.start(this));
         mBinding.sound.setOnClickListener(this::setKeySound);
         mBinding.indexSearch.setOnClickListener(this::setIndexQuickSearch);
         mBinding.siteManage.setOnClickListener(this::onSiteManage);
@@ -73,7 +73,9 @@ public class ElderSettingsActivity extends BaseActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // 从锁定页返回后同步最新的锁定状态
+        // 从锁定页 / 体检页返回后同步最新状态；同时强制重算一次「是不是默认主页」
+        //（用户可能刚在系统页面里改掉了默认桌面）。
+        LauncherCapability.refresh(this);
         if (mBinding != null) refresh();
     }
 
@@ -83,14 +85,37 @@ public class ElderSettingsActivity extends BaseActivity {
         mBinding.lockText.setText(locked == null ? getString(R.string.elder_lock_none) : getString(R.string.elder_lock_on, locked.getName()));
         mBinding.fullText.setText(Setting.getSwitch(Setting.isAutoFullscreen()));
         mBinding.resumeText.setText(Setting.getSwitch(Setting.isAutoResume()));
-        mBinding.bootAutostartText.setText(Setting.getSwitch(Setting.isBootAutostart()));
-        mBinding.homeGuardText.setText(Setting.getSwitch(Setting.isHomeGuard()));
         mBinding.soundText.setText(Setting.getSwitch(Setting.isKeySound()));
         mBinding.indexSearchText.setText(Setting.getSwitch(Setting.isIndexQuickSearch()));
         // 设置行右侧只放计数（行标题已经是「站源管理」，再写「已启用」会重复）
         mBinding.siteManageText.setText(getString(R.string.site_manage_count_short, SiteVisibility.countEnabled(VodConfig.get().getRawSites()), VodConfig.get().getRawSites().size()));
         mBinding.fontText.setText(getFontName());
         mBinding.sizeText.setText((size = ResUtil.getStringArray(R.array.select_size))[PlayerSetting.getSize()]);
+        refreshSelfCheck();
+    }
+
+    /**
+     * 「启动与桌面体检」行的右侧摘要：已就绪 / 总数。
+     *
+     * <p>为什么给个数字而不是「查看」：子女帮老人装机时一眼就知道还差几项，比点进去才发现要省事。
+     * 分母是动态的 —— 「按主页键回到看电视」这一项在「已是默认主页」时是空转的，
+     * 不算进分母（{@link LauncherCapability#isSelfHome}）。</p>
+     */
+    private void refreshSelfCheck() {
+        boolean selfHome = LauncherCapability.isSelfHome(this);
+        int total = 0;
+        int done = 0;
+        total++;
+        if (Setting.isBootAutostart()) done++;
+        total++;
+        if (LauncherCapability.isBatteryOk(this)) done++;
+        if (!selfHome) {
+            total++;
+            if (Setting.isHomeGuard() && LauncherCapability.isA11yOn(this)) done++;
+        }
+        total++;
+        if (selfHome) done++;
+        mBinding.selfCheckText.setText(getString(R.string.elder_setting_self_check_value, done, total));
     }
 
     /** 当前字号档位的名称（标准 / 大 / 特大 / 超大 / 极大）。 */
@@ -119,24 +144,6 @@ public class ElderSettingsActivity extends BaseActivity {
     private void setAutoResume(View view) {
         Setting.putAutoResume(!Setting.isAutoResume());
         mBinding.resumeText.setText(Setting.getSwitch(Setting.isAutoResume()));
-    }
-
-    /** 开机自启动开关：关闭后开机不再自动打开本软件，停留在电视原桌面。 */
-    private void setBootAutostart(View view) {
-        Setting.putBootAutostart(!Setting.isBootAutostart());
-        mBinding.bootAutostartText.setText(Setting.getSwitch(Setting.isBootAutostart()));
-    }
-
-    /**
-     * 接管 Home 键开关：开启后按主页键回到电视桌面会被自动切回本软件
-     * （实现在 {@code HomeGuardService}，门控实时读偏好，因此立即生效）。
-     *
-     * <p>注意：本开关只控制「抢不抢」，服务本身能否运行取决于系统无障碍设置里是否已开启
-     * 本软件的无障碍服务 —— 仅靠这里打开开关不会生效。</p>
-     */
-    private void setHomeGuard(View view) {
-        Setting.putHomeGuard(!Setting.isHomeGuard());
-        mBinding.homeGuardText.setText(Setting.getSwitch(Setting.isHomeGuard()));
     }
 
     /**
