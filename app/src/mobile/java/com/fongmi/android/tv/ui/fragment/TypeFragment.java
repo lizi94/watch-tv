@@ -140,8 +140,15 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
         mScroller.reset();
         mAdapter.clear(() -> {
             if (!mBinding.swipeLayout.isRefreshing()) mBinding.progressLayout.showProgress();
-            if (isHome()) setAdapter(getParent().getResult());
-            else getVideo(getTypeId(), "1");
+            if (isHome()) {
+                // ⛔ 2026-11-06（R113）：warm 重建时自己拉一次 —— 父级 result 这一刻可能还是旧的，
+                //   而父级刷新完也不会通知本页重渲染，导致「推荐」tab 停在旧内容。
+                //   冷启动仍走老路径（取父级 result），避免在配置没就绪时发一个必然失败的请求。
+                if (VodConfig.get().getRawSites().isEmpty()) setAdapter(getParent().getResult());
+                else mViewModel.homeContent();
+            } else {
+                getVideo(getTypeId(), "1");
+            }
         });
     }
 

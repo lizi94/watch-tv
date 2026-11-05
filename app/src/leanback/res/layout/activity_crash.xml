@@ -16,7 +16,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/ag_space_4"
         android:gravity="center"
-        android:lineSpacingExtra="4dp"
+        android:lineSpacingExtra="@dimen/ag_space_1"
         android:text="@string/crash_info"
         android:textColor="@color/ag_text"
         android:textSize="@dimen/ag_text_label" />

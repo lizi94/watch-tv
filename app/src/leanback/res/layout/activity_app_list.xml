@@ -83,7 +83,7 @@
 
         <Space
             android:layout_width="0dp"
-            android:layout_height="1dp"
+            android:layout_height="@dimen/ag_stroke_hairline"
             android:layout_weight="1" />
 
         <!-- 右上角桌面胶囊：**只在「本应用是默认主页」时出现**。

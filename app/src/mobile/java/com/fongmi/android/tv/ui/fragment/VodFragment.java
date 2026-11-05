@@ -146,12 +146,13 @@ public class VodFragment extends BaseFragment implements ConfigListener, FilterL
         //   setValue(null) 在注册前调用 ⇒ 没有观察者 ⇒ 不触发任何回调。
         mViewModel.clearResultIfEmpty();
         mViewModel.getResult().observe(getViewLifecycleOwner(), this::setAdapter);
-        // 走到这里 getValue() 只可能是「真有内容」或 null（空壳上面已经清掉了）：
-        //   有内容 ⇒ observe 已重放并渲染，一次请求都不发 —— 这才是「不重拉」；
-        //   null   ⇒ 冷启动（配置还没就绪，交给 ConfigEvent 这条唯一触发链）
-        //            或重建后确实没有数据（补一次请求，转圈代替空态）。
-        Result cached = mViewModel.getResult().getValue();
-        if (cached == null && !VodConfig.get().getRawSites().isEmpty()) mViewModel.homeContent();
+        // ⛔ 2026-11-06（R113）：**同进程重建时总是重载一次内容**。
+        //   R110 曾为了「不重拉」只判 cached == null，结果重建后列表停在旧数据，
+        //   用户得手动切分类 / 冷启动才看到新内容 —— 这不是想要的。
+        //   现在的口径：warm（配置还在内存）就重拉列表，**但仍然不发配置请求**（那才是慢的那一步）。
+        //   冷启动 getRawSites() 为空 ⇒ 不在这里发，交给 ConfigEvent.vod() → RefreshEvent.home() 这条唯一链，
+        //   避免每次开机都重复请求一遍。
+        if (!VodConfig.get().getRawSites().isEmpty()) mViewModel.homeContent();
     }
 
     private void setAdapter(Result result) {

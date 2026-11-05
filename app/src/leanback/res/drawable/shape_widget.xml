@@ -6,7 +6,7 @@
 
     <!-- 圆角 8dp 是上游原值，**不要**套 ag_radius_m(12dp) —— 令牌值不等价，套上去播放页
          （live/vod/cast 三处）的提示面板会明显变圆，与上游观感不一致。 -->
-    <corners android:radius="8dp" />
+    <corners android:radius="@dimen/ag_radius_s" />
 
     <padding
         android:bottom="@dimen/ag_space_4"
