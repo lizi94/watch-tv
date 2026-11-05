@@ -195,13 +195,30 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
         // 选择器，未授权时 FileChooser 拿不到真实路径（会把文件拷进缓存目录），写进配置的
         // 就变成缓存绝对路径；等到选完文件再申请已来不及（路径在 SAF 回调时已定型）。
         PermissionUtil.requestOnLaunch(this);
+        // ⛔ 2026-11-05（R108）：必须在 initFragment 之前 —— menu_nav.xml 里三项默认 visible=false，
+        //   唯一打开它们的是 setNavigation()，而它原来只挂在 ConfigEvent.COMMON 上。
+        //   同进程重建（切主题色 / 改图片尺寸）不重载配置 ⇒ 不会有 COMMON ⇒ 底部导航整条是空的。
+        //   与电视端 initView 里首帧调 setFunc() 同一个思路：功能入口不能依赖配置事件。
+        setNavigation();
         initFragment(savedInstanceState);
         // ⚠⚠ 2026-10-16（R62，与电视端同口径）：先用本地缓存的配置 JSON 同步重建内存态。
         // 判据 S = !getSites().isEmpty()，而 sites 只能由一次全量配置 JSON 的网络往返填上 ——
         // 没有缓存时「上次加载成功过、但本次开机没网」会被判成数据源没就绪 ⇒ 干等。
         // 有了缓存则 S 立刻为真，电视端/手机端行为一致（见 VodConfig#loadFromCache）。
+        //
+        // ⛔⛔ 2026-11-04（R101 / P0）：**同进程重建不再重载数据源**。
+        //   判据只有一条：「进 initView 那一刻，进程内存里还有没有配置」。
+        //     · 有（getRawSites() 非空）⇒ 同进程重建（切主题色 / 切壁纸 / 转屏 / 改字号）：
+        //       内存态完好，再走 initConfig() 会重新网络拉一遍配置 JSON，并派发 RefreshEvent.home()
+        //       把首页内容一起清空重拉 —— 用户只是换了个外观，不该看到「数据源重新加载」。
+        //     · 没有 ⇒ 冷启动 / 进程被回收后的恢复 ⇒ 照旧全量加载。
+        //   为什么不用 savedInstanceState != null：它分不清「recreate」与「进程被杀后恢复」，
+        //   后者必须重新拉配置（depot 型配置本来就不落缓存）。内存判据天然正确。
+        //   WallConfig 是本地的（读偏好 + 读文件），重建后仍需重建内存态，所以暖启动也调它。
+        boolean warm = !VodConfig.get().getRawSites().isEmpty();
         VodConfig.get().loadFromCache();
-        initConfig();
+        if (warm) WallConfig.get().init();
+        else initConfig();
     }
 
     @Override
@@ -573,12 +590,22 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
         cancelConfigAwait();
         bootDirectAwait.cancel();
         bootDirectAwait = NetAwait.Handle.NONE;
-        LiveConfig.get().clear();
-        VodConfig.get().clear();
         BackupManager.backup();
-        OkHttp.get().clear();
-        Source.get().exit();
-        Server.get().stop();
+        // ⛔ 2026-11-05（R107）：**只有真正退出才拆进程级资源**。
+        //   原来这几行无条件执行，而 recreate（切主题色 / 改图片尺寸 / 改字号）必然走 onDestroy
+        //   ⇒ 紧接着的 initView 里 warm 判据（getRawSites() 非空）必然为 false
+        //   ⇒ 照样 initConfig() 全量重载。R101 那轮「同进程重建不重载数据源」被这一处彻底抵消。
+        //   为什么不能反过来「重建后补 Server.start()」：OkHttp 的 dns / selector / 响应拦截器
+        //   是在 loadConfig() 里 addAll 的，Source.exit() 还会把解析器置成已退出 —— 清掉之后
+        //   只有重载配置才能恢复，那就回到原点了。所以这里只能「不清」。
+        //   recreate / 配置变更销毁时 isFinishing() 为 false，资源与内存态原样留给下一个实例。
+        if (isFinishing()) {
+            LiveConfig.get().clear();
+            VodConfig.get().clear();
+            OkHttp.get().clear();
+            Source.get().exit();
+            Server.get().stop();
+        }
         super.onDestroy();
     }
 }

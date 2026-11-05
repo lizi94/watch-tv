@@ -101,7 +101,7 @@
     <string name="elder_setting_title">长辈设置</string>
     <string name="elder_setting_lock_entry">一键锁定</string>
     <string name="elder_setting_full_entry">点播自动全屏</string>
-    <string name="elder_setting_resume_entry">退出自动续播</string>
+    <string name="elder_setting_resume_entry">点播退出自动续播</string>
     <string name="elder_setting_index_search_entry">首页快速搜索</string>
     <string name="elder_setting_size_entry">图片尺寸</string>
     <string name="elder_setting_restore_entry">恢复默认设置</string>

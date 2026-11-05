@@ -24,6 +24,7 @@
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/batch"
             style="@style/Ag.Button.Secondary"
+            android:layout_height="@dimen/ag_button_h"
             android:layout_width="wrap_content"
             android:singleLine="true"
             android:text="@string/history_batch" />
@@ -31,6 +32,7 @@
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/all"
             style="@style/Ag.Button.Secondary"
+            android:layout_height="@dimen/ag_button_h"
             android:layout_width="wrap_content"
             android:layout_marginStart="@dimen/ag_space_4"
             android:singleLine="true"
@@ -40,6 +42,7 @@
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/delete"
             style="@style/Ag.Button.Danger"
+            android:layout_height="@dimen/ag_button_h"
             android:layout_width="wrap_content"
             android:layout_marginStart="@dimen/ag_space_4"
             android:singleLine="true"

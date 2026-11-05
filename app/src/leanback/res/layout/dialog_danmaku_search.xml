@@ -20,17 +20,17 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:background="@drawable/shape_danmaku_search_keyword"
+            style="@style/Ag.Field"
             android:hint="@string/search_keyword"
             android:imeOptions="actionSearch"
             android:inputType="textCapWords|textAutoCorrect|textAutoComplete"
             android:maxLength="255"
             android:nextFocusDown="@id/recycler"
-            android:singleLine="true"
-            android:textSize="@dimen/ag_text_body" />
+            android:singleLine="true" />
 
         <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/setting"
+            style="@style/Ag.IconButton"
             app:tint="@color/ag_primary"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

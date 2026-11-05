@@ -388,8 +388,28 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
         // EventBus 在 BaseActivity.onCreate 里先于 initView 注册，ConfigEvent.VOD 稍后抵达时
         // RefreshEvent.home() → getVideo() 会照常填充内容，不丢链路；evaluateBoot 首行
         // isProgress 守卫 + success/error 回调里的重复调用都幂等，重复裁决无害。
+        // ⛔⛔ 2026-11-04（R101 / P0）：**同进程重建不再重载数据源**。
+        //   判据只有一条：「进 initView 那一刻，进程内存里还有没有配置」。
+        //     · 有（getRawSites() 非空）⇒ 同进程重建（切主题色 / 切壁纸 / 转屏 / 改字号）：
+        //       内存态完好，再走 initConfig() 会重新网络拉一遍配置 JSON，并派发 RefreshEvent.home()
+        //       把首页内容一起清空重拉 —— 用户只是换了个外观，不该看到「数据源重新加载」。
+        //     · 没有 ⇒ 冷启动 / 进程被回收后的恢复 ⇒ 照旧全量加载。
+        //   为什么不用 savedInstanceState != null：它分不清「recreate」与「进程被杀后恢复」，
+        //   后者必须重新拉配置（depot 型配置本来就不落缓存）。内存判据天然正确。
+        //   WallConfig 是本地的（读偏好 + 读文件），重建后仍需重建内存态，所以暖启动也调它。
+        boolean warm = !VodConfig.get().getRawSites().isEmpty();
         if (VodConfig.get().loadFromCache()) evaluateBoot();
-        initConfig();
+        if (warm) {
+            WallConfig.get().init();   // 壁纸配置是本地的（读偏好 + 读文件），重建后重建内存态即可
+            // ⛔ 2026-11-05（R107）：warm 重建不重载配置，但整页启动画面只有 showContent() 能收
+            //   （它挂在配置加载成功的回调里），分类 chip 的高亮与焦点落点又依赖 getVideo()。
+            //   这里补一次，走 RefreshEvent.home() → getVideo() 的完整链路：改完字号 / 图片尺寸
+            //   回到首页时，启动画面收掉、焦点落回、内容与 chip 高亮一致。
+            //   代价是内容重拉一次（约 1-2 秒），换来的是不再重载整份配置 JSON。
+            App.post(() -> RefreshEvent.home(), 100);
+        } else {
+            initConfig();
+        }
         // ⛔ 2026-10-29（R100）：这里原本调 setLogo()，即用「数据源配置里的 logo」覆盖软件图标。
         //   现在整块删掉 —— 首页标题区**恒显示软件自己的 logo**（activity_home.xml 里的
         //   android:src="@drawable/ic_logo"），代码里再没有任何地方写这个 ImageView，
@@ -1872,13 +1892,23 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
         // 的 Glide 调用未防护，已在 ImgUtil#clear 统一根治（所有 holder 已改调它）。
         // 释放内存改由「不主动触发回收」实现 —— 系统销毁视图树时会自然回收。
         // ⚠ 同理 DLNA 的 isChangingConfigurations 守卫保留（与本次崩溃无关，但确为真实加固）。
-        if (!isChangingConfigurations()) DLNARendererService.stop(this);
-        LiveConfig.get().clear();
-        VodConfig.get().clear();
+        if (isFinishing() && !isChangingConfigurations()) DLNARendererService.stop(this);
         BackupManager.backup();
-        OkHttp.get().clear();
-        Source.get().exit();
-        Server.get().stop();
+        // ⛔ 2026-11-05（R107）：**只有真正退出才拆进程级资源**。
+        //   原来这几行无条件执行，而 recreate（切主题色 / 改图片尺寸 / 改字号）必然走 onDestroy
+        //   ⇒ 紧接着的 initView 里 warm 判据（getRawSites() 非空）必然为 false
+        //   ⇒ 照样 initConfig() 全量重载。R101 那轮「同进程重建不重载数据源」被这一处彻底抵消。
+        //   为什么不能反过来「重建后补 Server.start()」：OkHttp 的 dns / selector / 响应拦截器
+        //   是在 loadConfig() 里 addAll 的，Source.exit() 还会把解析器置成已退出 —— 清掉之后
+        //   只有重载配置才能恢复，那就回到原点了。所以这里只能「不清」。
+        //   recreate / 配置变更销毁时 isFinishing() 为 false，资源与内存态原样留给下一个实例。
+        if (isFinishing()) {
+            LiveConfig.get().clear();
+            VodConfig.get().clear();
+            OkHttp.get().clear();
+            Source.get().exit();
+            Server.get().stop();
+        }
         super.onDestroy();
     }
 }

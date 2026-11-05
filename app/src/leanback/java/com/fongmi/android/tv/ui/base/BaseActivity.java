@@ -91,7 +91,10 @@ public abstract class BaseActivity extends AppCompatActivity {
         super.onResume();
         // 字号档位 / 图片尺寸在别处（长辈设置页）切换后，回到前台的页面重建以应用新的全局倍率 / 新列数。
         // 播放页覆写 autoRecreateOnFontChange() / autoRecreateOnSizeChange() 为 false，不重建以免打断播放；
-        // 电视首页自己响应 RefreshEvent.SIZE，同样覆写为 false —— 重建只会白丢焦点与滚动位置。
+        // 电视首页只覆写 autoRecreateOnSizeChange()（它自己响应 RefreshEvent.SIZE，重建只会白丢焦点与滚动位置），
+        // **字号这一项不覆写** —— hackResources 只在 Activity 创建时生效，不重建就换不了倍率。
+        // ⛔ 别为了「重建会重载数据源」把 autoRecreateOnFontChange 也改成 false：那个副作用已在
+        //    HomeActivity#initView 的暖启动判据里根治（R101/P0，见那边的注释），改这里只会让字号失效。
         boolean scaleChanged = autoRecreateOnFontChange() && Setting.getFontScale() != scaleOnCreate;
         boolean sizeChanged = autoRecreateOnSizeChange() && PlayerSetting.getSize() != sizeOnCreate;
         if (scaleChanged || sizeChanged) {
@@ -140,6 +143,11 @@ public abstract class BaseActivity extends AppCompatActivity {
      *
      * <p>播放页覆写为 false 以免打断播放；电视首页覆写为 false —— 它自己响应
      * {@code RefreshEvent.SIZE}（重建推荐区与「最近观看」行），再重建一次只会白丢焦点与滚动位置。</p>
+     *
+     * <p>⚠ 电视首页<b>只</b>覆写本方法，<b>不</b>覆写 {@link #autoRecreateOnFontChange()}：
+     * 字号倍率在 {@code hackResources} 里算、只在 Activity 创建时生效，不重建根本换不了。
+     * 至于「重建会顺带重载数据源」——那是另一个问题，已在 {@code HomeActivity#initView}
+     * 的暖启动判据里根治（R101/P0）。</p>
      */
     protected boolean autoRecreateOnSizeChange() {
         return true;

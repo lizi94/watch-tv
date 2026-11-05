@@ -44,6 +44,7 @@
 
     <!-- Push -->
     <string name="push_clip">Push clipboard content</string>
+    <string name="push_clip_empty">Nothing in the clipboard yet</string>
     <string name="push_info">Scan QR Code or enter the URL in browser\n<xliff:g name="name">%s</xliff:g></string>
 
     <!-- Elder friendly -->
@@ -91,10 +92,11 @@
     <string name="keep_none_selected">Select favorites to delete first</string>
 
     <string name="elder_setting_entry">Elder settings</string>
+    <string name="setting_page_title">Settings</string>
     <string name="elder_setting_title">Elder settings</string>
     <string name="elder_setting_lock_entry">One-tap lock</string>
     <string name="elder_setting_full_entry">Auto fullscreen on play</string>
-    <string name="elder_setting_resume_entry">Auto-resume after exit</string>
+    <string name="elder_setting_resume_entry">Resume VOD after exit</string>
     <string name="elder_setting_sound_entry">Remote key sound</string>
     <string name="elder_setting_index_search_entry">Quick search on home</string>
     <string name="elder_setting_font_entry">Font size</string>

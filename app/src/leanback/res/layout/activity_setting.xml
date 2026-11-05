@@ -12,6 +12,12 @@
         android:orientation="vertical"
         android:padding="@dimen/ag_space_6">
 
+        <com.google.android.material.textview.MaterialTextView
+            style="@style/Ag.Text.Title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/setting_page_title" />
+
         <!-- ============ 常用设置 ============ -->
         <androidx.appcompat.widget.LinearLayoutCompat
             android:layout_width="match_parent"
@@ -27,12 +33,11 @@
                 android:background="@drawable/shape_ag_bar" />
 
             <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Body"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="@dimen/ag_space_3"
-                android:text="@string/elder_group_common"
-                android:textColor="@color/ag_text_sub"
-                android:textSize="@dimen/ag_text_headline" />
+                android:text="@string/elder_group_common" />
         </androidx.appcompat.widget.LinearLayoutCompat>
 
         <androidx.appcompat.widget.LinearLayoutCompat
@@ -54,8 +59,16 @@
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/elderSettingsText"
                 style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 tools:text="未锁定" />
+
+            <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Caption"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/ag_space_2"
+                android:text="&#8250;" />
         </androidx.appcompat.widget.LinearLayoutCompat>
 
         <androidx.appcompat.widget.LinearLayoutCompat
@@ -76,24 +89,22 @@
                 android:orientation="horizontal">
 
                 <com.google.android.material.textview.MaterialTextView
+                    style="@style/Ag.Text.Body"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="@dimen/ag_space_4"
                     android:layout_weight="0.3"
-                    android:text="@string/setting_vod_source"
-                    android:textColor="@color/ag_text"
-                    android:textSize="@dimen/ag_text_body" />
+                    android:text="@string/setting_vod_source" />
 
                 <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/vodUrl"
+                    style="@style/Ag.Text.Body.Sub"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="0.7"
                     android:ellipsize="middle"
                     android:gravity="end"
                     android:singleLine="true"
-                    android:textColor="@color/ag_text"
-                    android:textSize="@dimen/ag_text_body"
                     tools:ignore="NestedWeights"
                     tools:text="https://" />
 
@@ -125,24 +136,22 @@
                 android:orientation="horizontal">
 
                 <com.google.android.material.textview.MaterialTextView
+                    style="@style/Ag.Text.Body"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="@dimen/ag_space_4"
                     android:layout_weight="0.3"
-                    android:text="@string/setting_live_source"
-                    android:textColor="@color/ag_text"
-                    android:textSize="@dimen/ag_text_body" />
+                    android:text="@string/setting_live_source" />
 
                 <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/liveUrl"
+                    style="@style/Ag.Text.Body.Sub"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="0.7"
                     android:ellipsize="middle"
                     android:gravity="end"
                     android:singleLine="true"
-                    android:textColor="@color/ag_text"
-                    android:textSize="@dimen/ag_text_body"
                     tools:ignore="NestedWeights"
                     tools:text="https://" />
 
@@ -174,24 +183,22 @@
                 android:orientation="horizontal">
 
                 <com.google.android.material.textview.MaterialTextView
+                    style="@style/Ag.Text.Body"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="@dimen/ag_space_4"
                     android:layout_weight="0.3"
-                    android:text="@string/setting_wall_source"
-                    android:textColor="@color/ag_text"
-                    android:textSize="@dimen/ag_text_body" />
+                    android:text="@string/setting_wall_source" />
 
                 <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/wallUrl"
+                    style="@style/Ag.Text.Body.Sub"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="0.7"
                     android:ellipsize="middle"
                     android:gravity="end"
                     android:singleLine="true"
-                    android:textColor="@color/ag_text"
-                    android:textSize="@dimen/ag_text_body"
                     tools:ignore="NestedWeights"
                     tools:text="https://" />
 
@@ -227,11 +234,17 @@
             android:orientation="horizontal">
 
             <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Body"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/setting_player"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_body" />
+                android:text="@string/setting_player" />
+
+            <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Caption"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="end"
+                android:text="&#8250;" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 
@@ -244,11 +257,17 @@
             android:orientation="horizontal">
 
             <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Body"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/setting_danmaku"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_body" />
+                android:text="@string/setting_danmaku" />
+
+            <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Caption"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="end"
+                android:text="&#8250;" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 
@@ -261,20 +280,17 @@
             android:orientation="horizontal">
 
             <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Body"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="@dimen/ag_space_4"
-                android:text="@string/setting_incognito"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_body" />
+                android:text="@string/setting_incognito" />
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/incognitoText"
-                android:layout_width="match_parent"
+                style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:gravity="end"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_body"
                 tools:text="Off" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
@@ -288,20 +304,17 @@
             android:orientation="horizontal">
 
             <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Body"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="@dimen/ag_space_4"
-                android:text="@string/setting_doh"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_body" />
+                android:text="@string/setting_doh" />
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/dohText"
-                android:layout_width="match_parent"
+                style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:gravity="end"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_body"
                 tools:text="Google" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
@@ -322,11 +335,10 @@
                 android:orientation="horizontal">
 
                 <com.google.android.material.textview.MaterialTextView
+                    style="@style/Ag.Text.Body"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/setting_backup"
-                    android:textColor="@color/ag_text"
-                    android:textSize="@dimen/ag_text_body" />
+                    android:text="@string/setting_backup" />
 
             </androidx.appcompat.widget.LinearLayoutCompat>
 
@@ -339,11 +351,10 @@
                 android:orientation="horizontal">
 
                 <com.google.android.material.textview.MaterialTextView
+                    style="@style/Ag.Text.Body"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/setting_restore"
-                    android:textColor="@color/ag_text"
-                    android:textSize="@dimen/ag_text_body" />
+                    android:text="@string/setting_restore" />
 
             </androidx.appcompat.widget.LinearLayoutCompat>
         </androidx.appcompat.widget.LinearLayoutCompat>
@@ -364,20 +375,17 @@
                 android:orientation="horizontal">
 
                 <com.google.android.material.textview.MaterialTextView
+                    style="@style/Ag.Text.Body"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="@dimen/ag_space_4"
-                    android:text="@string/setting_cache"
-                    android:textColor="@color/ag_text"
-                    android:textSize="@dimen/ag_text_body" />
+                    android:text="@string/setting_cache" />
 
                 <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/cacheText"
-                    android:layout_width="match_parent"
+                    style="@style/Ag.Text.Value"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:gravity="end"
-                    android:textColor="@color/ag_text"
-                    android:textSize="@dimen/ag_text_body"
                     tools:text="1.0 MB" />
 
             </androidx.appcompat.widget.LinearLayoutCompat>
@@ -391,20 +399,17 @@
                 android:orientation="horizontal">
 
                 <com.google.android.material.textview.MaterialTextView
+                    style="@style/Ag.Text.Body"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="@dimen/ag_space_4"
-                    android:text="@string/setting_version"
-                    android:textColor="@color/ag_text"
-                    android:textSize="@dimen/ag_text_body" />
+                    android:text="@string/setting_version" />
 
                 <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/versionText"
-                    android:layout_width="match_parent"
+                    style="@style/Ag.Text.Value"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:gravity="end"
-                    android:textColor="@color/ag_text"
-                    android:textSize="@dimen/ag_text_body"
                     tools:text="1.2.1" />
 
             </androidx.appcompat.widget.LinearLayoutCompat>

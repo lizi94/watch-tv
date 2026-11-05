@@ -119,7 +119,12 @@ public class CustomWallView extends FrameLayout implements DefaultLifecycleObser
         int oldColor = Setting.getWallColor();
         if (newColor == oldColor) return;
         Setting.putWallColor(newColor);
-        if (Setting.getThemeColor() == 0) RefreshEvent.theme();
+        // ⛔ 2026-11-05（R111）：这里原本在「主题色 = 自动」时发 RefreshEvent.theme()，
+        //   而 HomeActivity 收到 THEME 就 recreate —— 于是**换一张壁纸也会整页重建**，
+        //   重建又带回「首页推荐 / 分类空态」那一串问题。
+        //   壁纸本身已经在 refresh() 里热更新完毕（load() 换图 + 取色写入偏好），
+        //   唯一需要重建的是 Material 的 DynamicColors 重应用 —— 不值得为它拆掉整个页面。
+        //   ⇒ 自动主题色的色相延后到下一次自然重建 / 冷启动生效。
     }
 
     private void loadRes(int resId) {

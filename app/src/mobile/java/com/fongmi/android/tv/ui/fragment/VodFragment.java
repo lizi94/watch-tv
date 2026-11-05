@@ -95,8 +95,11 @@ public class VodFragment extends BaseFragment implements ConfigListener, FilterL
         EventBus.getDefault().register(this);
         mBinding.title.setSelected(true);
         setRecyclerView();
-        setViewModel();
+        // 顺序要紧：showProgress() 必须在 setViewModel() 之前 —— 注册 observe 时会立即回调一次
+        // （Activity 作用域的 ViewModel 里还留着上一次的数据），回调里会 hideProgress()；
+        // 若 showProgress() 排在后面，就把刚隐藏的转圈又盖回来，表现为「重建后一直转圈」。
         showProgress();
+        setViewModel();
         setTitle();
         setLogo();
     }
@@ -131,8 +134,24 @@ public class VodFragment extends BaseFragment implements ConfigListener, FilterL
     }
 
     private void setViewModel() {
-        mViewModel = new ViewModelProvider(this).get(SiteViewModel.class);
+        // ⛔ 2026-11-05（R107）：必须是 **Activity 作用域**。recreate 时 Activity 的 ViewModelStore
+        //   会保留（走 onRetainNonConfigurationInstance），而 Fragment 作用域的会在重建时被清掉 ——
+        //   清掉就意味着首页数据得重拉一遍，那正是「点个设置项首页就转圈」的观感来源。
+        //   TypeFragment / CollectFragment 各自用 Fragment 作用域，拿的是各自实例，不会串台。
+        mViewModel = new ViewModelProvider(requireActivity()).get(SiteViewModel.class);
+        // ⛔ 2026-11-05（R110）：注册 observe **之前**先清掉「上次失败留下的空壳结果」。
+        //   否则 observe 一注册就立即重放它 → setAdapter(空) → syncEmpty() 直接把空态卡画出来，
+        //   要等补发的请求回来才消失（网络慢就一直挂着）。这也解释了「只有推荐空、分类不空」：
+        //   分类用的是 Fragment 作用域的另一个 SiteViewModel 实例，数据是好的。
+        //   setValue(null) 在注册前调用 ⇒ 没有观察者 ⇒ 不触发任何回调。
+        mViewModel.clearResultIfEmpty();
         mViewModel.getResult().observe(getViewLifecycleOwner(), this::setAdapter);
+        // 走到这里 getValue() 只可能是「真有内容」或 null（空壳上面已经清掉了）：
+        //   有内容 ⇒ observe 已重放并渲染，一次请求都不发 —— 这才是「不重拉」；
+        //   null   ⇒ 冷启动（配置还没就绪，交给 ConfigEvent 这条唯一触发链）
+        //            或重建后确实没有数据（补一次请求，转圈代替空态）。
+        Result cached = mViewModel.getResult().getValue();
+        if (cached == null && !VodConfig.get().getRawSites().isEmpty()) mViewModel.homeContent();
     }
 
     private void setAdapter(Result result) {
@@ -226,7 +245,9 @@ public class VodFragment extends BaseFragment implements ConfigListener, FilterL
             hideEmpty();
             return;
         }
-        boolean canRetry = isBroken();
+        // 「上次请求失败」同样该给重试按钮：失败被记成 Result.error(msg)，此时 isBroken() 可能为 false
+        // （有源、有网，只是源侧超时），但文案不该是「这里什么都没有」—— 那会把老人劝退。
+        boolean canRetry = isBroken() || (mResult != null && !TextUtils.isEmpty(mResult.getMsg()));
         mBinding.emptyText.setText(canRetry ? R.string.empty_source : R.string.error_empty);
         mBinding.emptyRetry.setVisibility(canRetry ? View.VISIBLE : View.GONE);
         mBinding.empty.setVisibility(View.VISIBLE);

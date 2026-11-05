@@ -43,6 +43,7 @@
 
     <!-- Push -->
     <string name="push_clip">推送剪貼簿內容</string>
+    <string name="push_clip_empty">剪貼簿裡還沒有內容</string>
     <string name="push_info">使用手機掃描 QR Code，或於瀏覽器輸入網址\n<xliff:g name="name">%s</xliff:g></string>
 
     <!-- 老人友善 -->
@@ -90,10 +91,11 @@
     <string name="keep_none_selected">請先點選要刪除的收藏</string>
 
     <string name="elder_setting_entry">長輩設定</string>
+    <string name="setting_page_title">設定</string>
     <string name="elder_setting_title">長輩設定</string>
     <string name="elder_setting_lock_entry">一鍵鎖定</string>
     <string name="elder_setting_full_entry">隨選自動全螢幕</string>
-    <string name="elder_setting_resume_entry">退出自動續播</string>
+    <string name="elder_setting_resume_entry">點播退出自動續播</string>
     <string name="elder_setting_sound_entry">按鍵音</string>
     <string name="elder_setting_index_search_entry">首頁快速搜尋</string>
     <string name="elder_setting_font_entry">字號大小</string>

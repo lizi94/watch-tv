@@ -43,6 +43,7 @@
 
     <!-- Push -->
     <string name="push_clip">推送剪贴板内容</string>
+    <string name="push_clip_empty">剪贴板里还没有内容</string>
     <string name="push_info">使用手机扫描二维码，或于浏览器访问地址\n<xliff:g name="name">%s</xliff:g></string>
 
     <!-- 老人友好 -->
@@ -90,10 +91,11 @@
     <string name="keep_none_selected">请先点选要删除的收藏</string>
 
     <string name="elder_setting_entry">长辈设置</string>
+    <string name="setting_page_title">设置</string>
     <string name="elder_setting_title">长辈设置</string>
     <string name="elder_setting_lock_entry">一键锁定</string>
     <string name="elder_setting_full_entry">点播自动全屏</string>
-    <string name="elder_setting_resume_entry">退出自动续播</string>
+    <string name="elder_setting_resume_entry">点播退出自动续播</string>
     <string name="elder_setting_sound_entry">按键音</string>
     <string name="elder_setting_index_search_entry">首页快速搜索</string>
     <string name="elder_setting_font_entry">字号大小</string>

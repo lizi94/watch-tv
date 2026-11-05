@@ -209,6 +209,7 @@
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/content"
             style="@style/Ag.Button.Secondary"
+            android:layout_height="@dimen/ag_button_h"
             android:layout_width="wrap_content"
             android:layout_marginEnd="@dimen/ag_space_4"
             android:drawablePadding="@dimen/ag_space_2"
@@ -221,6 +222,7 @@
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/keep"
             style="@style/Ag.Button.Secondary"
+            android:layout_height="@dimen/ag_button_h"
             android:layout_width="wrap_content"
             android:layout_marginEnd="@dimen/ag_space_4"
             android:drawablePadding="@dimen/ag_space_2"
@@ -233,6 +235,7 @@
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/change"
             style="@style/Ag.Button.Secondary"
+            android:layout_height="@dimen/ag_button_h"
             android:layout_width="wrap_content"
             android:drawablePadding="@dimen/ag_space_2"
             android:nextFocusRight="@id/change"
@@ -262,6 +265,7 @@
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/flagTitle"
                 style="@style/Ag.GroupTitle"
+                android:layout_marginBottom="@dimen/ag_space_1"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/detail_group_flag"
@@ -295,6 +299,7 @@
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/episodeTitle"
                 style="@style/Ag.GroupTitle"
+                android:layout_marginBottom="@dimen/ag_space_1"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/detail_group_episode"
@@ -315,6 +320,7 @@
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/arrayTitle"
                 style="@style/Ag.GroupTitle"
+                android:layout_marginBottom="@dimen/ag_space_1"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/detail_group_sort"

@@ -40,7 +40,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="@dimen/ag_space_4"
                 android:layout_weight="1"
-                android:background="@drawable/selector_ag_field"
+                style="@style/Ag.Field"
                 android:fontFamily="monospace"
                 android:gravity="top|start"
                 android:hint="@string/player_mpv_conf"
@@ -49,8 +49,7 @@
                 android:inputType="textMultiLine|textNoSuggestions"
                 android:maxLines="5"
                 android:minLines="5"
-                android:nextFocusDown="@id/positive"
-                android:textSize="@dimen/ag_text_body" />
+                android:nextFocusDown="@id/positive" />
             </androidx.appcompat.widget.LinearLayoutCompat>
         </androidx.appcompat.widget.LinearLayoutCompat>
     </androidx.core.widget.NestedScrollView>
@@ -66,6 +65,7 @@
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/positive"
             style="@style/Ag.Button.Primary"
+            android:layout_height="@dimen/ag_button_h"
             android:layout_width="0dp"
             android:layout_marginEnd="@dimen/ag_space_4"
             android:layout_weight="1"
@@ -76,6 +76,7 @@
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/negative"
             style="@style/Ag.Button.Secondary"
+            android:layout_height="@dimen/ag_button_h"
             android:layout_width="0dp"
             android:layout_weight="1"
             android:nextFocusLeft="@id/positive"

@@ -13,176 +13,153 @@
         android:orientation="vertical"
         android:padding="@dimen/ag_space_6">
 
+        <com.google.android.material.textview.MaterialTextView
+            style="@style/Ag.Text.Title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/ag_space_4"
+            android:text="@string/player_decode_setting" />
+
         <androidx.appcompat.widget.LinearLayoutCompat
             android:id="@+id/tunnel"
+            style="@style/Ag.ListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="@dimen/ag_space_4"
-            android:background="@drawable/selector_item"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
             android:orientation="horizontal">
 
             <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Body"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="@dimen/ag_space_4"
-                android:text="@string/player_tunnel"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_body" />
+                android:text="@string/player_tunnel" />
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/tunnelText"
-                android:layout_width="match_parent"
+                style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:gravity="end"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_body"
                 tools:text="Off" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 
         <androidx.appcompat.widget.LinearLayoutCompat
             android:id="@+id/audioPassThrough"
+            style="@style/Ag.ListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="@dimen/ag_space_4"
-            android:background="@drawable/selector_item"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
             android:orientation="horizontal">
 
             <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Body"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="@dimen/ag_space_4"
-                android:text="@string/player_audio_pass_through"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_body" />
+                android:text="@string/player_audio_pass_through" />
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/audioPassThroughText"
-                android:layout_width="match_parent"
+                style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:gravity="end"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_body"
                 tools:text="Off" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 
         <androidx.appcompat.widget.LinearLayoutCompat
             android:id="@+id/audioPrefer"
+            style="@style/Ag.ListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="@dimen/ag_space_4"
-            android:background="@drawable/selector_item"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
             android:orientation="horizontal">
 
             <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Body"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="@dimen/ag_space_4"
-                android:text="@string/player_audio_decode"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_body" />
+                android:text="@string/player_audio_decode" />
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/audioPreferText"
-                android:layout_width="match_parent"
+                style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:gravity="end"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_body"
                 tools:text="Off" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 
         <androidx.appcompat.widget.LinearLayoutCompat
             android:id="@+id/videoPrefer"
+            style="@style/Ag.ListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="@dimen/ag_space_4"
-            android:background="@drawable/selector_item"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
             android:orientation="horizontal">
 
             <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Body"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="@dimen/ag_space_4"
-                android:text="@string/player_video_decode"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_body" />
+                android:text="@string/player_video_decode" />
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/videoPreferText"
-                android:layout_width="match_parent"
+                style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:gravity="end"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_body"
                 tools:text="Off" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 
         <androidx.appcompat.widget.LinearLayoutCompat
             android:id="@+id/aac"
+            style="@style/Ag.ListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="@dimen/ag_space_4"
-            android:background="@drawable/selector_item"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
             android:orientation="horizontal">
 
             <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Body"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="@dimen/ag_space_4"
-                android:text="@string/player_aac_track"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_body" />
+                android:text="@string/player_aac_track" />
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/aacText"
-                android:layout_width="match_parent"
+                style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:gravity="end"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_body"
                 tools:text="Off" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 
         <androidx.appcompat.widget.LinearLayoutCompat
             android:id="@+id/dolbyVisionOutput"
+            style="@style/Ag.ListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="@dimen/ag_space_4"
-            android:background="@drawable/selector_item"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
             android:orientation="horizontal">
 
             <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Body"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="@dimen/ag_space_4"
-                android:text="@string/player_dolby_vision_output"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_body" />
+                android:text="@string/player_dolby_vision_output" />
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/dolbyVisionOutputText"
-                android:layout_width="match_parent"
+                style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:gravity="end"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_body"
                 tools:text="Auto" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>

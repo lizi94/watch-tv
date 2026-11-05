@@ -44,6 +44,7 @@
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/siteText"
                 style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 tools:text="饭太硬" />
         </androidx.appcompat.widget.LinearLayoutCompat>
@@ -67,6 +68,7 @@
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/routeText"
                 style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 tools:text="源内自动择优" />
         </androidx.appcompat.widget.LinearLayoutCompat>
@@ -90,6 +92,7 @@
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/searchText"
                 style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 tools:text="已开启" />
         </androidx.appcompat.widget.LinearLayoutCompat>
@@ -113,6 +116,7 @@
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/liveText"
                 style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 tools:text="未导入" />
         </androidx.appcompat.widget.LinearLayoutCompat>
@@ -135,6 +139,7 @@
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/apply"
             style="@style/Ag.Button.Primary"
+            android:layout_height="@dimen/ag_button_h"
             android:layout_width="match_parent"
             android:layout_marginTop="@dimen/ag_space_5"
             android:singleLine="true"

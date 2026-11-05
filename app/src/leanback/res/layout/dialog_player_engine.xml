@@ -16,15 +16,15 @@
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/title"
+            style="@style/Ag.Text.Body"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="@string/player_engine"
-            android:textColor="@color/ag_text"
-            android:textSize="@dimen/ag_text_label" />
+            android:text="@string/player_engine" />
 
         <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/debug"
+            style="@style/Ag.IconButton"
             app:tint="@color/ag_primary"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -46,38 +46,26 @@
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/exo"
+            style="@style/Ag.Chip.Round"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="@dimen/ag_space_2"
-            android:background="@drawable/selector_chip_round"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
-            android:text="@string/play_exo"
-            android:textColor="@color/text"
-            android:textSize="@dimen/ag_text_body" />
+            android:text="@string/play_exo" />
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/mpv"
+            style="@style/Ag.Chip.Round"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="@dimen/ag_space_2"
-            android:background="@drawable/selector_chip_round"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
-            android:text="@string/play_mpv"
-            android:textColor="@color/text"
-            android:textSize="@dimen/ag_text_body" />
+            android:text="@string/play_mpv" />
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/other"
+            style="@style/Ag.Chip.Round"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="@drawable/selector_chip_round"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
-            android:text="@string/play_other"
-            android:textColor="@color/text"
-            android:textSize="@dimen/ag_text_body" />
+            android:text="@string/play_other" />
 
     </androidx.appcompat.widget.LinearLayoutCompat>
 </androidx.appcompat.widget.LinearLayoutCompat>

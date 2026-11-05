@@ -29,24 +29,22 @@
 
     <com.google.android.material.textview.MaterialTextView
         android:id="@+id/count"
+        style="@style/Ag.Text.Headline"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/ag_space_2"
-        android:textColor="@color/ag_text"
-        android:textSize="@dimen/ag_text_headline"
         tools:text="已启用 20 / 共 80" />
 
     <com.google.android.material.textview.MaterialTextView
         android:id="@+id/desc"
+        style="@style/Ag.Text.Body.Sub"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/ag_space_1"
         android:layout_marginBottom="@dimen/ag_space_4"
         android:ellipsize="end"
         android:maxLines="2"
-        android:text="@string/site_manage_desc"
-        android:textColor="@color/ag_text_sub"
-        android:textSize="@dimen/ag_text_body" />
+        android:text="@string/site_manage_desc" />
 
     <!-- 一行两 chip：左边「全部启用 / 全部停用」随状态切换；右边「只看停用 · N」筛选 -->
     <LinearLayout
@@ -113,13 +111,12 @@
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/empty"
+            style="@style/Ag.Text.Body.Sub"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:gravity="center"
             android:padding="@dimen/ag_space_6"
-            android:textColor="@color/ag_text_sub"
-            android:textSize="@dimen/ag_text_body"
             android:visibility="gone"
             tools:text="暂无站源，请先导入配置" />
     </FrameLayout>

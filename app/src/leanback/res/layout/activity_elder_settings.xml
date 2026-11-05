@@ -44,6 +44,7 @@
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/lockText"
                 style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 tools:text="未锁定" />
         </androidx.appcompat.widget.LinearLayoutCompat>
@@ -54,7 +55,7 @@
             style="@style/Ag.ListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/ag_space_2"
+            android:layout_marginTop="@dimen/ag_space_4"
             android:nextFocusDown="@id/font"
             android:orientation="horizontal">
 
@@ -68,6 +69,7 @@
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/siteManageText"
                 style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 tools:text="20 / 80" />
         </androidx.appcompat.widget.LinearLayoutCompat>
@@ -78,7 +80,7 @@
             style="@style/Ag.ListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/ag_space_2"
+            android:layout_marginTop="@dimen/ag_space_4"
             android:nextFocusDown="@id/size"
             android:orientation="horizontal">
 
@@ -92,6 +94,7 @@
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/fontText"
                 style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 tools:text="标准" />
         </androidx.appcompat.widget.LinearLayoutCompat>
@@ -102,7 +105,7 @@
             style="@style/Ag.ListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/ag_space_2"
+            android:layout_marginTop="@dimen/ag_space_4"
             android:nextFocusDown="@id/full"
             android:orientation="horizontal">
 
@@ -116,6 +119,7 @@
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/sizeText"
                 style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 tools:text="中" />
         </androidx.appcompat.widget.LinearLayoutCompat>
@@ -126,7 +130,7 @@
             style="@style/Ag.ListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/ag_space_2"
+            android:layout_marginTop="@dimen/ag_space_4"
             android:nextFocusDown="@id/resume"
             android:orientation="horizontal">
 
@@ -140,6 +144,7 @@
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/fullText"
                 style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 tools:text="开启" />
         </androidx.appcompat.widget.LinearLayoutCompat>
@@ -150,7 +155,7 @@
             style="@style/Ag.ListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/ag_space_2"
+            android:layout_marginTop="@dimen/ag_space_4"
             android:nextFocusDown="@id/indexSearch"
             android:orientation="horizontal">
 
@@ -164,6 +169,7 @@
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/resumeText"
                 style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 tools:text="开启" />
         </androidx.appcompat.widget.LinearLayoutCompat>
@@ -174,7 +180,7 @@
             style="@style/Ag.ListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/ag_space_2"
+            android:layout_marginTop="@dimen/ag_space_4"
             android:nextFocusDown="@id/sound"
             android:orientation="horizontal">
 
@@ -188,6 +194,7 @@
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/indexSearchText"
                 style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 tools:text="关闭" />
         </androidx.appcompat.widget.LinearLayoutCompat>
@@ -198,7 +205,7 @@
             style="@style/Ag.ListItem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/ag_space_2"
+            android:layout_marginTop="@dimen/ag_space_4"
             android:nextFocusDown="@id/restore"
             android:orientation="horizontal">
 
@@ -212,6 +219,7 @@
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/soundText"
                 style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 tools:text="开启" />
         </androidx.appcompat.widget.LinearLayoutCompat>
