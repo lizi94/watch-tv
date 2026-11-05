@@ -6,9 +6,11 @@
     android:gravity="center"
     android:orientation="vertical">
 
-    <!-- 二维码：只给鼠标 / 触摸屏用。电视遥控器不参与 —— 显式 focusable=false，
-         避免焦点停在「按下也只会去调系统浏览器」的图片上（电视多半没有浏览器）。
-         遥控器真正要操作的是下面那个按钮。 -->
+    <!-- 本页是纯展示页：二维码 + 局域网地址。
+         ⛔ 2026-11-06（R112）：原先还有一个「推送剪贴板内容」按钮，已整块删除 ——
+         它只在支持跨设备剪贴板同步的生态里才有意义，普通电视的剪贴板永远是空的；
+         而且它上游从来没有 focusable（遥控器选不中），修好焦点后一点就崩（把任意文本当视频地址）。
+         现在页面上没有可聚焦项，遥控器按返回键退出即可；二维码仅供鼠标 / 触摸屏点击。 -->
     <androidx.appcompat.widget.AppCompatImageView
         android:id="@+id/code"
         android:layout_width="250dp"
@@ -23,18 +25,6 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/ag_space_6"
         android:gravity="center"
-        android:lineSpacingExtra="8dp" />
-
-    <!-- 2026-11-05（R107）：这里原来是裸 TextView + shape_item_normal，
-         既没有 focusable 也没有焦点态 —— 遥控器根本选不中，
-         等于「推送剪贴板内容」这个功能在电视上不存在。
-         改挂 Ag.Button.Primary：自带 focusable / 64dp 高 / 焦点环 / padding。 -->
-    <com.google.android.material.textview.MaterialTextView
-        android:id="@+id/clip"
-        style="@style/Ag.Button.Primary"
-        android:layout_width="wrap_content"
-        android:layout_height="@dimen/ag_button_h"
-        android:layout_marginTop="@dimen/ag_space_4"
-        android:text="@string/push_clip" />
+        android:lineSpacingExtra="@dimen/ag_space_2" />
 
 </androidx.appcompat.widget.LinearLayoutCompat>

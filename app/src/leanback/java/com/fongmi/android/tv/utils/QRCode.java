@@ -5,6 +5,8 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 
+import com.fongmi.android.tv.R;
+
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.EncodeHintType;
 import com.google.zxing.MultiFormatWriter;
@@ -17,15 +19,16 @@ public class QRCode {
 
     private static final int FINDER_MODULES = 7;
     private static final float MODULE_RADIUS_RATIO = 0.45f;
-    /** 二维码码点颜色：与主页图标同款深色 ag_text，浅色背景上清晰可扫。 */
-    private static final int FOREGROUND = Color.rgb(0x22, 0x25, 0x2A);
+    // ⛔ 2026-11-06（R112）：码点颜色改为直接取 ag_text 令牌，不再写死 #22252A
+    //   （原来是 Color.rgb(0x22,0x25,0x2A)，值与 ag_text 一模一样，只是没走令牌）。
+    //   不放在 static final 里：类加载时机早于 App 初始化时会取不到资源。
 
     public static Bitmap getBitmap(String content, int size, int margin) {
         try {
             BitMatrix matrix = encode(content, size, margin);
             int quietZone = detectQuietZone(matrix);
             int finderSize = detectFinderPx(matrix, quietZone);
-            return render(matrix, FOREGROUND, quietZone, finderSize);
+            return render(matrix, ResUtil.getColor(R.color.ag_text), quietZone, finderSize);
         } catch (Exception e) {
             return null;
         }
