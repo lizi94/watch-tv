@@ -1,36 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 历史配置列表项（电视版）：行家族同 adapter_site_manage.xml，但是「双动作行」⇒ 双焦点目标结构。
+     ⛔ 行根不能 focusable：Android 焦点算法要求方向键候选与焦点 view 边界分离，行内按钮在根内部
+     永远不可达（=「遥控器无法选择启用停用」的根因）。因此根布局显式关掉 focusable（覆盖 Ag.ListItem），
+     由 text 与 action 各自承接焦点；state 不可聚焦，纯标注。
+     @id/text、@id/state 必须与手机版同名同类型（ConfigAdapter 双端各一份）。 -->
 <androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    style="@style/Ag.ListItem"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal">
+    android:layout_marginBottom="@dimen/ag_space_2"
+    android:orientation="horizontal"
+    android:focusable="false"
+    android:focusableInTouchMode="false">
 
     <com.google.android.material.textview.MaterialTextView
         android:id="@+id/text"
+        style="@style/Ag.Text.Body"
         android:layout_width="0dp"
-        android:layout_height="@dimen/ag_dialog_item_h"
+        android:layout_height="match_parent"
         android:layout_weight="1"
-        android:background="@drawable/selector_chip_round"
+        android:background="@drawable/selector_item"
         android:ellipsize="middle"
         android:focusable="true"
         android:focusableInTouchMode="true"
-        android:gravity="center"
+        android:gravity="center_vertical"
         android:singleLine="true"
-        android:textColor="@color/ag_text"
-        android:textSize="@dimen/ag_text_body"
         tools:text="https://fongmi.github.io/cat.json" />
 
-    <androidx.appcompat.widget.AppCompatImageView
-        android:id="@+id/delete"
-        app:tint="@color/ag_text"
-        android:layout_width="@dimen/ag_icon_40"
-        android:layout_height="@dimen/ag_icon_40"
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/state"
+        style="@style/Ag.Text.Body"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/ag_space_3"
-        android:background="@drawable/selector_chip_round"
+        android:singleLine="true"
+        android:textColor="@color/site_state_color"
+        tools:text="使用中" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/action"
+        style="@style/Ag.Text.Body"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_marginStart="@dimen/ag_space_3"
+        android:background="@drawable/selector_item"
+        android:paddingStart="@dimen/ag_space_2"
+        android:paddingEnd="@dimen/ag_space_2"
+        android:paddingTop="@dimen/ag_space_1"
+        android:paddingBottom="@dimen/ag_space_1"
+        android:singleLine="true"
         android:focusable="true"
         android:focusableInTouchMode="true"
-        android:padding="@dimen/ag_space_2"
-        android:src="@drawable/ic_setting_delete" />
+        android:gravity="center_vertical"
+        tools:text="停用" />
 
 </androidx.appcompat.widget.LinearLayoutCompat>

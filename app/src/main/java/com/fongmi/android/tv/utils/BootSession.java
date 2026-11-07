@@ -1,0 +1,207 @@
+package com.fongmi.android.tv.utils;
+
+import android.content.SharedPreferences;
+import android.os.SystemClock;
+import android.util.Log;
+
+import com.github.catvod.utils.Prefers;
+
+/**
+ * 「开机会话」的唯一真相源（R124）。
+ *
+ * <p><b>为什么需要它</b>：R123 用「{@code SystemClock.elapsedRealtime() < 90 秒}」判断「是不是开机阶段」，
+ * 这条判据在两类真实场景里<b>必然判错</b>：</p>
+ *
+ * <ul>
+ *   <li><b>待机唤醒</b> —— 中国老人最常见的「开机」是按遥控器上的关机键，那是<b>待机（STR）</b>而不是拔插头。
+ *       {@code elapsedRealtime} 从开机起算且<b>包含深睡</b>，第二天早上这个值早就过了 90 秒
+ *       ⇒ 被判成「不是开机」⇒ 默认桌面形态下的点播/直播直达全部失效。</li>
+ *   <li><b>慢机型</b> —— 实测有电视把 BOOT_COMPLETED 拖到开机 80 秒以后，90 秒窗口太窄。</li>
+ * </ul>
+ *
+ * <p><b>本类只记四件事，全是事实，不做推断</b>：</p>
+ * <ol>
+ *   <li><b>进程启动时刻</b>（{@link #onProcessStart()}，App 启动时记）：进程是不是在开机后
+ *       {@link #BOOT_PHASE_MS} 内启动的；</li>
+ *   <li><b>熄屏时刻</b>（{@link #onScreenOff()}，系统 SCREEN_OFF 广播）：墙钟时间，<b>并持久化</b>；</li>
+ *   <li><b>首页可见时刻</b>（{@link #onHomeVisible()}）：首页最后一次在前台的墙钟时间；</li>
+ *   <li><b>首页隐藏时刻</b>（{@link #onHomeHidden()}）：首页最后一次退到后台的墙钟时间。</li>
+ * </ol>
+ *
+ * <p><b>唤醒会话</b>（{@link #isWakeSession()}）要四个条件同时成立（R134）：① 熄屏那一刻<b>首页在前台</b>
+ * （见 {@link #onScreenOff()} 里对「熄屏瞬间前台归属」的快照）；② 待机已满 {@link #WAKE_GAP_MS}（60 秒）；
+ * ③ 已亮屏（亮屏时刻晚于熄屏时刻）；④ 距亮屏不超过 {@link #WAKE_FRESH_MS}（60 秒）。</p>
+ *
+ * <p><b>R134 更新</b>：熄屏/亮屏快照已<b>持久化</b>（Prefers），进程在待机期间被系统杀掉
+ * （实测小米电视快速待机会杀进程）后的唤醒冷启动<b>也能识别</b>唤醒会话 —— {@link #onProcessStart()}
+ * 会把上一次熄屏/亮屏快照读回来。旧版只存内存、进程一死快照即丢，导致「快速待机唤醒」
+ * 既不在开机 5 分钟窗口内、又不满足熄屏 10 分钟，开机直达 100% 失效（2026-11-07 实测定案）。</p>
+ *
+ * <p>⚠ 防误判：条件④「距亮屏 ≤ {@link #WAKE_FRESH_MS}」——若进程在<b>亮屏状态下</b>被杀、
+ * 很久之后用户按主页键才冷启动，持久化的还是几小时前的快照，绝不能当成唤醒去抢屏。</p>
+ */
+public final class BootSession {
+
+    private static final String TAG = "BootSession";
+
+    /**
+     * 开机阶段的长度（毫秒）：进程启动落在这之内 ⇒ 这次启动属于「开机阶段」。
+     *
+     * <p>5 分钟能覆盖实测最慢的机型（BOOT_COMPLETED 约 80 秒），又不至于把「开机半小时后
+     * 用户自己点图标」误判成开机（那种情况由 {@code CATEGORY_LAUNCHER} 单独排除）。</p>
+     */
+    public static final long BOOT_PHASE_MS = 5 * 60 * 1000L;
+
+    /**
+     * 熄屏多久算「重新开电视」（毫秒）。R134：10 分钟 → 60 秒。
+     *
+     * <p><b>为什么放宽</b>：实测小米电视「快速待机」（1~3 分钟）会杀掉本进程，唤醒后的冷启动
+     * 落在开机 5 分钟窗口之外 ⇒ 旧阈值下直达全部失效（用户 2026-11-07 实测反馈）。
+     * 60 秒的取舍：看直播/点播时熄屏唤醒恢复的是原界面（不经过首页，不抢屏）；
+     * 只有「熄屏时停在首页」才会重跳，而那正是「待机快速开机 = 重新开机直达」的产品语义。
+     * 看剧中途起身 1 分钟内回来不重跳，仍旧保留。</p>
+     */
+    public static final long WAKE_GAP_MS = 60 * 1000L;
+
+    /**
+     * 距亮屏多久之内才算「这次唤醒」（毫秒）。R134 新增。
+     *
+     * <p><b>为什么需要</b>：持久化的熄屏快照可能写入于几小时前。进程在<b>亮屏状态</b>下被杀、
+     * 之后用户按主页键冷启动时，若只看「距熄屏很久」就会把普通的主页键启动误判成唤醒 ⇒ 抢屏。
+     * 唤醒后的冷启动/onResume 发生在亮屏后几秒内，60 秒窗口足够覆盖慢 ROM；超窗一律不算。</p>
+     */
+    public static final long WAKE_FRESH_MS = 60 * 1000L;
+
+    /**
+     * 「熄屏导致的退到后台」与「熄屏广播」之间允许的最大间隔（毫秒）。
+     *
+     * <p><b>为什么需要它</b>：熄屏时系统会先让窗口失去可见性（{@code onPause}）、
+     * 再（或同时）发出 {@code ACTION_SCREEN_OFF} 广播，<b>两者的先后顺序在不同 ROM 上并不一致</b>。
+     * 若只按「广播到达时的前台归属」判断，广播晚到时首页已经被判成后台 ⇒ 真正的唤醒被误杀；
+     * 若只按「首页最近一次可见/隐藏的时刻」判断，用户自己切走时留下的隐藏时刻又会被当成
+     * 「熄屏导致」⇒ 切到别的应用看了十分钟再回来被误判成开机 ⇒ 抢屏。
+     * 所以：<b>隐藏时刻落在熄屏前后 {@code SCREEN_OFF_GRACE_MS} 之内</b>的，一律按
+     * 「熄屏导致首页退到后台」处理（那时首页确实在前台）。</p>
+     */
+    public static final long SCREEN_OFF_GRACE_MS = 2000L;
+
+    /** 进程启动时刻（elapsedRealtime）。 */
+    private static long processStartAt = -1L;
+    /** 系统熄屏时刻（墙钟）。 */
+    private static long screenOffAt;
+    /** 熄屏那一刻首页是否在前台（快照，随 {@link #screenOffAt} 一起作废）。 */
+    private static boolean screenOffWithHome;
+    /** 系统亮屏时刻（墙钟）。R134：与 screenOffAt 一起构成「待机时长」与「唤醒新鲜度」判据。 */
+    private static long screenOnAt;
+
+    /** 持久化键名（R134）：跨进程死亡存活，唤醒冷启动时由 {@link #onProcessStart()} 恢复。 */
+    private static final String KEY_SCREEN_OFF = "boot_session_screen_off_at";
+    private static final String KEY_SCREEN_ON = "boot_session_screen_on_at";
+    private static final String KEY_WITH_HOME = "boot_session_screen_off_with_home";
+
+    private static SharedPreferences prefs() {
+        return Prefers.getPrefers();
+    }
+    /** 首页最后一次在前台的时刻（墙钟）。 */
+    private static long homeVisibleAt;
+    /** 首页最后一次退到后台的时刻（墙钟）。 */
+    private static long homeHiddenAt;
+
+    private BootSession() {
+    }
+
+    /** App 启动时记一次：这次进程是在开机后多久启动的。 */
+    public static void onProcessStart() {
+        processStartAt = SystemClock.elapsedRealtime();
+        // R134：恢复上一次熄屏/亮屏快照 —— 待机期间进程可能被系统杀掉，新进程必须能识别
+        // 「这是唤醒会话」。恢复的只是事实记录，是否算唤醒仍由 isWakeSession() 的四条件裁定。
+        SharedPreferences p = prefs();
+        screenOffAt = p.getLong(KEY_SCREEN_OFF, 0L);
+        screenOnAt = p.getLong(KEY_SCREEN_ON, 0L);
+        screenOffWithHome = p.getBoolean(KEY_WITH_HOME, false);
+        Log.i(TAG, "process start, elapsed=" + processStartAt
+                + ", screenOff=" + screenOffAt + ", screenOn=" + screenOnAt + ", withHome=" + screenOffWithHome);
+    }
+
+    /**
+     * 系统熄屏（SCREEN_OFF 广播）：记墙钟时刻，<b>并当场快照「这一刻首页在前台吗」</b>。
+     *
+     * <p>为什么必须「当场」快照：熄屏之后首页会被判成后台，等 {@code isWakeSession()} 再回头看
+     * 「首页可见/隐藏时刻」已经分不清「是熄屏导致的」还是「用户自己切走的」——
+     * 那正是 R124 之前「切到别的应用后熄屏再回来被误判成开机、进而抢屏」的根因。</p>
+     */
+    public static void onScreenOff() {
+        screenOffAt = System.currentTimeMillis();
+        screenOffWithHome = homeVisibleAt > 0
+                && (homeVisibleAt > homeHiddenAt || screenOffAt - homeHiddenAt <= SCREEN_OFF_GRACE_MS);
+        Log.i(TAG, "screen off at " + screenOffAt + ", homeForeground=" + screenOffWithHome);
+        // R134：快照持久化 —— 进程可能在待机期间被系统杀掉，唤醒后的新进程要能读到这份快照。
+        prefs().edit().putLong(KEY_SCREEN_OFF, screenOffAt)
+                .putBoolean(KEY_WITH_HOME, screenOffWithHome).apply();
+    }
+
+    /**
+     * 系统亮屏（SCREEN_ON 广播）：记墙钟时刻并持久化（R134）。
+     *
+     * <p>亮屏时刻是两个判据的基准：「待机时长 = 亮屏 − 熄屏」与「唤醒新鲜度 = 当前 − 亮屏」。
+     * 没有它，持久化的熄屏快照既算不出待机多久，也挡不住亮屏状态下进程被杀后的误判。</p>
+     */
+    public static void onScreenOn() {
+        screenOnAt = System.currentTimeMillis();
+        prefs().edit().putLong(KEY_SCREEN_ON, screenOnAt).apply();
+    }
+
+    /** 首页回到前台：记墙钟时刻（用来判断熄屏那一刻首页是否在前台）。 */
+    public static void onHomeVisible() {
+        homeVisibleAt = System.currentTimeMillis();
+    }
+
+    /**
+     * 首页退到后台：记墙钟时刻。
+     *
+     * <p>⚠ <b>熄屏也会让首页退到后台</b>，所以这个时刻不能单独用来否定「熄屏时首页在前台」——
+     * 真正的判据在 {@link #onScreenOff()} 里做（那里有熄屏瞬间的快照）。</p>
+     */
+    public static void onHomeHidden() {
+        homeHiddenAt = System.currentTimeMillis();
+    }
+
+    /** 本次进程启动是否落在「开机阶段」内。 */
+    public static boolean inBootPhase() {
+        return processStartAt >= 0 && processStartAt <= BOOT_PHASE_MS;
+    }
+
+    /**
+     * 是不是「熄屏很久之后被唤醒」的那一次（R134 四条件，见类注释）。
+     *
+     * <p>⚠ 时序兜底：亮屏瞬间 {@code onResume}/冷启动可能跑在 {@code ACTION_SCREEN_ON}
+     * 广播送达之前，此时 {@code screenOnAt} 还是上一轮亮屏的旧值（早于熄屏时刻）。
+     * 而「有判定在跑」本身就意味着屏幕已经亮了 —— 所以广播未达时直接以当前时刻充当亮屏时刻，
+     * 待机时长按「now − 熄屏」计，新鲜度天然为 0。否则每次唤醒的第一跳都会被漏掉。</p>
+     */
+    public static boolean isWakeSession() {
+        if (screenOffAt <= 0) return false;
+        if (!screenOffWithHome) return false;
+        long now = System.currentTimeMillis();
+        // R134：待机时长 = 亮屏时刻 − 熄屏时刻。旧式「now − 熄屏」在亮屏状态下会一直变大，
+        //   配合持久化快照会把几小时后的普通启动误判成唤醒。
+        //   ⛔ 例外（时序兜底）：SCREEN_ON 广播还没送达（screenOnAt 仍是上轮旧值）但判定已在跑
+        //   ⇒ 屏幕此刻必已点亮，以 now 充当亮屏时刻（新鲜度天然为 0，不会被 freshness 拦下）。
+        long onAt = screenOnAt > screenOffAt ? screenOnAt : now;
+        if (onAt - screenOffAt < WAKE_GAP_MS) return false;
+        // R134：新鲜度 —— 距亮屏太久说明这不是「这次唤醒」，而是普通的主页键/图标启动。
+        return now - onAt <= WAKE_FRESH_MS;
+    }
+
+    /** 唤醒会话只认一次：用掉即清零，否则每次 {@code onResume} 都会重判。 */
+    public static void consumeWake() {
+        screenOffAt = 0L;
+        screenOffWithHome = false;
+        screenOnAt = 0L;
+        homeVisibleAt = 0L;
+        homeHiddenAt = 0L;
+        // R134：持久化快照一起清 —— 否则同一亮屏期内进程被杀又被拉起（崩溃重启等），
+        // 恢复出来的旧快照会把普通启动误判成唤醒。
+        prefs().edit().remove(KEY_SCREEN_OFF).remove(KEY_SCREEN_ON).remove(KEY_WITH_HOME).apply();
+    }
+}

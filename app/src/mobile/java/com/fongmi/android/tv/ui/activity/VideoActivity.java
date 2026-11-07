@@ -77,7 +77,6 @@ import com.fongmi.android.tv.setting.DanmakuSetting;
 import com.fongmi.android.tv.setting.PlayerSetting;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.setting.SpeedSetting;
-import com.fongmi.android.tv.utils.ElderLock;
 import com.fongmi.android.tv.ui.adapter.EpisodeAdapter;
 import com.fongmi.android.tv.ui.adapter.FlagAdapter;
 import com.fongmi.android.tv.ui.adapter.QualityAdapter;
@@ -142,7 +141,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
      * 就等于把「自动择优站源」整条链掐断（Activity 一 finish，controller 随之销毁）。</p>
      */
     private static final long EMPTY_DETAIL_FALLBACK_MS = 20000L;
-    /** 最近一次渲染的线路条数：R-A′ 的判据（不能用线路行可见性 —— 手机端锁定后 hideRoute() 会把它隐藏，但线路其实存在）。 */
+    /** 最近一次渲染的线路条数：R-A′ 的判据（用条数而非可见性，理由见 {@link #fallbackToSearch()}）。 */
     private int mFlagCount;
     /** 用户是否已手动点过「换源」：置位后永久取消 mR5 自动跳搜索页（见 {@link #onSwitchSource}）。 */
     private boolean userSwitchedSource;
@@ -668,9 +667,9 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     /**
      * R-A′ 落点：延时检查「详情页是否仍然没有任何线路」，是则转搜索同名。
      *
-     * <p>判据用<b>线路条数</b>而不是线路行的可见性：手机端在「一键锁定 + 自动择优换线」开启时
-     * 会把线路条整行隐藏（{@link ElderLock#hideRoute()}），用可见性判会把「有线路」误判成
-     * 「没线路」，20 秒后把老人从正常播放页踢走。</p>
+     * <p>判据用<b>线路条数</b>而不是线路行的可见性：空线路时控件是 {@code GONE}、有条目时是
+     * {@code VISIBLE}，两者等价但条数更直接；R130 起锁定不再隐藏线路条，可见性判据本已无必要，
+     * 这里继续用条数是为了将来再出现「隐藏但有条目」的状态时，不会把老人从正常播放页踢走。</p>
      */
     private void fallbackToSearch() {
         if (isFinishing() || isDestroyed()) return;
@@ -685,9 +684,10 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     @Override
     public void renderFlags(List<Flag> items) {
-        // 与电视版一致：锁定播放线路时隐藏线路选择条，交给自动择优处理，老人不会被问到「用哪条线路」
         mFlagCount = items.size();
-        mBinding.flag.setVisibility(items.isEmpty() || ElderLock.hideRoute() ? View.GONE : View.VISIBLE);
+        // R130：锁定不再隐藏线路条 —— 锁定只固定「用哪个数据源」，
+        //   不等于「不许用户自己挑线路」；空列表时才隐藏。
+        mBinding.flag.setVisibility(items.isEmpty() ? View.GONE : View.VISIBLE);
         mBinding.flagText.setVisibility(mBinding.flag.getVisibility());
         mFlagAdapter.addAll(items);
         // 线路出来了 → 取消 R-A′ 的空页兜底（择源成功，不该再跳搜索）

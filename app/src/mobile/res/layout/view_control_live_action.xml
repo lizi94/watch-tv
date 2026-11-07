@@ -16,31 +16,43 @@
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/config"
             style="@style/Control"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:text="@string/play_config" />
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/home"
             style="@style/Control"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             tools:text="首頁" />
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/line"
             style="@style/Control"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             tools:text="來源 1" />
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/player"
             style="@style/Control"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:text="@string/player_engine" />
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/decode"
             style="@style/Control"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:text="@string/play_decode" />
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/speed"
             style="@style/Control"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:fontFeatureSettings="tnum"
             android:text="@string/play_speed"
             android:visibility="gone"
@@ -49,6 +61,8 @@
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/scale"
             style="@style/Control"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:text="@string/play_scale" />
 
         <View
@@ -59,6 +73,8 @@
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/text"
             style="@style/Control"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:tag="3"
             android:text="@string/play_track_text"
             android:visibility="gone"
@@ -67,28 +83,38 @@
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/audio"
             style="@style/Control"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:tag="1"
             android:text="@string/play_track_audio" />
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/video"
             style="@style/Control"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:tag="2"
             android:text="@string/play_track_video" />
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/invert"
             style="@style/Control"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:text="@string/play_invert" />
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/across"
             style="@style/Control"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:text="@string/play_across" />
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/change"
             style="@style/Control"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:text="@string/play_change" />
 
     </androidx.appcompat.widget.LinearLayoutCompat>

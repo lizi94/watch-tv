@@ -99,6 +99,10 @@ public class ConfigDialog extends BaseAlertDialog {
         binding.positive.setText(edit ? R.string.dialog_edit : R.string.dialog_positive);
         binding.code.setImageBitmap(QRCode.getBitmap(Server.get().getAddress(4), 200, 0));
         binding.info.setText(ResUtil.getString(R.string.push_info, Server.get().getAddress()).replace("\uff0c", "\n"));
+        // R128：首焦点给 URL 输入框（主操作）。原先落在 info（可聚焦的提示文字）上，
+        //   而 info 没有焦点态背景 ⇒ 用户看不到焦点在哪，还要多按一次「下」才能输入。
+        //   info 仍保留 focusable：长 URL 需要按「上」回去聚焦才能滚动查看。
+        binding.text.requestFocus();
     }
 
     @Override
@@ -159,9 +163,20 @@ public class ConfigDialog extends BaseAlertDialog {
         String text = binding.text.getText().toString().trim();
         if (edit) Config.find(url, type).url(text).update();
         if (text.isEmpty()) Config.delete(url, type);
-        if (name.isEmpty()) ((ConfigListener) requireActivity()).setConfig(Config.find(text, type));
-        else ((ConfigListener) requireActivity()).setConfig(Config.find(text, name, type));
+        if (name.isEmpty()) applyConfig(Config.find(text, type));
+        else applyConfig(Config.find(text, name, type));
         dismiss();
+    }
+
+    /**
+     * 手动添加 / 选用配置：命中的库记录若曾被停用，恢复为启用。
+     *
+     * <p>「手动输入地址」是<b>明确意图</b>（用户就是要用它），不该被历史的停用状态拦住；
+     * 否则会出现「我明明添加了它，却仍是停用态、点不动也换不掉」的僵死 ——
+     * 与「在历史列表里误点一条停用项」不同，那种必须拦（见 ConfigAdapter）。</p>
+     */
+    private void applyConfig(Config config) {
+        ((ConfigListener) requireActivity()).setConfig(config.enable());
     }
 
     private void onNegative(View view) {
@@ -193,7 +208,7 @@ public class ConfigDialog extends BaseAlertDialog {
 
     private void setConfig(Uri uri) {
         if (!isAdded()) return;
-        ((ConfigListener) requireActivity()).setConfig(Config.find(UrlUtil.toLocalUrl(uri), type));
+        applyConfig(Config.find(UrlUtil.toLocalUrl(uri), type));
         dismiss();
     }
 }

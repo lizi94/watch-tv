@@ -100,6 +100,9 @@ public final class TrackDialog extends BaseBottomSheetDialog implements TrackAda
         binding.choose.setVisibility(hasChoose() ? View.VISIBLE : View.GONE);
         binding.setting.setVisibility(hasSetting() ? View.VISIBLE : View.GONE);
         binding.title.setText(ResUtil.getStringArray(R.array.select_track)[type - 1]);
+        // R128：首焦点给轨道列表（主操作），原先落在「搜索」按钮（辅助）上。
+        //   列表为空时它是 GONE —— 交给系统落到第一个可见按钮。
+        if (binding.recycler.getVisibility() == View.VISIBLE) binding.recycler.requestFocus();
     }
 
     @Override

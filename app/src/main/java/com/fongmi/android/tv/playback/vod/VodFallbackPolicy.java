@@ -1,5 +1,7 @@
 package com.fongmi.android.tv.playback.vod;
 
+import android.os.SystemClock;
+
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.api.config.VodConfig;
@@ -39,6 +41,11 @@ class VodFallbackPolicy {
     private final VodPlaybackState state;
     private final VodPlaybackHost host;
     private final VodDataSource dataSource;
+
+    /** 同一次故障的去抖窗口（R129）：多个失败回调在此窗口内只推进一格。 */
+    private static final long ADVANCE_DEBOUNCE_MS = 1000L;
+    /** 上一次实际推进的时刻（elapsedRealtime；0 = 从未推进，首次直接放行）。 */
+    private long lastAdvanceAt;
 
     VodFallbackPolicy(VodPlaybackController controller, VodPlaybackState state, VodPlaybackHost host, VodDataSource dataSource) {
         this.controller = controller;
@@ -187,6 +194,12 @@ class VodFallbackPolicy {
     private void advance(String msg) {
         // 页面已经关了就别再折腾：此时换线/换源/弹提示都是在死掉的 Activity 上操作。
         if (host.isHostFinishing()) return;
+        // R129：**同一次故障只推进一格**。播放器 onError、看门狗超时、宿主状态变化都会走
+        //   playbackError → advance；没有去抖就是「一次故障连跳好几条线路」，
+        //   用户看到的是「在自动换、但像跳过一样，根本没有挨个尝试」。
+        long now = SystemClock.elapsedRealtime();
+        if (lastAdvanceAt != 0L && now - lastAdvanceAt < ADVANCE_DEBOUNCE_MS) return;
+        lastAdvanceAt = now;
         if (!Setting.isAutoFallback() && !host.getSite().isIndex()) {
             // msg 为空 = 这个源压根没有可播的东西（详情空 / 没有线路），不是超时也不是网络问题，
             // 提示「连接超时」会把老人往错误的方向上引，所以要分开说。

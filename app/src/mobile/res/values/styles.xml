@@ -14,8 +14,6 @@
     </style>
 
     <style name="Control">
-        <item name="android:layout_width">wrap_content</item>
-        <item name="android:layout_height">wrap_content</item>
         <item name="android:background">?attr/selectableItemBackgroundBorderless</item>
         <item name="android:textColor">@color/yellow</item>
         <item name="android:textSize">14sp</item>

@@ -136,6 +136,18 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
     private NetAwait.Handle bootDirectAwait = NetAwait.Handle.NONE;
     /** 待续播项：仅在「本次应当续播、但网络 / 数据源还没就绪」时非空；就绪跳转后立即清空。 */
     private History mBootDirect;
+    /**
+     * 本次直达的目标（R125）。
+     *
+     * <p>与电视版同构：<b>目标</b>与<b>待续播项</b>分成两件事 ——
+     * 直播直达没有 History（目标是「直播页」本身），点播直达才有；
+     * 目标一旦消费（跳转成功）就清成 {@link BootTarget#NONE}，避免二次跳转与空指针。</p>
+     */
+    private BootTarget mBootTarget = BootTarget.NONE;
+    /** 直达目标类型。 */
+    private enum BootTarget {
+        NONE, VOD, LIVE
+    }
     /** 网络阶段是否已过关：避免在「有网但数据源还没加载好」时反复注册网络回调（会空转自旋）。 */
     private boolean bootNetReady;
     /** 用户是否已操作过首页（真实触摸 / 按键，见 {@link #onUserInteraction()}）：已操作则放弃本次自动抢屏跳转。 */
@@ -150,6 +162,24 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
     private long bootStartTime;
     /** 冷启动后的输入宽限期：这段时间内到达的输入视为系统残留（见 bootStartTime 的说明）。 */
     private static final long BOOT_INPUT_GRACE_MS = 1500L;
+
+    /**
+     * 无网时「兜底轮询」的固定间隔（R129，与电视端同口径）。
+     *
+     * <p>R129 当时 {@code NetAwait#isOnline()} 还要求 {@code NET_CAPABILITY_VALIDATED}，部分固件
+     * 该位恒 false ⇒ 只挂 {@code whenReady} 会永远等不到，配置失败后永不自愈。⛔ R131 已删该判据，
+     * {@code whenReady} 恢复正常；这条轮询保留，兜「网络能力回调压根不上报 / 回调早于监听注册」的机型。</p>
+     */
+    private static final long RESILIENT_RETRY_MS = 20_000L;
+
+    // R132：直播直达的有限重试（与电视端 tryBootDirect 同口径）。
+    //   手机端原本没有第二级轮询：直播配置只在 initConfig() 里加载一次且不带回调，
+    //   首次加载失败（开机头几秒 DNS/网关未就绪很常见）后就再无人重拉 ⇒ 直达必然失效。
+    private static final int LIVE_BOOT_DIRECT_MAX_RETRY = 30;
+    private static final long LIVE_RELOAD_MIN_INTERVAL_MS = 3000L;
+    private long liveDirectLoadAt;
+    private int liveDirectRetry;
+    private final Runnable mLiveDirectRetry = this::tryLiveDirectRetry;
     /** 配置加载失败后挂着的「等网络恢复就重载」监听（与 {@link #bootDirectAwait} 生命周期不同）。 */
     private NetAwait.Handle configAwait = NetAwait.Handle.NONE;
     private ActivityHomeBinding mBinding;
@@ -304,6 +334,18 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
         // 两个瞬时标记必须先消费再判断：若门控提前 return，标记会残留到下一次冷启动，误伤续播。
         if (consumeBackHome()) return;
         if (consumeInternalRecreate()) return;
+        // R125（P1）：**直播分支必须排在「点播续播关闭」早退之前**。
+        //   两个开关在设置页互斥（见 ElderSettingsActivity#setBootLive / #setAutoResume），
+        //   「直播直达开」必然意味着「点播续播关」—— 旧代码把 !isAutoResume() 的早退放在前面，
+        //   于是直播分支<b>永远走不到</b>（100% 不可达）：开关打开的效果只是「把点播续播关掉」，
+        //   手机端就是一个纯断功能的空开关（P1）。现在直播优先，两个开关都不再是空开关。
+        if (Setting.isBootLive()) {
+            // 与点播续播同一套「普通启动」判据：排除回退 / 内部重建 / 带 data / 分享 / 搜索。
+            if (!isPlainLaunch(getIntent())) return;
+            mBootTarget = BootTarget.LIVE;
+            awaitBootDirect();
+            return;
+        }
         // 退出自动续播关闭：不再自动跳入上次观看的节目，落在首页
         if (!Setting.isAutoResume()) return;
         if (!isPlainLaunch(getIntent())) return;
@@ -313,6 +355,7 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
         if (TextUtils.isEmpty(item.getVodId())) return;
         // 只登记「本次应当续播」；什么时候跳、能不能跳，交给两级门控。
         mBootDirect = item;
+        mBootTarget = BootTarget.VOD;
         awaitBootDirect();
     }
 
@@ -325,10 +368,11 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
      * 等配置加载成功的回调（{@code getCallback().success()}）来推进，不重新注册网络回调。</p>
      */
     private void awaitBootDirect() {
-        if (mBootDirect == null) return;
+        // R125：主控从「待续播项」换成「直达目标」—— 直播目标没有 History，只有目标本身。
+        if (mBootTarget == BootTarget.NONE) return;
         // 老人已经在操作了 → 彻底放弃本次抢屏（清掉待续播项，之后配置成功也不会再被拉起）。
         if (bootInteracted) {
-            mBootDirect = null;
+            resetBootDirectState();
             return;
         }
         if (isFinishing() || isDestroyed()) return;
@@ -343,9 +387,62 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
             });
             return;
         }
-        // 第二级：网络已就绪，只看数据源。没就绪就直接返回 —— 由 success() 回调再推进。
-        if (!isBootDirectReady()) return;
+        // 第二级：网络已就绪，只看数据源。点播未就绪仍交给 success() 回调推进；
+        // 直播未就绪必须主动重拉 —— 旧逻辑这里直接 return，直播配置一次加载失败后
+        // 再无人重拉，直播直达必然失效（R132，与电视端 tryBootDirect 同口径）。
+        if (!isBootDirectReady()) {
+            if (mBootTarget == BootTarget.LIVE) tryLiveDirectRetry();
+            return;
+        }
         fireBootDirect();
+    }
+
+    /**
+     * R132：直播直达的有限重试（电视端由 tryBootDirect 的 1 秒轮询承担，手机端在这里补齐）。
+     *
+     * <p>每次 tick：就绪即跳（fireBootDirect 自带一次性与防重入）；未就绪则限频
+     * {@link #LIVE_RELOAD_MIN_INTERVAL_MS} 重新拉一次直播配置，再排下一次 tick。
+     * {@code App.post} 对同一个 Runnable 先 remove 再 post，事件驱动的重复调用不会叠出多个定时器。
+     * 预算 {@link #LIVE_BOOT_DIRECT_MAX_RETRY}；就绪 / 用户按键 / 页面销毁都会停。</p>
+     */
+    private void tryLiveDirectRetry() {
+        if (mBootTarget != BootTarget.LIVE || bootInteracted) return;
+        if (isFinishing() || isDestroyed()) return;
+        if (isBootDirectReady()) {
+            fireBootDirect();
+            return;
+        }
+        // R136：数据「根本不可得」时立即放弃，不再空转 30 秒：
+        //   · 直播源从未配置（url 为空）——没有任何可加载的数据；
+        //   · sync（直播配置与主数据源同源）：直播数据只能由主数据源 JSON 内嵌的 lives 灌入
+        //     （见 VodConfig#initLive），独立重拉会被 LiveConfig#load() 的 sync 早退吞掉，
+        //     主数据源已加载完成仍无 lives ⇒ 永远等不到。
+        //   「独立直播源 + 网络慢」不在此列：那种场景重拉有意义，仍走下面的限频重试预算。
+        if (LiveConfig.isUnreachable()) {
+            abandonLiveDirect();
+            return;
+        }
+        long now = System.currentTimeMillis();
+        if (liveDirectLoadAt == 0L || now - liveDirectLoadAt >= LIVE_RELOAD_MIN_INTERVAL_MS) {
+            liveDirectLoadAt = now;
+            LiveConfig.get().init().load();
+        }
+        if (liveDirectRetry++ < LIVE_BOOT_DIRECT_MAX_RETRY) App.post(mLiveDirectRetry, 1000);
+            // R136：预算用尽不再静默——旧版这里自然停摆，老人只看到「没跳」，不知道发生了什么。
+        else abandonLiveDirect();
+    }
+
+    /**
+     * R136：直播直达的统一「放弃出口」——数据不可得（LiveConfig#isUnreachable()）
+     * 或限频重试预算用尽时走这里：清掉等待与登记（resetBootDirectState），并给出一次明确提示。
+     * 旧版两处都静默：直播不跳、续播又被互斥开关关掉，老人两头落空且毫无线索。
+     * 提示后落回首页；下次打开软件时重新判定。本方法不降级续播——两个开关互斥，
+     * 「直播直达开」意味着用户明确选择了直播，擅自转跳点播违背设置。
+     */
+    private void abandonLiveDirect() {
+        if (mBootTarget != BootTarget.LIVE) return;
+        resetBootDirectState();
+        Notify.show(R.string.boot_live_unready);
     }
 
     /**
@@ -356,7 +453,18 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
      * 依然会失败。少这一条就堵不住这个口子。</p>
      */
     private boolean isBootDirectReady() {
-        if (!NetAwait.isOnline()) return false;
+        // ⛔ R131：这里原本是 `if (!NetAwait.isOnline()) return false;` —— **已删**。
+        //   原因见 NetAwait#isOnline()：它曾要求 NET_CAPABILITY_VALIDATED，该位在国内固件上
+        //   恒 false ⇒ 本方法恒返回 false ⇒ 点播续播与直播直达 100% 不触发。
+        //   现在判据只留「数据源是否就绪」—— 配置能拉下来本身就证明网是通的，不必再判一次。
+        // R133：直播目标 —— 判「直播配置已就绪」= lives 非空且已选定源（LiveConfig#hasData()）。
+        //   ⛔ 不能用 getHome().getGroups().isEmpty()：URL 型直播源（type≥1）的频道分组要等
+        //   LiveActivity 打开后自行拉取才会填充，配置解析完成时恒为空 ⇒ 旧判据对这类源永远为假，
+        //   直播直达永远不跳（小米电视实测：手动进直播正常播放，开机直达永不触发，BDiag 全程
+        //   liveGroups=0）。跳转后的频道拉取由 LiveActivity 自身负责，与手动进入同一条路径。
+        if (mBootTarget == BootTarget.LIVE) return LiveConfig.hasData();
+        // R125：待续播项可能已被消费（跳转后置空）—— 必须先判空，否则 mBootDirect.getSiteKey() NPE。
+        if (mBootDirect == null) return false;
         if (VodConfig.get().getSites().isEmpty()) return false;
         if (!VodConfig.get().getSite(mBootDirect.getSiteKey()).isEmpty()) return true;
         // ⛔ 2026-10-24 修「冷启动/被杀进程后退出自动续播失效」：
@@ -368,12 +476,21 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
 
     /** 三绿后真正发起续播。此时详情页必定能取到站点，不存在「跳进去再失败」。 */
     private void fireBootDirect() {
-        History item = mBootDirect;
-        mBootDirect = null;
+        // R125：目标一次性消费 —— 发完就清成 NONE，后续驱动自然早退，不会二次跳、不会空指针。
+        BootTarget target = mBootTarget;
+        if (target == BootTarget.NONE) return;
+        if (bootInteracted) return;
+        if (isFinishing() || isDestroyed()) return;
+        mBootTarget = BootTarget.NONE;
         bootDirectAwait.cancel();
         bootDirectAwait = NetAwait.Handle.NONE;
-        if (item == null || bootInteracted) return;
-        if (isFinishing() || isDestroyed()) return;
+        if (target == BootTarget.LIVE) {
+            LiveActivity.start(this);
+            return;
+        }
+        History item = mBootDirect;
+        mBootDirect = null;
+        if (item == null) return;
         // siteKey 失效时用当前主站点打开（与 isBootDirectReady 的降级判据配套）
         String key = item.getSiteKey();
         if (VodConfig.get().getSite(key).isEmpty()) key = VodConfig.get().getHome().getKey();
@@ -385,9 +502,14 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
         bootDirectAwait.cancel();
         bootDirectAwait = NetAwait.Handle.NONE;
         mBootDirect = null;
+        mBootTarget = BootTarget.NONE;
         bootNetReady = false;
         // 还是一次新的「打开软件」，允许续播；已操作标记随之复位。
         bootInteracted = false;
+        // R132：直播直达的限频时间戳 / 重试计数一并清零，重试定时器一并撤销。
+        liveDirectLoadAt = 0L;
+        liveDirectRetry = 0;
+        App.removeCallbacks(mLiveDirectRetry);
     }
 
     /**
@@ -405,6 +527,9 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
         if (NetAwait.isOnline()) return;
         configAwait = NetAwait.whenReady(0L, this::reloadConfig, () -> {
         });
+        // R129：兜底轮询（理由同电视端）。R131 前 whenReady 依赖 VALIDATED、坏固件永不触发；
+        //   R131 后保留，兜「网络能力回调不上报 / 回调早于监听注册」的机型。
+        App.post(this::reloadConfig, RESILIENT_RETRY_MS);
     }
 
     /** 网络恢复后的重载：先撤销等待（一次即够），再重走一遍配置加载。 */
@@ -495,7 +620,13 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
                 setNavigation();
                 break;
             case BOOT:
-                LiveActivity.start(this);
+            case LIVE:
+                // R125：BOOT 只有一个来源（直播配置解析完成 + 「直播开机直达」开关打开，见 LiveConfig#setHome），
+                //   LIVE 是「直播配置就绪」。两者都只用来**推进已登记的直播目标**，不新建目标 ——
+                //   否则运行期任何一次直播配置重载（换源、重试）都会把老人从正在看的页面上拽走。
+                //   R125：原先这里还有一个 tvbus 分量（「用户刚换了直播内核」）—— 该语义已由
+                //   TVBus 原地重建引擎取代（换内核不再需要杀进程再跳回来），故一并删除。
+                if (mBootTarget == BootTarget.LIVE) awaitBootDirect();
                 break;
         }
     }

@@ -43,13 +43,19 @@ public class ElderMode {
      *       / {@code elder_lock_search} / {@code elder_lock_route} —— 一键锁定与其下各项；</li>
      *   <li>{@code auto_fullscreen} —— 点播自动全屏；</li>
      *   <li>{@code auto_resume} —— 退出自动续播；</li>
+     *   <li>{@code boot_live_direct} —— 直播开机直达（与 {@code auto_resume} 互斥，默认关）；</li>
      *   <li>{@code index_quick_search} —— 首页快速搜索（index 站源点击是否跳搜索）；</li>
      *   <li>{@code elder_key_sound} —— 按键音；</li>
      *   <li>{@code elder_font_size} —— 字号档位；</li>
      *   <li>{@code size} —— 图片尺寸（决定首页 / 分类页的列数与卡片大小）；</li>
      *   <li>{@code elder_nav_live} —— 手机版底部导航「直播」入口（电视版不读，登记以保持双端口径一致）；</li>
-     *   <li>{@code site_disabled} —— 用户关掉的站源（站源选择，见 {@link com.fongmi.android.tv.utils.SiteVisibility}）。</li>
      * </ul>
+     *
+     * <p>⛔ <b>站源启停（{@code SiteVisibility}）刻意不在本表</b>：它的 key 是
+     * {@code site_disabled.<配置指纹>}（按配置分桶，不是固定 key），且语义上与收藏 / 观看记录
+     * 同属「用户自己的数据选择」，所以「恢复默认设置」<b>保留</b>用户关掉的站源
+     * —— 详见 {@code SiteVisibility#reset()} 的说明。别再往本表里加 {@code site_disabled}，
+     * 那是个不存在的 key（清不掉任何东西，只会误导后人）。</p>
      */
     private static final String[] RESET_KEYS = {
             "elder_lock_on",
@@ -59,12 +65,12 @@ public class ElderMode {
             "elder_lock_route",
             "auto_fullscreen",
             "auto_resume",
+            "boot_live_direct",
             "index_quick_search",
             "elder_key_sound",
             "elder_font_size",
             "size",
             "elder_nav_live",
-            "site_disabled",
     };
 
     private ElderMode() {

@@ -103,8 +103,6 @@
     <dimen name="ag_vod_poster_h">225dp</dimen>
 
     <!-- ==== 详情页行高（API 24 起统一生效，不走 XML lineHeight）==== -->
-    <dimen name="ag_line_display">46dp</dimen>
-    <dimen name="ag_line_body">28dp</dimen>
 
     <!-- ==== 详情页网格栅格间距 ====
          ⚠ 必须用 **Activity 侧** Resources 读取（getResources().getDimensionPixelSize）。
@@ -112,7 +110,6 @@
          既不随字号档位、也不随大屏补偿缩放；而项的内边距（shape_item_normal/focused 的
          上下 8dp / 左右 12dp）随档位缩放 → 档位越高，格与格之间越挤、内边距越阔。
          改走 Activity 侧后，间距与内边距同比缩放，栅格才自洽。 -->
-    <dimen name="ag_grid_gap">8dp</dimen>
 
     <!-- ==== 加载/缓冲浮层（view_progress） ====
          本浮层同时出现在两个差异极大的宿主里：
@@ -127,7 +124,6 @@
     <!-- ==== 弹窗（三段式：标题 / 内容 / 按钮行） ====
          列表项 64dp：24sp 文字 + 上下 8dp 内边距需要 48dp，写死 40dp 会把文字上下裁掉；
          列表上限 352dp：24sp 字号下一屏放得下 4~5 项，超出滚动，按钮行不会被顶出屏幕。 -->
-    <dimen name="ag_dialog_item_h">64dp</dimen>
     <dimen name="ag_dialog_list_max">352dp</dimen>
     <dimen name="ag_key_size">80dp</dimen>
     <dimen name="ag_func_size">120dp</dimen>
@@ -156,5 +152,10 @@
          而 match_parent 配 layout_toEndOf 会被 RelativeLayout 忽略（宽度按整个父宽算，
          文字会压到海报上）。所以改用「左起点固定 + match_parent 填满剩余」的写法。 -->
     <dimen name="ag_vod_meta_start">448dp</dimen>
+
+    <!-- 一键锁定页「标签列」固定宽：4 行标签字数不同（主数据源/播放线路/搜索优先源/直播源），
+         wrap_content 会让右侧值列起点参差不齐 ⇒ 固定标签列宽让值列起点垂直对齐。
+         148dp ≈ 最长标签 5 个字（24sp×5=120sp）+ 4dp 安全余量；随字号档位等比放大，高档位对齐不破。 -->
+    <dimen name="ag_lock_label_w">148dp</dimen>
 
 </resources>

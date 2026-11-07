@@ -83,7 +83,6 @@ import com.fongmi.android.tv.utils.FileChooser;
 import com.fongmi.android.tv.utils.FileUtil;
 import com.fongmi.android.tv.utils.ImgUtil;
 import com.fongmi.android.tv.utils.KeyUtil;
-import com.fongmi.android.tv.utils.ElderLock;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.SoundFx;
@@ -629,9 +628,9 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
 
     @Override
     public void renderFlags(List<Flag> items) {
-        // 已锁定播放线路时隐藏线路选择条，交给原生自动择优 + 失败顺延逻辑处理，
-        // 老人不会被问到「用哪条线路」。未锁定时与原版完全一致。
-        mBinding.flag.setVisibility(items.isEmpty() || ElderLock.hideRoute() ? View.GONE : View.VISIBLE);
+        // R130：锁定不再隐藏线路条 —— 锁定只固定「用哪个数据源」，
+        //   不等于「不许用户自己挑线路」；空列表时才隐藏。
+        mBinding.flag.setVisibility(items.isEmpty() ? View.GONE : View.VISIBLE);
         mBinding.flagTitle.setVisibility(mBinding.flag.getVisibility());
         mFlagCount = items.size();
         mFlagAdapter.addAll(items);

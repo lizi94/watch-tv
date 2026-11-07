@@ -10,7 +10,6 @@ import androidx.room.PrimaryKey;
 
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.Constant;
-import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.api.loader.BaseLoader;
 import com.fongmi.android.tv.db.AppDatabase;
 import com.fongmi.android.tv.gson.ExtAdapter;
@@ -310,14 +309,6 @@ public class Live {
         for (Group group : getGroups()) if (group.getName().equals(item.getName())) return group;
         getGroups().add(item);
         return item;
-    }
-
-    public int getBootIcon() {
-        return isBoot() ? R.drawable.ic_live_boot : R.drawable.ic_live_block;
-    }
-
-    public int getPassIcon() {
-        return isPass() ? R.drawable.ic_live_block : R.drawable.ic_live_pass;
     }
 
     public Live boot(boolean boot) {

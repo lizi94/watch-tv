@@ -56,10 +56,6 @@ public class Catchup {
         this.type = type;
     }
 
-    public String getDays() {
-        return TextUtils.isEmpty(days) ? "" : days;
-    }
-
     public void setDays(String days) {
         this.days = days;
     }

@@ -92,13 +92,6 @@ public class Util {
         }
     }
 
-    public static CharSequence getClipText() {
-        ClipboardManager manager = (ClipboardManager) App.get().getSystemService(Context.CLIPBOARD_SERVICE);
-        ClipData clipData = manager == null ? null : manager.getPrimaryClip();
-        if (clipData == null || clipData.getItemCount() == 0) return "";
-        return clipData.getItemAt(0).getText();
-    }
-
     public static void copy(String text) {
         try {
             ClipboardManager manager = (ClipboardManager) App.get().getSystemService(Context.CLIPBOARD_SERVICE);

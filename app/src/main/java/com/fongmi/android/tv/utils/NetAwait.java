@@ -42,10 +42,13 @@ public final class NetAwait {
     /**
      * 判定「现在能否上网」。
      *
-     * <p><b>为什么优先认 VALIDATED</b>：{@code NET_CAPABILITY_INTERNET} 只表示「这张网声称能上网」，
-     * 盒子刚连上路由器、但光猫还没拨通时它就已经为 true —— 这正是我们要躲开的那段时间；
-     * {@code NET_CAPABILITY_VALIDATED} 才是「系统真的探测通了外网」。所以只要系统给了 VALIDATED
-     * 就以它为准，没给（部分老盒子不报）再退回 INTERNET，避免把用户卡死在等待里。</p>
+     * <p><b>⛔ R131：只看「有活动网络 + 声明支持 INTERNET」，不再要求 VALIDATED。</b>
+     * 旧实现在 {@code NET_CAPABILITY_VALIDATED} 为 false 时一律返回 false，理由原本是
+     * 「盒子刚连上路由器、光猫还没拨通时 INTERNET 就已经为 true」。但实测更严重的问题在另一头：
+     * <b>国内大量电视/盒子永远拿不到 VALIDATED</b>（系统级联网校验访问的是厂商/Google 服务器，
+     * 多数固件直接跳过或失败）⇒ 本方法恒 false ⇒ 8 处真实逻辑全部失效，
+     * 最先崩的就是「点播续播 / 直播开机直达」（{@code isBootDirectReady()} 首行就是本方法）。
+     * 现在宁可接受「偶尔早判一次在线、多发一个注定失败的请求」，也不要让整个功能面全灭。</p>
      */
     public static boolean isOnline() {
         ConnectivityManager manager = manager();
@@ -56,10 +59,16 @@ public final class NetAwait {
             NetworkCapabilities capabilities = manager.getNetworkCapabilities(network);
             if (capabilities == null) return false;
             if (!capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)) return false;
-            // VALIDATED 为 true → 确定通了；为 false 时区分「系统明确说没通」与「系统没给这个位」。
-            // API 23+ 起 NET_CAPABILITY_VALIDATED 恒存在（未通网时为 false），
-            // 因此这里把 false 视为「还没通」是安全的保守判断。
-            return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
+            // ⛔⛔ R131：**不再要求 NET_CAPABILITY_VALIDATED**。
+            //   该位代表「系统级联网校验通过」（访问厂商/Google 的校验服务器）。国内大量电视与
+            //   盒子完不成这次校验，或校验服务器不可达 ⇒ 这个位<b>恒为 false</b>。
+            //   而全仓有 8 处真实逻辑依赖本方法，最先崩的就是开机直达：
+            //   isBootDirectReady() 首行 `if (!NetAwait.isOnline()) return false;` ⇒ 恒 false
+            //   ⇒ 点播续播与直播直达 100% 不触发（开关打开也没用，热启动/冷启动都一样）。
+            //   判据保留「有活动网络 + 声明支持 INTERNET」即可；真没网时上面两行已经返回 false。
+            //   代价：连了「无外网的热点」时会认为在线，从而多一次失败请求 —— 那也只是显示
+            //   「暂时连接不上 + 重试」，比「永久判无网导致功能全灭」好得多。
+            return true;
         } catch (Exception e) {
             return false;
         }
@@ -185,7 +194,10 @@ public final class NetAwait {
          */
         @Override
         public void onCapabilitiesChanged(@NonNull Network network, @NonNull NetworkCapabilities capabilities) {
-            if (!capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)) return;
+            // ⛔ R131：与 onAvailable 同口径 —— 只看 INTERNET。要求 VALIDATED 时，
+            //   国内固件永远等不到，这条兜底也就永远不触发（awaitBootDirect 的第一级
+            //   bootNetReady 正依赖 whenReady）。
+            if (!capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)) return;
             fire(onReady);
         }
 

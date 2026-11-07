@@ -16,7 +16,6 @@ import com.github.catvod.utils.Path;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -59,12 +58,6 @@ public class FileUtil {
     public static void copyAtomically(File source, File target) throws IOException {
         if (source.getCanonicalFile().equals(target.getCanonicalFile())) return;
         try (InputStream input = new FileInputStream(source)) {
-            copyAtomically(input, target);
-        }
-    }
-
-    public static void writeAtomically(byte[] data, File target) throws IOException {
-        try (InputStream input = new ByteArrayInputStream(data)) {
             copyAtomically(input, target);
         }
     }

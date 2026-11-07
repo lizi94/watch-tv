@@ -43,6 +43,12 @@ public class TypeAdapter extends RecyclerView.Adapter<TypeAdapter.ViewHolder> {
     }
 
     public void addAll(Result result) {
+        // ⛔ 2026-11-06（R114）：**先清空再填**。本方法的语义是「用 result 替换当前分类列表」，
+        //   但原来直接 addAll 追加、且每次都 add(0, home()) —— 调用方一旦没有先 clear()
+        //   （例如 VodFragment 同进程重建后直接刷新内容），就会变成
+        //   「两个推荐 + 分类翻倍」：mItems = [推荐, 推荐, A, B, 推荐, A, B]。
+        //   修在数据源头，所有调用方都安全；不要再依赖「调用前记得 clear」这种口头约定。
+        mItems.clear();
         mItems.addAll(result.getTypes());
         if (!result.getList().isEmpty()) mItems.add(0, home());
         if (!mItems.isEmpty()) mItems.get(0).setSelected(true);

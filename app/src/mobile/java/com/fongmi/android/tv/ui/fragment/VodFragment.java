@@ -253,8 +253,7 @@ public class VodFragment extends BaseFragment implements ConfigListener, FilterL
         mBinding.emptyRetry.setVisibility(canRetry ? View.VISIBLE : View.GONE);
         mBinding.empty.setVisibility(View.VISIBLE);
         // 自动重试每个页面实例只挂一次（networkAwaited 一次翻转、不在重试后复位）：
-        // 极端情况下（系统从不上报 NET_CAPABILITY_VALIDATED 的少量老机型 → isBroken() 恒为真、
-        // watchNetwork() 的 isOnline() 守卫也恒不成立）注册回调会被同步补发 onAvailable，
+        // 极端情况下（回调早于监听注册的机型会把 onAvailable 同步补发过来）注册即立刻回调，
         // 于是「挂 → 立刻回调 → 重试 → 仍空 → 再挂」会自转成忙循环。一次性的等待彻底堵死这条路：
         // 网络恢复替他试一次就够了，再不行也还有手动按钮。
         if (canRetry && !networkAwaited) {

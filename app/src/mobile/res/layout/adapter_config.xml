@@ -1,32 +1,56 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 历史配置列表项（手机版）：与主数据源弹窗行（选择模式）同构 ——
+     shape_site_pick_row（10dp 圆角淡白行 + 按下主色高亮），内边距显式补 12/8dp。
+     三元素：text（点行=切换使用）+ state（使用中/停用）+ 启停文字按钮（原删除图标位）。
+     @id/text、@id/state 必须与电视版同名同类型（ConfigAdapter 双端各一份）。 -->
 <androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:layout_marginBottom="8dp"
+    android:background="@drawable/shape_site_pick_row"
     android:gravity="center_vertical"
-    android:orientation="horizontal">
+    android:minHeight="48dp"
+    android:orientation="horizontal"
+    android:paddingStart="12dp"
+    android:paddingTop="8dp"
+    android:paddingEnd="12dp"
+    android:paddingBottom="8dp">
 
-    <com.google.android.material.button.MaterialButton
+    <com.google.android.material.textview.MaterialTextView
         android:id="@+id/text"
-        style="?attr/materialButtonOutlinedStyle"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:ellipsize="middle"
         android:singleLine="true"
-        android:textColor="?attr/colorOnSurface"
-        android:textSize="14sp"
-        app:backgroundTint="@color/selector_button"
-        app:strokeColor="@color/selector_stroke"
+        android:textColor="@color/white"
+        android:textSize="16sp"
         tools:text="https://fongmi.github.io/cat.json" />
 
-    <androidx.appcompat.widget.AppCompatImageView
-        android:id="@+id/delete"
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/state"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
+        android:layout_marginStart="12dp"
+        android:singleLine="true"
+        android:textColor="@color/site_state_color"
+        android:textSize="16sp"
+        tools:text="使用中" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/action"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:src="@drawable/ic_setting_delete" />
+        android:paddingStart="8dp"
+        android:paddingTop="4dp"
+        android:paddingEnd="8dp"
+        android:paddingBottom="4dp"
+        android:singleLine="true"
+        android:textColor="@color/white"
+        android:textSize="14sp"
+        tools:text="停用" />
 
 </androidx.appcompat.widget.LinearLayoutCompat>

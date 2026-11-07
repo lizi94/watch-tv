@@ -302,10 +302,6 @@ public class VodPlaybackController {
         }
     }
 
-    public void selectSource(Vod item) {
-        switchSource(item);
-    }
-
     void fallbackSource(Vod item) {
         switchSource(item);
     }
@@ -570,14 +566,24 @@ public class VodPlaybackController {
             // ⛔ 不能静默 return —— 此时 selectFlag() 已把高亮切到新线路，静默返回会让
             //    「提示已切换到线路 X + 高亮在 X」但画面还是旧流，老人会认为「换线没用」。
             List<Episode> episodes = flag.getEpisodes();
-            if (episodes == null || episodes.isEmpty()) return;
+            // R129：换到的这条线路**没有剧集**时不能静默 return —— 那样既不起播、也不武装看门狗，
+            //   表现就是「线路高亮切过去了，却什么都没发生」。交给推进器继续试下一条。
+            if (episodes == null || episodes.isEmpty()) {
+                fallbackPolicy.emptyFlag();
+                return;
+            }
             episode = episodes.get(0);
             if (history != null) history.setVodRemarks(episode.getName());
             host.renderQualityVisible(episode.isSelected() && state.getQuality().getUrl().isMulti());
             selectEpisode(episode);
             return;
         }
-        if (episode.isSelected()) return;
+        // R129：⛔ 这里原本是 `if (episode.isSelected()) return;` —— **必须删掉**。
+        //   走到这里说明线路真的换了（selectFlag 开头已用 `selected.isSelected()` 拦过「同线路」），
+        //   而每条线路的播放地址完全不同 ⇒ 不重新请求就等于「提示已切到线路 X、画面还是旧流」。
+        //   更关键：首次起播走 startPlayback，没经过 Flag#toggle(false, …) 去清其它线路的选中态，
+        //   所以其它线路的第 1 集**一直是 selected**；换线时集名对不上就退化成「取第 1 集」，
+        //   本条判断几乎必然命中 ⇒ 表现为「自动换线但像跳过、没有任何尝试播放的动作」。
         if (history != null) history.setVodRemarks(episode.getName());
         selectEpisode(episode);
     }

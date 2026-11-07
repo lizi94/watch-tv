@@ -156,7 +156,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/ag_space_4"
-            android:nextFocusDown="@id/indexSearch"
+            android:nextFocusDown="@id/bootLive"
             android:orientation="horizontal">
 
             <com.google.android.material.textview.MaterialTextView
@@ -174,7 +174,32 @@
                 tools:text="开启" />
         </androidx.appcompat.widget.LinearLayoutCompat>
 
-        <!-- 7. 首页快速搜索 -->
+        <!-- 7. 直播开机直达 -->
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/bootLive"
+            style="@style/Ag.ListItem"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ag_space_4"
+            android:nextFocusDown="@id/indexSearch"
+            android:orientation="horizontal">
+
+            <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Body"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/ag_space_4"
+                android:text="@string/elder_setting_boot_live_entry" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/bootLiveText"
+                style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                tools:text="关闭" />
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <!-- 8. 首页快速搜索 -->
         <androidx.appcompat.widget.LinearLayoutCompat
             android:id="@+id/indexSearch"
             style="@style/Ag.ListItem"
@@ -199,7 +224,7 @@
                 tools:text="关闭" />
         </androidx.appcompat.widget.LinearLayoutCompat>
 
-        <!-- 8. 遥控器按键音 -->
+        <!-- 9. 遥控器按键音 -->
         <androidx.appcompat.widget.LinearLayoutCompat
             android:id="@+id/sound"
             style="@style/Ag.ListItem"
@@ -224,7 +249,7 @@
                 tools:text="开启" />
         </androidx.appcompat.widget.LinearLayoutCompat>
 
-        <!-- 9. 恢复默认设置（破坏性操作，固定最后） -->
+        <!-- 10. 恢复默认设置（破坏性操作，固定最后） -->
         <androidx.appcompat.widget.LinearLayoutCompat
             android:id="@+id/restore"
             style="@style/Ag.ListItem"

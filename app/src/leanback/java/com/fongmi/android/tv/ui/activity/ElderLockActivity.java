@@ -29,8 +29,8 @@ import com.fongmi.android.tv.utils.Notify;
  *       只列已启用的站源，点一行即选为要锁定的数据源，当前生效源标「使用中」。</li>
  *   <li><b>播放线路</b>（{@code @id/route}）：自动择优换线开关。</li>
  *   <li><b>搜索优先源</b>（{@code @id/search}）：开启后搜索结果里优先展示锁定的数据源。</li>
- *   <li><b>直播源</b>（{@code @id/live}）：点开 {@link LiveDialog} 的操作栏形态，
- *       一窗两用 —— 点一行即换直播源；启停/屏蔽图标 + 长按批量。</li>
+ *   <li><b>直播源</b>（{@code @id/live}）：点开 {@link LiveDialog} —— 纯名称列表，
+ *       点一行即换直播源。</li>
  * </ul>
  *
  * <p>按钮<b>合一</b>：页面只有一个「锁定/解锁」按钮——未锁定时显示「一键锁定」，
@@ -139,14 +139,14 @@ public class ElderLockActivity extends BaseActivity implements LiveListener {
         refresh();
     }
 
-    /** 直播源：操作栏形态的直播弹窗 —— 点一行即换源，启停/屏蔽 + 长按批量由弹窗自己处理。 */
+    /** 直播源：直播弹窗 —— 点一行即换源，纯名称列表，无启停/屏蔽图标。 */
     private void onLive(View view) {
         if (needUnlockFirst()) return;
         if (LiveConfig.get().getLives().isEmpty()) {
             Notify.show(R.string.elder_live_need_config);
             return;
         }
-        LiveDialog.create().action().show(this);
+        LiveDialog.create().show(this);
     }
 
     @Override

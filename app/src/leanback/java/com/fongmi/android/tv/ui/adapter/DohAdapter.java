@@ -6,6 +6,7 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.api.config.VodConfig;
 import com.fongmi.android.tv.databinding.AdapterDohBinding;
 import com.github.catvod.bean.Doh;
@@ -52,7 +53,12 @@ public class DohAdapter extends RecyclerView.Adapter<DohAdapter.ViewHolder> {
         Doh item = mItems.get(position);
         holder.binding.text.setText(item.getName());
         holder.binding.text.setSelected(select == position);
-        holder.binding.text.setOnClickListener(v -> listener.onItemClick(item));
+        // 选中项行尾标注「使用中」，与主数据源选择模式（SiteManageAdapter）同一文案。
+        if (select == position) holder.binding.state.setText(R.string.site_pick_in_use);
+        else holder.binding.state.setText("");
+        // 单动作行：点击绑整行根布局 —— Ag.ListItem 的 focusable 在根布局上，遥控器焦点落整行，
+        // 绑在 text 上按 OK 键不会触发（R119 改行样式时引入的回归，R122 修复）。
+        holder.binding.getRoot().setOnClickListener(v -> listener.onItemClick(item));
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder {

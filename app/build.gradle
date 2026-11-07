@@ -19,8 +19,8 @@ android {
         applicationId "com.fongmi.android.tv"
         minSdk libs.versions.minSdk.get().toInteger()
         targetSdk libs.versions.targetSdk.get().toInteger()
-        versionCode 611
-        versionName "6.1.1"
+        versionCode 629
+        versionName "6.2.9"
         javaCompileOptions {
             annotationProcessorOptions {
                 arguments = ["room.schemaLocation": "$projectDir/schemas".toString(), "eventBusIndex": "com.fongmi.android.tv.event.EventIndex"]
@@ -91,6 +91,10 @@ dependencies {
     implementation project(':chaquo')
     implementation project(':quickjs')
     implementation libs.appcompat
+    // R125：显式声明 androidx.core —— ContextCompat（App#registerScreenOff / ActionReceiver /
+    //   PlaybackActivity / Notify / ResUtil / mobile Biometric / Timer）全仓在用，
+    //   但此前只靠 appcompat 的传递依赖带进来。传递依赖一旦被上游改掉就会整片编译失败。
+    implementation libs.core
     implementation libs.lifecycle.service
     implementation libs.media
     implementation libs.palette

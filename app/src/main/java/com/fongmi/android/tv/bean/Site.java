@@ -206,10 +206,6 @@ public class Site implements Parcelable {
         return type == null ? 0 : type;
     }
 
-    public Integer getHide() {
-        return hide == null ? 0 : hide;
-    }
-
     public Integer getIndexs() {
         return indexs == null ? 0 : indexs;
     }
@@ -275,10 +271,6 @@ public class Site implements Parcelable {
         this.selected = item.equals(this);
     }
 
-    public boolean isHide() {
-        return getHide() == 1;
-    }
-
     public boolean isIndex() {
         return getIndexs() == 1;
     }
@@ -294,10 +286,6 @@ public class Site implements Parcelable {
     public Site setSearchable(boolean searchable) {
         if (getSearchable() != 0) setSearchable(searchable ? 1 : 2);
         return this;
-    }
-
-    public boolean isChangeable() {
-        return getChangeable() == 1;
     }
 
     public void setChangeable(Integer changeable) {

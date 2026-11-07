@@ -228,8 +228,23 @@ public class VodConfig extends BaseConfig {
         for (Depot item : items) configs.add(Config.find(item, VOD));
         if (configs.isEmpty()) throw new Exception("Depot urls is empty");
         inDepot = true;
+        Throwable lastError = null;
         try {
-            load(this.config = configs.get(0));
+            // R129：**多仓必须逐个尝试**。原先只 load(configs.get(0))：第一个子仓挂了
+            //   （网络/格式/空站点）就整体失败 ⇒ 首页 sites 为空 ⇒ 「首次导入多仓后一直转圈」。
+            //   现在依次试，直到某个子仓真的解析出站点；全部失败才把最后一个异常抛出去。
+            for (Config item : configs) {
+                try {
+                    load(this.config = item);
+                    if (!getRawSites().isEmpty()) {
+                        lastError = null;
+                        break;
+                    }
+                } catch (Throwable e) {
+                    lastError = e;
+                }
+            }
+            if (lastError != null) throw lastError;
         } finally {
             inDepot = false;
         }

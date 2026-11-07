@@ -41,6 +41,9 @@ public class Config {
     private String home;
     @SerializedName("parse")
     private String parse;
+    // 启停标记（true=启用）：不加 @SerializedName，Gson 序列化/推送协议不受影响。
+    // 历史配置弹窗用它做「停用=软删除」；停用的配置不进入直播页切换器等只读场景。
+    private boolean checked = true;
 
     @Ignore
     @SerializedName("notice")
@@ -123,13 +126,6 @@ public class Config {
     public static Config find(String url, int type) {
         Config item = AppDatabase.get().getConfigDao().find(url, type);
         return item == null ? create(type, url) : item.type(type);
-    }
-
-    /** 纯查询：找不到返回 {@code null}，绝不自动创建（供锁定状态回退判断使用）。 */
-    public static Config getOrNull(String url, int type) {
-        if (url == null || url.isEmpty()) return null;
-        Config item = AppDatabase.get().getConfigDao().find(url, type);
-        return item == null ? null : item.type(type);
     }
 
     public static Config find(String url, String name, int type) {
@@ -222,6 +218,72 @@ public class Config {
 
     public void setParse(String parse) {
         this.parse = parse;
+    }
+
+    public boolean isChecked() {
+        return checked;
+    }
+
+    /** Room 实体要求的标准 setter（字段 checked）。 */
+    public void setChecked(boolean value) {
+        checked = value;
+    }
+
+    public Config putChecked(boolean value) {
+        checked = value;
+        return this;
+    }
+
+    /** 启停切换：只在内存里翻转，调用方自行 save() 落库。 */
+    public Config toggleChecked() {
+        return putChecked(!checked);
+    }
+
+    /**
+     * 是否处于「停用」态。
+     *
+     * <p>停用 = 软删除（保留历史记录但不再可用）。停用项<b>不可被选用</b>：
+     * 它的地址可能已失效，选用会直接加载失败并报错。</p>
+     */
+    public boolean isDisabled() {
+        return !checked;
+    }
+
+    /**
+     * 是否当前「使用中」：{@link #findOne(int)}（时间最新一条）与自己同 id。
+     *
+     * <p>与 {@code ConfigAdapter} 的「使用中」标注同源（同一判定口径），
+     * 保证「标注」「能不能停用」「能不能选用」三处不会打架。</p>
+     */
+    public boolean isInUse() {
+        Config used = findOne(getType());
+        return used != null && used.getId() == getId();
+    }
+
+    /**
+     * 逻辑层不变量：<b>使用中的配置不允许停用</b>。
+     *
+     * <p>放在 bean 层而不是只靠 UI 隐藏按钮 —— 任何调用方都绕不过，
+     * 不会出现「停用了正在用的配置 ⇒ 点不动、也换不掉」的僵死状态。</p>
+     *
+     * @return true = 允许停用
+     */
+    public boolean canDisable() {
+        return !isInUse();
+    }
+
+    /**
+     * 重新选用：停用过的记录恢复为启用并落库；本来就是启用状态时不动数据库。
+     *
+     * <p>用于「用户手动添加 / 编辑配置」这种<b>明确意图</b>的入口
+     * （{@code ConfigDialog}）：用户就是要用这个地址，不该被历史的停用状态拦住。
+     * 与「在历史列表里点一条停用项」不同 —— 那种是误触，必须拦（见 ConfigAdapter）。</p>
+     */
+    public Config enable() {
+        if (checked) return this;
+        putChecked(true);
+        save();
+        return this;
     }
 
     public long getTime() {

@@ -30,6 +30,17 @@
             android:paddingEnd="16dp"
             android:paddingBottom="16dp">
 
+            <!-- 页面说明（与 TV 端 desc 同文案）：告知锁定行为与自动换线，两端信息对齐 -->
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/desc"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:lineSpacingExtra="4dp"
+                android:text="@string/elder_lock_desc"
+                android:textColor="@color/white"
+                android:textSize="13sp" />
+
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:id="@+id/site"
                 android:layout_width="match_parent"

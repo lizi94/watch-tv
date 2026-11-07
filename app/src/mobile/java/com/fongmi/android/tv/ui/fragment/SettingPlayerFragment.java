@@ -17,11 +17,11 @@ import com.fongmi.android.tv.setting.PlayerSetting;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.ui.activity.HomeActivity;
 import com.fongmi.android.tv.ui.base.BaseFragment;
+import com.fongmi.android.tv.ui.dialog.ArrayPickDialog;
 import com.fongmi.android.tv.ui.dialog.BufferDialog;
 import com.fongmi.android.tv.ui.dialog.MpvConfDialog;
 import com.fongmi.android.tv.ui.dialog.UaDialog;
 import com.fongmi.android.tv.utils.ResUtil;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 public class SettingPlayerFragment extends BaseFragment implements UaListener, BufferListener {
 
@@ -113,11 +113,11 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, B
     }
 
     private void onScale(View view) {
-        new MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.player_scale).setNegativeButton(R.string.dialog_negative, null).setSingleChoiceItems(scale, PlayerSetting.getScale(), (dialog, which) -> {
+        // 通用单选弹窗（行列表 + 「使用中」标注），替代系统 setSingleChoiceItems，与主数据源弹窗同构。
+        ArrayPickDialog.create().title(R.string.player_scale).items(scale).select(PlayerSetting.getScale()).listener(which -> {
             mBinding.scaleText.setText(scale[which]);
             PlayerSetting.putScale(which);
-            dialog.dismiss();
-        }).show();
+        }).show(this);
     }
 
     private void onBuffer(View view) {
@@ -131,11 +131,10 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, B
     }
 
     private void onBackground(View view) {
-        new MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.player_background).setNegativeButton(R.string.dialog_negative, null).setSingleChoiceItems(background, PlayerSetting.getBackground(), (dialog, which) -> {
+        ArrayPickDialog.create().title(R.string.player_background).items(background).select(PlayerSetting.getBackground()).listener(which -> {
             mBinding.backgroundText.setText(background[which]);
             PlayerSetting.putBackground(which);
-            dialog.dismiss();
-        }).show();
+        }).show(this);
     }
 
     private void setAdblock(View view) {

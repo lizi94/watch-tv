@@ -1,14 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.textview.MaterialTextView xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- DoH 列表项（电视版）：与主数据源弹窗行（adapter_site_manage.xml）同构 ——
+     Ag.ListItem 自带 selector_item 焦点框与 64dp 触控高度，文字走 Ag.Text.Body。
+     选中项由 @id/state 行尾标注「使用中」（与主数据源选择模式同一文案 site_pick_in_use）。 -->
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/text"
+    style="@style/Ag.ListItem"
     android:layout_width="match_parent"
-    android:layout_height="@dimen/ag_dialog_item_h"
-    android:background="@drawable/selector_chip_round"
-    android:focusable="true"
-    android:focusableInTouchMode="true"
-    android:gravity="center"
-    android:singleLine="true"
-    android:textColor="@color/text"
-    android:textSize="@dimen/ag_text_body"
-    tools:text="Google" />
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="@dimen/ag_space_2"
+    android:orientation="horizontal">
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/text"
+        style="@style/Ag.Text.Body"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:ellipsize="middle"
+        android:singleLine="true"
+        tools:text="Google" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/state"
+        style="@style/Ag.Text.Body"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/ag_space_3"
+        android:singleLine="true"
+        android:textColor="@color/site_state_color"
+        tools:text="使用中" />
+</androidx.appcompat.widget.LinearLayoutCompat>
