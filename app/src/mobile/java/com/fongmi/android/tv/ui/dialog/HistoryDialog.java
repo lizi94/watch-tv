@@ -11,7 +11,6 @@ import com.fongmi.android.tv.bean.Config;
 import com.fongmi.android.tv.databinding.DialogHistoryBinding;
 import com.fongmi.android.tv.impl.ConfigListener;
 import com.fongmi.android.tv.ui.adapter.ConfigAdapter;
-import com.fongmi.android.tv.ui.custom.SpaceItemDecoration;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
@@ -96,7 +95,6 @@ public class HistoryDialog extends BaseAlertDialog implements ConfigAdapter.OnCl
         binding.recycler.setItemAnimator(null);
         binding.recycler.setHasFixedSize(false);
         if (isFull()) binding.recycler.setMaxHeight(ResUtil.dp2px(264));
-        binding.recycler.addItemDecoration(new SpaceItemDecoration(1, 8));
         binding.recycler.setAdapter(adapter.readOnly(readOnly).addAll(type));
     }
 
@@ -106,9 +104,10 @@ public class HistoryDialog extends BaseAlertDialog implements ConfigAdapter.OnCl
         dismiss();
     }
 
+    /** 启停切换（原删除按钮功能替换）：就地翻转落库并刷新，不关弹窗。 */
     @Override
-    public void onDeleteClick(Config item) {
-        if (adapter.remove(item) == 0) dismiss();
+    public void onActionClick(Config item) {
+        adapter.toggle(item);
     }
 
     @Override

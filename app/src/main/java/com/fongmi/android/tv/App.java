@@ -2,7 +2,10 @@ package com.fongmi.android.tv;
 
 import android.app.Activity;
 import android.app.Application;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
@@ -10,10 +13,12 @@ import android.os.Looper;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.core.os.HandlerCompat;
 
 import com.bumptech.glide.Glide;
 import com.fongmi.android.tv.db.AppDatabase;
+import com.fongmi.android.tv.utils.BootSession;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.hook.DelegateHook;
 import com.fongmi.hook.Hook;
@@ -104,6 +109,12 @@ public class App extends Application implements Application.ActivityLifecycleCal
         super.onCreate();
         Notify.createChannel();
         registerActivityLifecycleCallbacks(this);
+        // R124：记下「本次进程是在开机后多久启动的」。开机阶段的判据（默认桌面被系统用 HOME 拉起、
+        // 开机自启被 BootLauncher 拉起）都靠它，替代了 R123 那条在待机唤醒时必然判错的
+        // 「elapsedRealtime < 90 秒」绝对时间窗（elapsedRealtime 包含深睡）。
+        BootSession.onProcessStart();
+        registerScreenOff();
+        registerScreenOn();
         // 后台预热数据库：首次安装 / 版本升级后的首启要建库并跑 5 个 Migration
         // （MIGRATION_31_32 含 History 全表复制），慢闪存上可达 200ms~2s，原来会在首页首个查询处
         // 同步发生、正好压在首帧之前。这里提前到后台线程建库，首帧不再等它。
@@ -114,6 +125,55 @@ public class App extends Application implements Application.ActivityLifecycleCal
             } catch (Exception ignored) {
             }
         }, "db-warmup").start();
+    }
+
+    /**
+     * 监听系统熄屏（R124）。
+     *
+     * <p><b>为什么必须在这里（App）而不是首页</b>：系统熄屏时窗口会先失去可见性
+     * （首页走 {@code onPause → onStop}），若把监听器绑在 Activity 生命周期上，onStop 时就注销了，
+     * 永远收不到熄屏时刻 ⇒「待机唤醒算不算开机」这条判据整个失效。</p>
+     *
+     * <p><b>为什么用 {@code RECEIVER_EXPORTED}</b>（R125 更正注释）：要收到<b>系统</b>发出的广播，
+     * 注册时就必须用 EXPORTED；用 NOT_EXPORTED 注册的接收器收不到系统广播。
+     * 这里安全的原因是 {@code ACTION_SCREEN_OFF} 属于 <b>protected broadcast</b> ——
+     * 只有系统能发，第三方应用伪造不了，所以「导出」并不等于「谁都能指挥本应用」。
+     * （R124 的注释写的是「系统保护广播，用 NOT_EXPORTED 注册收不到」，把因果说反了：
+     * 恰恰是要 EXPORTED 才收得到。）</p>
+     */
+    private void registerScreenOff() {
+        try {
+            ContextCompat.registerReceiver(this, new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    BootSession.onScreenOff();
+                }
+            }, new IntentFilter(Intent.ACTION_SCREEN_OFF), ContextCompat.RECEIVER_EXPORTED);
+        } catch (Throwable e) {
+            android.util.Log.w("BootSession", "监听熄屏失败", e);
+        }
+    }
+
+    /**
+     * 监听系统亮屏（R134）。
+     *
+     * <p><b>为什么需要</b>：{@code isWakeSession()} 的「待机时长」= 亮屏时刻 − 熄屏时刻，
+     * 「唤醒新鲜度」= 当前时刻 − 亮屏时刻。没有亮屏时刻，持久化的熄屏快照既算不出待机多久，
+     * 也挡不住「进程在亮屏状态下被杀、很久后按主页键」的误判。注册方式与熄屏相同：
+     * {@code ACTION_SCREEN_ON} 同样是系统 protected broadcast，必须 EXPORTED 才收得到；
+     * 在 App 注册（而非 Activity）才能保证收屏时一定活着。</p>
+     */
+    private void registerScreenOn() {
+        try {
+            ContextCompat.registerReceiver(this, new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    BootSession.onScreenOn();
+                }
+            }, new IntentFilter(Intent.ACTION_SCREEN_ON), ContextCompat.RECEIVER_EXPORTED);
+        } catch (Throwable e) {
+            android.util.Log.w("BootSession", "监听亮屏失败", e);
+        }
     }
 
     @Override

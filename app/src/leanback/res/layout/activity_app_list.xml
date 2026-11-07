@@ -86,9 +86,9 @@
             android:layout_height="@dimen/ag_stroke_hairline"
             android:layout_weight="1" />
 
-        <!-- 右上角桌面胶囊：**只在「本应用是默认主页」时出现**。
+        <!-- 右上角桌面胶囊：**只在「本应用是默认桌面」时出现**。
              常态「换回电视自带的主页」；若本机只剩我们一个 HOME 候选，文案改成「打开系统设置」
-             （那时候「换回默认主页」无处可选，见 LauncherCapability#isOnlyHome）。 -->
+             （那时候「换回默认桌面」无处可选，见 LauncherCapability#isOnlyHome）。 -->
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/homeSwitch"
             style="@style/Ag.Button.Secondary"
@@ -148,6 +148,16 @@
             android:layout_marginStart="@dimen/ag_space_3"
             android:singleLine="true"
             android:text="@string/app_menu_info" />
+
+        <!-- 卸载应用（R122）：危险动作走 Danger 家族；系统应用在代码里隐藏此按钮 -->
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/uninstallButton"
+            style="@style/Ag.Button.Danger"
+            android:layout_height="@dimen/ag_button_h"
+            android:layout_width="wrap_content"
+            android:layout_marginStart="@dimen/ag_space_3"
+            android:singleLine="true"
+            android:text="@string/app_menu_uninstall" />
 
     </androidx.appcompat.widget.LinearLayoutCompat>
 

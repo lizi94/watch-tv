@@ -61,6 +61,7 @@ public class ElderSettingsActivity extends BaseActivity {
         mBinding.lock.setOnClickListener(this::onLock);
         mBinding.full.setOnClickListener(this::setAutoFullscreen);
         mBinding.resume.setOnClickListener(this::setAutoResume);
+        mBinding.bootLive.setOnClickListener(this::setBootLive);
         mBinding.selfCheck.setOnClickListener(view -> SelfCheckActivity.start(this));
         mBinding.sound.setOnClickListener(this::setKeySound);
         mBinding.indexSearch.setOnClickListener(this::setIndexQuickSearch);
@@ -73,7 +74,7 @@ public class ElderSettingsActivity extends BaseActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // 从锁定页 / 体检页返回后同步最新状态；同时强制重算一次「是不是默认主页」
+        // 从锁定页 / 体检页返回后同步最新状态；同时强制重算一次「是不是默认桌面」
         //（用户可能刚在系统页面里改掉了默认桌面）。
         LauncherCapability.refresh(this);
         if (mBinding != null) refresh();
@@ -85,6 +86,7 @@ public class ElderSettingsActivity extends BaseActivity {
         mBinding.lockText.setText(locked == null ? getString(R.string.elder_lock_none) : getString(R.string.elder_lock_on, locked.getName()));
         mBinding.fullText.setText(Setting.getSwitch(Setting.isAutoFullscreen()));
         mBinding.resumeText.setText(Setting.getSwitch(Setting.isAutoResume()));
+        mBinding.bootLiveText.setText(Setting.getSwitch(Setting.isBootLive()));
         mBinding.soundText.setText(Setting.getSwitch(Setting.isKeySound()));
         mBinding.indexSearchText.setText(Setting.getSwitch(Setting.isIndexQuickSearch()));
         // 设置行右侧只放计数（行标题已经是「站源管理」，再写「已启用」会重复）
@@ -98,7 +100,7 @@ public class ElderSettingsActivity extends BaseActivity {
      * 「启动与桌面体检」行的右侧摘要：已就绪 / 总数。
      *
      * <p>为什么给个数字而不是「查看」：子女帮老人装机时一眼就知道还差几项，比点进去才发现要省事。
-     * 分母是动态的 —— 「按主页键回到看电视」这一项在「已是默认主页」时是空转的，
+     * 分母是动态的 —— 「按主页键回到看电视」这一项在「已是默认桌面」时是空转的，
      * 不算进分母（{@link LauncherCapability#isSelfHome}）。</p>
      */
     private void refreshSelfCheck() {
@@ -106,7 +108,9 @@ public class ElderSettingsActivity extends BaseActivity {
         int total = 0;
         int done = 0;
         total++;
-        if (Setting.isBootAutostart()) done++;
+        // 默认桌面形态下系统必然把本应用拉起来，「开机自动打开」这一项恒成立 ⇒ 直接算就绪。
+        // 否则长辈设置右侧会永远差一项，而那一项其实在默认桌面形态下根本关不掉。
+        if (selfHome || Setting.isBootAutostart()) done++;
         total++;
         if (LauncherCapability.isBatteryOk(this)) done++;
         if (!selfHome) {
@@ -144,6 +148,22 @@ public class ElderSettingsActivity extends BaseActivity {
     private void setAutoResume(View view) {
         Setting.putAutoResume(!Setting.isAutoResume());
         mBinding.resumeText.setText(Setting.getSwitch(Setting.isAutoResume()));
+        // 与「直播开机直达」互斥：打开本开关时把另一个关掉（后开的关掉先开的）。
+        if (Setting.isAutoResume() && Setting.isBootLive()) {
+            Setting.putBootLive(false);
+            mBinding.bootLiveText.setText(Setting.getSwitch(false));
+        }
+    }
+
+    /** 直播开机直达开关：开启后冷启动直接进直播页，与「退出自动续播」互斥。 */
+    private void setBootLive(View view) {
+        Setting.putBootLive(!Setting.isBootLive());
+        mBinding.bootLiveText.setText(Setting.getSwitch(Setting.isBootLive()));
+        // 与「退出自动续播」互斥：打开本开关时把另一个关掉（后开的关掉先开的）。
+        if (Setting.isBootLive() && Setting.isAutoResume()) {
+            Setting.putAutoResume(false);
+            mBinding.resumeText.setText(Setting.getSwitch(false));
+        }
     }
 
     /**

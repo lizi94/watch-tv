@@ -1,50 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 直播源列表项（电视版）：与主数据源弹窗行（adapter_site_manage.xml）同构 ——
+     Ag.ListItem 自带 selector_item 焦点框与 64dp 触控高度，文字走 Ag.Text.Body。
+     @id/text 与主数据源行同名同类型；@id/state 由行尾标注「使用中」（同配置历史弹窗家族）。
+     ⛔ 点击绑整行根（LiveAdapter）—— Ag.ListItem 的 focusable 在根布局上，
+     绑在 text 上遥控器 OK 键根本不触发（R119 引入的回归，R122 修复）。 -->
 <androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    style="@style/Ag.ListItem"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:layout_marginBottom="@dimen/ag_space_2"
     android:orientation="horizontal">
 
-    <!-- 行高刻意写 40dp 字面值，不要套 ag_dialog_item_h(64dp)：那是弹窗列表的触控行高，
-         套到直播源列表会让条目高 +60%，整个「选择直播源」弹窗的版式被撑变形。 -->
     <com.google.android.material.textview.MaterialTextView
         android:id="@+id/text"
+        style="@style/Ag.Text.Body"
         android:layout_width="0dp"
-        android:layout_height="40dp"
+        android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:background="@drawable/selector_chip_round"
-        android:ellipsize="marquee"
-        android:focusable="true"
-        android:focusableInTouchMode="true"
-        android:gravity="center"
+        android:ellipsize="middle"
         android:singleLine="true"
-        android:textColor="@color/text"
-        android:textSize="@dimen/ag_text_body"
         tools:text="https://fongmi.github.io/live.json" />
 
-    <androidx.appcompat.widget.AppCompatImageView
-        android:id="@+id/pass"
-        app:tint="@color/ag_text"
-        android:layout_width="@dimen/ag_icon_40"
-        android:layout_height="@dimen/ag_icon_40"
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/state"
+        style="@style/Ag.Text.Body"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/ag_space_3"
-        android:background="@drawable/selector_chip_round"
-        android:focusable="true"
-        android:focusableInTouchMode="true"
-        android:padding="@dimen/ag_space_2"
-        android:src="@drawable/ic_live_pass" />
-
-    <androidx.appcompat.widget.AppCompatImageView
-        android:id="@+id/boot"
-        app:tint="@color/ag_text"
-        android:layout_width="@dimen/ag_icon_40"
-        android:layout_height="@dimen/ag_icon_40"
-        android:layout_marginStart="@dimen/ag_space_3"
-        android:background="@drawable/selector_chip_round"
-        android:focusable="true"
-        android:focusableInTouchMode="true"
-        android:padding="@dimen/ag_space_2"
-        android:src="@drawable/ic_live_boot" />
+        android:singleLine="true"
+        android:textColor="@color/site_state_color"
+        tools:text="使用中" />
 
 </androidx.appcompat.widget.LinearLayoutCompat>

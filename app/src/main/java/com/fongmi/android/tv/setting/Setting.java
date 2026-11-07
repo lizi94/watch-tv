@@ -207,6 +207,33 @@ public class Setting {
     }
 
     /**
+     * 直播开机直达：打开软件时直接进直播页（而非上次看的点播）。
+     * 适老化默认<b>关闭</b>。
+     *
+     * <p>与「退出自动续播」（{@link #isAutoResume()}，开机直达上次点播）<b>互斥</b>：
+     * 开机只能去一个地方。开关切换时由 {@code ElderSettingsActivity} 负责把另一个关掉
+     * （见 {@code setBootLive} / {@code setAutoResume}），判定侧不再各自兜底。</p>
+     *
+     * <p><b>判定点（R125，与实现一致）</b>：本开关只影响
+     * {@code HomeActivity#checkBootDirect()} 的<b>目标选择</b> ——
+     * 开着它就把直达目标定成「直播页」，关着它就定成「上次看的点播」。
+     * 放行条件与点播续播同一套（{@code isPlainLaunch}：排除回退 / 内部重建 / 桌面守护拉回 /
+     * 带 data / 分享 / 搜索；HOME 意图还额外要求是开机会话）。
+     * 直播配置解析完成时 {@code LiveConfig#setHome} 会派发一次 BOOT 事件，
+     * 首页据此推进直播目标（事件本身不新建目标，避免运行期重载把老人拽走）。</p>
+     *
+     * <p>本 key 用 {@code boot_live_direct}，避开 {@code boot_live}
+     * （TVBus 的一次性触发标记，R125 已随「原地重建引擎」删除）。</p>
+     */
+    public static boolean isBootLive() {
+        return Prefers.getBoolean("boot_live_direct", false);
+    }
+
+    public static void putBootLive(boolean bootLive) {
+        Prefers.put("boot_live_direct", bootLive);
+    }
+
+    /**
      * 开机自启动（适老化）：电视开机后是否自动打开「看电视」。默认开启。
      *
      * <p><b>门控点 = {@code BootLauncher#forBoot}</b>（2026-10-30 / R103 起收敛到单一出口，

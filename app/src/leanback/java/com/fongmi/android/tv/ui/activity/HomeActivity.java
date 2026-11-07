@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.util.Log;
 import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.View;
@@ -67,10 +68,10 @@ import com.fongmi.android.tv.ui.presenter.HistoryPresenter;
 import com.fongmi.android.tv.ui.presenter.HomeChipPresenter;
 import com.fongmi.android.tv.ui.presenter.ProgressPresenter;
 import com.fongmi.android.tv.ui.presenter.VodPresenter;
+import com.fongmi.android.tv.utils.BootSession;
 import com.fongmi.android.tv.utils.Clock;
 import com.fongmi.android.tv.utils.FileChooser;
 import com.fongmi.android.tv.utils.KeyUtil;
-import com.fongmi.android.tv.utils.LauncherCapability;
 import com.fongmi.android.tv.utils.LauncherInfo;
 import com.fongmi.android.tv.utils.NetAwait;
 import com.fongmi.android.tv.utils.Notify;
@@ -96,6 +97,18 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
 
     /** 内部重建标记（字号档位切换后 recreate）：重建不是用户打开软件，不得触发开机直达。 */
     public static final String EXTRA_REFRESH = "refresh";
+
+    /**
+     * 「系统/自启拉起」标记（R124）：{@code BootLauncher} 拉起首页时打上。
+     *
+     * <p>为什么要有它：系统把本应用当默认桌面拉起时用的是 <b>HOME 意图</b>，而开机自启、
+     * 桌面守护拉起用的是「什么都不带」的普通 Intent。两者在 {@link #isPlainLaunch} 里原本走同一条
+     * 分支，于是「守护把用户从别的应用拉回来」也会被当成「用户主动打开软件」⇒ 触发续播。</p>
+     */
+    public static final String EXTRA_BOOT_LAUNCH = "boot_launch";
+
+    /** 「桌面守护拉回」标记（R124）：用户按主页键离开后被守护拉回来 ⇒ 不该触发续播。 */
+    public static final String EXTRA_GUARD_PULL = "guard_pull";
 
     /**
      * 「非首页按返回」的进程内瞬时标记：<b>只走静态字段，不写进 Intent</b>。
@@ -177,6 +190,29 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
     private static final int BOOT_DIRECT_MAX_RETRY = 15;
     private final Runnable mBootDirectRetry = this::tryBootDirect;
 
+    // ── R132：直播直达的独立重试预算与限频参数 ──
+    //   · 预算比点播的 15 次更长：开机后手动打开时，头几秒 DNS / 网关常常还没就绪，
+    //     直播配置的首次加载会失败，而「打开后必进直播界面」是用户明确要求的行为，多等一会儿；
+    //   · 限频 3 秒：重试 tick 是 1 秒，不能把还在路上的下载反复取消
+    //     （BaseConfig#load 新一轮会取消上一轮，见 taskId 机制）。
+    private static final int LIVE_BOOT_DIRECT_MAX_RETRY = 30;
+    private static final long LIVE_RELOAD_MIN_INTERVAL_MS = 3000L;
+    private long liveDirectLoadAt;
+
+    // ── R132：首页内容级自动重试（配置成功但站点内容请求失败的空态自愈）──
+    private static final long[] CONTENT_RETRY_STEPS = {5_000L, 10_000L, 20_000L};
+    private int contentRetryCount;
+    private final Runnable mContentRetry = this::retryContentOnce;
+
+    // ── R132：快速待机补偿 ── 退后台超过这个时长且直达目标还没消费，回来就重新驱动一次。
+    private static final long QUICK_RESUME_REDRIVE_MS = 60_000L;
+    private long mPausedAt;
+
+    /** R132 诊断：直达链每个判断点一行日志（tag=BDiag）。只读状态、零副作用，发布版保留。 */
+    private static void diag(String msg) {
+        Log.i("BDiag", msg);
+    }
+
     /** 待续播项：仅在「本次应当续播、但数据源还没就绪」时非空；就绪后立即消费掉。 */
     private History mBootDirect;
 
@@ -236,6 +272,189 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
      * 且配置等待在 {@code onNewIntent} 补检成功时也要撤销。</p>
      */
     private NetAwait.Handle configAwait = NetAwait.Handle.NONE;
+
+    // ------------------------------------------------------------------ R123：启动场景 / 门控宽限 / 自动重试
+
+    /**
+     * 本次界面是怎么被拉起来的（R123）。
+     *
+     * <p><b>为什么必须分开</b>：同一个 {@code HomeActivity} 会被六种完全不同的入口拉起，
+     * 而这四种场景对「要不要等网络」「要不要自动续播」的期望是<b>相反</b>的 ——
+     * 一张判据表糊在一起，必然有一边被误伤（R123 之前就是：点播续播在默认桌面场景失效、
+     * 提示条在默认桌面场景误报、门控在开机场景被瞬间放行）。</p>
+     *
+     * <table border="1">
+     *   <tr><th>场景</th><th>入口</th><th>走哪个方法</th><th>门控宽限</th><th>点播续播</th></tr>
+     *   <tr><td>{@link #COLD_BOOT_DESKTOP} 冷启动·默认桌面</td>
+     *       <td>系统开机用 HOME 意图拉起（我们是默认桌面）；也可能发生在开机 90 秒内</td>
+     *       <td>{@code initView}</td><td><b>走</b>（最多 12 秒）</td><td><b>允许</b></td></tr>
+     *   <tr><td>{@link #COLD_BOOT} 冷启动·开机自启</td>
+     *       <td>BootReceiver / 守护在开机阶段拉起（不带 HOME，进程已死）</td>
+     *       <td>{@code initView}</td><td><b>走</b></td><td><b>允许</b></td></tr>
+     *   <tr><td>{@link #COLD_NORMAL} 冷启动·日常</td>
+     *       <td>开机很久之后点图标 / 进程被系统回收后重新打开（R134：待机唤醒杀进程后的冷启动仍归此类，
+     *       但 {@code mBootSession} 可另置 true ⇒ 直达允许；门控宽限仍不吃）</td>
+     *       <td>{@code initView}</td><td><b>不走</b>（0 等待，保持 R62 口径）</td><td><b>允许</b></td></tr>
+     *   <tr><td>{@link #WARM_REOPEN} 热启动·重新打开</td>
+     *       <td>进程还活着，用户点图标 / 遥控器快捷键 / 守护拉起 → {@code onNewIntent}</td>
+     *       <td>{@code onNewIntent}</td><td>不参与（启动画面早就收了）</td><td><b>允许</b></td></tr>
+     *   <tr><td>{@link #WARM_HOME} 热启动·按主页键回来</td>
+     *       <td>用户在别的应用里按主页键 → HOME 意图投递给已有实例；或进程刚被回收、按主页键
+     *           让系统重新拉起我们（此时 {@code elapsedRealtime} 早已过开机窗口）</td>
+     *       <td>{@code onNewIntent}</td><td>不参与</td><td><b>禁止</b>（用户只想回桌面）</td></tr>
+     *   <tr><td>待机唤醒（电视 STR / 关机再开）</td>
+     *       <td><b>不产生新 intent</b>，只走 {@code onResume}；实例还在、内容还在</td>
+     *       <td>{@code onResume}</td><td>不参与（{@code isProgress()} 已为 false，门控首行即返回）</td>
+     *       <td><b>允许</b>（R124/R134：熄屏时首页在前台、待机 ≥60 秒、距亮屏 ≤60 秒 ⇒ 算一次开机会话，重新发起直达；
+     快照已持久化，进程被杀也能识别）</td></tr>
+     * </table>
+     *
+     * <p><b>待机唤醒为什么不需要额外分支</b>：① 实例活着 → {@code onResume}，两种判定都不跑；
+     * ② 进程在待机期间被杀 → 走 {@code initView}，但 {@code SystemClock.elapsedRealtime()} 从
+     * 开机起算且<b>包含深睡</b>，唤醒时必然早已超过 {@link #BOOT_PHASE_MS} ⇒ 落 {@link #COLD_NORMAL}
+     * ⇒ 零等待进首页（有缓存就用缓存），正是期望行为。</p>
+     */
+    private enum LaunchKind {
+        COLD_BOOT_DESKTOP, COLD_BOOT, COLD_NORMAL, WARM_REOPEN, WARM_HOME;
+
+        /** 是否属于「开机阶段的一次冷启动」—— 只有这一类才吃门控宽限。 */
+        boolean isBootCold() {
+            return this == COLD_BOOT_DESKTOP || this == COLD_BOOT;
+        }
+    }
+
+    /** 本次界面的启动场景，{@code initView} 里定一次，{@code onNewIntent} 里更新。 */
+    private LaunchKind mLaunchKind = LaunchKind.COLD_NORMAL;
+
+    /**
+     * R124：本次启动是不是「开机 / 唤醒」会话。
+     *
+     * <p><b>为什么要和 {@link LaunchKind} 分开</b>：① 待机唤醒（老人按遥控器开机）<b>不产生新 intent</b>，
+     * 只能由 {@code onResume} 置位；② {@code onNewIntent} 复用实例时<b>不能</b>把它清掉 ——
+     * 系统在开机时可能重复投递 HOME 意图，那不是「用户按了主页键」。</p>
+     *
+     * <p>它决定三件事：① 默认桌面形态下要不要续播；② 要不要吃 12 秒门控宽限；
+     * ③ 要不要跳「开机直达直播」。</p>
+     */
+    private boolean mBootSession;
+
+    /**
+     * R124：本次直达的<b>目标</b>。
+     *
+     * <p>旧实现用「点播续播项（History）是否为空」表达「要不要续播」，于是直播直达只能靠
+     * {@code ConfigEvent.BOOT} 直接 {@code LiveActivity.start()} 旁路出去 —— 没有闸门、没有去重，
+     * 还会把运行期的直播配置重载也当成开机。改成显式的目标后，
+     * 「点播还是直播」由这里<b>二选一</b>，两者天然互斥。</p>
+     */
+    private enum BootTarget { NONE, VOD, LIVE }
+
+    private BootTarget mBootTarget = BootTarget.NONE;
+
+    /** R124：直达只跳一次（直播配置一次开机里会被解析两次 ⇒ 旧实现会跳两次）。 */
+    private boolean bootDirectFired;
+
+    /** R124：本次页面创建时刻（elapsedRealtime），用于「系统重复投递 HOME」的窄窗口判定。 */
+    private long mCreatedAt;
+
+    /**
+     * R124：「系统重复投递 HOME 意图」的保护窗口（毫秒）。
+     *
+     * <p><b>为什么需要这个窗口</b>：默认桌面形态下，系统开机投递的 HOME 意图与用户按主页键
+     * 投递的 HOME 意图<b>完全一样</b>，无法从 intent 区分。唯一的差别是时机：系统那一次发生在
+     * 开机后的几秒内，用户那一次发生在他主动操作时。</p>
+     *
+     * <p>所以只有「页面刚创建不久 + 用户还没操作 + 还有待跳的直达」时才把新的 HOME 意图
+     * 当成「系统重复投递」而不清掉进行中的续播。窗口取 10 秒 —— 足够覆盖 ROM 的重复 resolve，
+     * 又足够窄，不至于把用户开机后按主页键误判成重复投递。</p>
+     */
+    private static final long REPEAT_HOME_WINDOW_MS = 10_000L;
+
+    /**
+     * 开机阶段窗口（R124 已迁到 {@link BootSession}）：原值是「{@code elapsedRealtime} < 90 秒」，
+     * 而 {@code elapsedRealtime} <b>包含深睡</b> ⇒ 老人按遥控器开机（待机唤醒）时必然判错。
+     * 新判据见 {@link BootSession#inBootPhase()}：<b>进程启动时刻</b>是否落在开机 5 分钟内。
+     */
+
+    /**
+     * 门控宽限上限（用户 2026-11-06 定案 12 秒）：开机阶段冷启动时，即便「有缓存」也先留在
+     * 启动画面「正在连接网络…」，每 {@link #GATE_RETRY_STEP_MS} 重试一次配置，
+     * 任一次成功立刻进首页；12 秒仍未成功才进首页（有缓存显示内容，没内容显示空态卡）。
+     *
+     * <p>⛔ 只在「开机阶段 + 冷启动」生效：日常打开软件 / 待机唤醒 / 同进程重建一律 0 等待，
+     * 不能为了开机几秒钟的体感把 R62「别让老人干等」的成果退回去。</p>
+     */
+    private static final long GATE_GRACE_MS = 12_000L;
+
+    /** 门控期的重试间隔：短间隔，因为此时老人正盯着「正在连接网络…」看。 */
+    private static final long GATE_RETRY_STEP_MS = 3_000L;
+
+    /**
+     * 门控结束后的退避重试间隔（R123 #3 的真修复）。
+     *
+     * <p>原来只有 {@code NetAwait.whenReady} 一种等待：<b>「网络从无到有」</b>。
+     * 一旦系统说「已联网」（开机早期 VALIDATED 先于 DNS 就绪是常态），就什么监听都不挂 ⇒
+     * 首页空态卡写着「网络好了会自动重试」，实际永远不会重试。现在补一条「有网但这次没成功」
+     * 的重试链：10 → 30 → 60 → 120 秒，封顶后按 120 秒一直重试（直到页面销毁 / 成功），
+     * 让那句文案第一次真正兑现。</p>
+     */
+    private static final long[] SOURCE_RETRY_STEPS = {10_000L, 30_000L, 60_000L, 120_000L};
+
+    /**
+     * 无网时「兜底轮询」的固定间隔（R129）。
+     *
+     * <p>R129 当时 {@code NetAwait#isOnline()} 还要求 {@code NET_CAPABILITY_VALIDATED}，而国内
+     * 相当多电视/盒子无法完成系统的联网校验 ⇒ {@code whenReady} 与守卫<b>一起</b>恒 false，
+     * 于是 {@link #armSourceRetry()} 只挂 {@code whenReady} 就 return ⇒ 首次导入源之后一直转圈、
+     * 永不自愈。</p>
+     *
+     * <p>⛔ R131 已删掉那条 VALIDATED 判据（见 {@code NetAwait#isOnline()}），{@code whenReady}
+     * 恢复正常。这条轮询<b>仍然保留</b>：它兜的是另一半 —— 网络能力回调压根不上报
+     * （{@code onCapabilitiesChanged} 收不到）或回调早于监听注册的机型，那是「等事件」永远
+     * 覆盖不到的场景，只有定时真试一次才行。</p>
+     */
+    private static final long RESILIENT_RETRY_MS = 20_000L;
+
+    /**
+     * 无网等待上限（R129）：还停在启动画面、数据源为空、又迟迟等不到网络时，到点先放行进首页
+     * （空态卡自带「重试」与「去设置」），不让老人对着一个永不结束的转圈发呆。
+     */
+    private static final long BOOT_WAIT_MAX_MS = 30_000L;
+
+    /** 退避重试走到的档位（成功后清零）。 */
+    private int sourceRetryStep;
+
+    /** 门控宽限是否已经用尽（用尽后不再拦首页，但仍继续后台退避重试）。 */
+    private boolean gateExpired;
+
+    /**
+     * 宽限的<b>绝对</b>截止时刻（elapsedRealtime；0 = 还没开始）。
+     *
+     * <p>⛔ 必须是绝对时刻，不能每次 {@code holdGate()} 都重新 {@code post(12s)}：
+     * 门控期每 3 秒失败一次就会重新进一次 {@code evaluateBoot()}，若每次都把 12 秒重新计时，
+     * 定时器会被无限续期 —— 门控永远不放行，老人被锁在启动画面里。</p>
+     */
+    private long gateDeadline;
+
+    /**
+     * 本次进程里配置<b>真的</b>通过网络拉成功过（R123）。
+     * 缓存重建（{@code loadFromCache}）刻意不算 —— 它只能证明「硬盘上有旧配置」，
+     * 而门控要回答的是「这次开机，数据源到底通没通」。
+     */
+    private boolean configLoadedThisRun;
+
+    /** 出口④ 第一次开始等待网络的时刻（0 = 未在等），用于 {@link #BOOT_WAIT_MAX_MS} 超时兜底。 */
+    private long bootWaitStart;
+
+    private final Runnable mSourceRetry = this::runSourceRetry;
+
+    /**
+     * 门控宽限到点：放行首页（不改变后台重试）。
+     *
+     * <p>⛔ 用方法引用而不是直接写 lambda：lambda 里要读 {@code mBinding}，而它声明在本段字段之后
+     * —— Java 的「非法前向引用」规则不允许在字段初始化式里直接引用后面声明的实例字段（编译期就报错，
+     * 本轮的 2 个编译错误之一）。方法引用只受「方法已存在」约束，不受此限。</p>
+     */
+    private final Runnable mGateTimeout = this::onGateTimeout;
 
     private ActivityHomeBinding mBinding;
     private ArrayObjectAdapter mHistoryAdapter;
@@ -343,6 +562,24 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
         // 首页是 singleTop：实例被复用时 getIntent() 会一直停在「创建那一刻」的那份，
         // 必须同步过来，否则后面所有基于 getIntent() 的判断（含开机直达）都在拿旧数据。
         setIntent(intent);
+        // R124：开机会话期间系统可能重复投递 HOME 意图（部分 ROM 开机时会多次 resolve 桌面）。
+        //   那不是「用户按了主页键」：不能因此把场景降成 WARM_HOME，更不能把进行中的续播清掉。
+        //   ⚠ 默认桌面形态下「系统开机投递的 HOME」与「用户按主页键投递的 HOME」在 intent 上完全一样，
+        //   只能靠时机与状态区分：① 页面刚创建 10 秒内；② 用户还没按过任何键；③ 还有待跳的直达
+        //   且还没跳过。三条同时成立才当作「系统重复投递」，否则按「用户按主页键」处理（取消续播）。
+        boolean repeatHome = isHomeIntent(intent)
+                && mBootSession
+                && !intent.getBooleanExtra(EXTRA_GUARD_PULL, false)
+                && !bootInteracted
+                && !bootDirectFired
+                && mBootTarget != BootTarget.NONE
+                && SystemClock.elapsedRealtime() - mCreatedAt < REPEAT_HOME_WINDOW_MS;
+        // ⛔ R123：热启动也要重新定性 —— 同一个实例可能先被图标拉起（COLD_*），
+        //   之后又被「主页键」投递（WARM_HOME）⇒ 不更新就会拿上一次的场景去判续播。
+        diag("onNewIntent: repeatHome=" + repeatHome + " action=" + (intent == null ? "null" : intent.getAction())
+                + " cats=" + (intent == null || intent.getCategories() == null ? "null" : intent.getCategories())
+                + " target=" + mBootTarget + " fired=" + bootDirectFired + " interacted=" + bootInteracted);
+        if (!repeatHome) classifyLaunch(intent, true, false);
         // 2026-10-30（R103）：用户主动回来了 ⇒ 恢复守护接管，清掉「连按主页键」的放行期。
         // 这段安全的前提：放行期内守护自己不会拉起本页面，所以能走到这里的 onNewIntent
         // 只可能来自图标 / 遥控器快捷键 / 用户主动点击。
@@ -363,10 +600,11 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
         if (VodConfig.get().getSites().isEmpty() && NetAwait.isOnline() && canRecheckConfig()) initConfig();
         // 不是「从播放页/设置页返回首页」= 用户在软件内重新打开（图标 / 遥控器自定义按键 / 桌面拉起）。
         // 按定下的两层语义：只要软件还活着就允许续播，所以重新判定一次开机直达。
-        if (!backHome) {
+        if (!backHome && !repeatHome) {
+            diag("onNewIntent: 重置直达状态并重新判定（旧 target 会被清掉）");
             resetBootDirectState();
             bootDirectDone = false;
-            checkBootDirect();
+            checkBootDirect(true);
         }
     }
 
@@ -432,6 +670,10 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
         //   ⚠ 单测式回归：切主题色 / 切壁纸（含「跟随壁纸」档）/ 切图片尺寸 / 转屏 → 首页不转圈、不重拉；
         //     冷启动、备份还原、数据源改地址 → 必须仍然重载（后两条不走 initView，不受影响）。
         boolean warm = !VodConfig.get().getRawSites().isEmpty();
+        // ⛔ R123：启动场景必须在**第一次裁决之前**定下来 —— 门控宽限、点播续播两处判据都读它。
+        //   warm 参与判定：同进程重建（切主题/转屏/字号）既不是冷启动，也不是开机拉起，
+        //   不能因为「恰好还在开机 90 秒内」就让它吃 12 秒门控宽限（那是纯误伤）。
+        classifyLaunch(getIntent(), false, warm);
         if (VodConfig.get().loadFromCache()) evaluateBoot();
         if (warm) {
             WallConfig.get().init();   // 壁纸配置是本地的（读偏好 + 读文件），重建后重建内存态即可
@@ -454,7 +696,12 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
         // 开机直达的资格判定放在这里，而不是等 showContent() 之后再判 ——
         // 现在「数据源没就绪」时首页会保持启动画面继续等，showContent() 可能很晚才被调用；
         // 而续播应当从进入首页那一刻就开始并行等（先等网络、再等数据源），不能拖到那时才起步。
-        checkBootDirect();
+        checkBootDirect(false);
+        // R124：记下页面创建时刻（重复 HOME 的窄窗口判定 + 门控宽限起算点都要用）。
+        mCreatedAt = SystemClock.elapsedRealtime();
+        // R124：门控宽限从「页面创建」起算，而不是从第一次裁决起算 ——
+        //   否则慢机型上老人要等 20~32 秒（配置加载慢 + 12 秒宽限叠加）。
+        gateDeadline = SystemClock.elapsedRealtime() + GATE_GRACE_MS;
     }
 
     @Override
@@ -575,10 +822,17 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
             // 重试能力改由「点按」这个显式动作提供：onItemClick 走 loadChip(item, true) 强制路径。
             if (first) {
                 if (keepLoadingInsteadOfEmpty()) mAdapter.add("progress");
-                else showContentEmpty();
+                else {
+                    // R132：内容级有限自动重试 —— 配置成功但站点内容请求失败（开机头几秒
+                    // DNS / 站点服务器未就绪很常见）时，旧逻辑只显示空态卡，重试全靠手动点按；
+                    // 配置层的 armSourceRetry 只在配置失败时才转，覆盖不到这里。
+                    scheduleContentRetry();
+                    showContentEmpty();
+                }
             }
         } else {
             removeContentEmpty();
+            contentRetryCount = 0;   // R132：拿到内容即清零，下次空态重新计满
             addVideo(mResult = result);
         }
         Cache.clear().put(result);
@@ -657,6 +911,10 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
                 // 在完全没网时同样会走到这里（判据 VodConfig#isLoaded() 只看站点列表是否非空）。
                 // 所以「转圈后直接进首页」在无网时出现是正确行为，不是漏判网络。
                 configFailed = false;
+                // R123：标记「本次真的拉成功过」——门控宽限的放行条件之一；
+                // 同时把退避档位清零，下一轮（换源 / 断网）从最短间隔重新开始。
+                configLoadedThisRun = true;
+                sourceRetryStep = 0;
                 cancelConfigAwait();
                 evaluateBoot();
             }
@@ -674,13 +932,13 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
                 // 于是 evaluateBoot() 首行的 isProgress 守卫把本次（以及后续所有）裁决整个挡掉
                 // ⇒ 出口③（挂网络恢复监听）**永远不会执行** ⇒ 网好了首页也不会自己恢复，
                 // 老人必须自己找到并按下「重新加载」。这是 R63 的副作用，在此就地补上：
-                //   ① awaitConfigNetwork()：网络恢复后自动重载配置 → ConfigEvent.VOD → getVideo() 刷新首页。
-                //      ⛔ 这不是「再判一次网络决定进退」（原注释禁止的那种污染）：
-                //      它内部的 isOnline 守卫只是「有网就别挂监听」的**防忙循环**判据——
-                //      有网但源挂时直接不挂，不会形成「失败→立即重载→又失败」的忙循环。
+                //   ① armSourceRetry()：网络恢复 / 退避到点后自动重载配置 → ConfigEvent.VOD →
+                //      getVideo() 刷新首页。⛔ 这不是「再判一次网络决定进退」（原注释禁止的那种污染）：
+                //      它内部的 isOnline 只是「选哪种等待形态」，有网走退避、没网走事件驱动，
+                //      两条都不会形成「失败→立即重载→又失败」的忙循环。
                 //   ② awaitBootDirect()：与出口①对称（P4），让续播第二级仍有驱动。
                 if (!mBinding.progressLayout.isProgress()) {
-                    awaitConfigNetwork();
+                    armSourceRetry();
                     awaitBootDirect();
                     return;
                 }
@@ -690,74 +948,263 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
     }
 
     /**
-     * 启动门控的<b>唯一收敛点</b>（2026-10-13 定案）：只问「数据源就绪了吗」，
-     * 网络仅用来决定「还要不要继续等」，自己不再产出任何提示。
+     * 启动门控的<b>唯一收敛点</b>（2026-10-13 定案，R123 加「开机宽限」）。
      *
-     * <p><b>两个判据互相正交</b>：</p>
+     * <p><b>两个原始判据互相正交</b>：</p>
      * <ul>
      *   <li>{@code S = !VodConfig.get().getSites().isEmpty()} —— 数据源就绪，<b>与网络无关</b>
      *       （本地导入的源、缓存里已有的源，没网也是就绪的）；</li>
      *   <li>{@code N = NetAwait.isOnline()} —— 网络就绪，只在「数据源还没就绪」时决定是等、还是放弃。</li>
      * </ul>
      *
-     * <p><b>三个出口，语义互不重叠</b>（本轮去重的核心）：</p>
+     * <p>⛔⛔ <b>R123 补的第三个维度：这次是不是「开机阶段的一次冷启动」</b>（{@link #gateHold()}）。
+     * 原实现只有 S / N 两个维度，而 {@code S} 会被 {@code loadFromCache()} 顶成 true ⇒
+     * 只要硬盘上有旧配置，门控就<b>瞬间放行</b>，`bootHint`「正在连接网络…」永远没机会出现。
+     * 电视开机时（尤其本应用是默认桌面、被系统最早拉起）它的真实体感是：
+     * 「一开机就亮出首页 → 内容区一张『暂时连接不上』的空态卡」，正是老人最怕的「坏了的脸」。
+     * 现在开机阶段冷启动额外要求「本次真的拉成功过」（{@link #configLoadedThisRun}），
+     * 否则先留在启动画面最多 {@link #GATE_GRACE_MS} 秒，每 3 秒重试一次，成功即进首页。</p>
+     *
+     * <p><b>四个出口，语义互不重叠</b>：</p>
      * <ol>
-     *   <li>{@code S} → 进首页（正常）。“有数据源 + 完全没网 → 转圈后进首页”走的正是这条，
-     *       它本来就是对的；</li>
-     *   <li>{@code !S && N} → 进首页 + 空态卡「暂时连接不上」+「重新加载」。
-     *       有网仍拿不到数据源 = 数据源侧的问题，<b>没有可等的对象</b>，不能把老人锁死在转圈里；</li>
-     *   <li>{@code !S && !N} → <b>留在启动画面</b>，显示「正在连接网络…」，并挂网络恢复监听：
-     *       网络一通自动重载配置，回到判据 ①。无网时<b>绝不降级成首页空态</b> —— 那会让老人
-     *       一开机就先看到一张「坏了」的脸，而他家的路由器可能只是起得慢。</li>
+     *   <li>{@code S && 已放行} → 进首页（正常）。「有缓存 + 非开机阶段」走的正是这条，
+     *       日常打开软件 / 待机唤醒 / 同进程重建都是 0 等待，R62 的成果一点没退；</li>
+     *   <li>{@code !S && N && 无需宽限} → 进首页 + 空态卡。有网仍拿不到数据源 = 数据源侧的问题，
+     *       <b>不能把老人锁死在转圈里</b>；但<b>后台退避重试照挂</b>（见 {@link #armSourceRetry()}），
+     *       空态卡那句「网络好了会自动重试」从此是真的；</li>
+     *   <li>{@code !S && !N && 无需宽限} → 留在启动画面显示「正在连接网络…」，挂网络恢复监听；</li>
+     *   <li>{@code 需要宽限}（开机阶段冷启动、本次还没真拉成功）→ 留在启动画面，
+     *       显示「正在连接网络…」+ 每 3 秒重试，最长 12 秒；到点后按上面三条出口重新裁决。</li>
      * </ol>
      *
      * <p><b>防回退</b>：首行的 {@code isProgress()} 守卫保证「一旦进过首页就永不再回退」，
      * 因此换源、返回首页等场景重复触发本方法也不会把页面打回启动画面。</p>
      */
     private void evaluateBoot() {
+        diag("evaluate: progress=" + mBinding.progressLayout.isProgress()
+                + " sites=" + VodConfig.get().getSites().size()
+                + " online=" + NetAwait.isOnline() + " gateHold=" + gateHold());
         if (!mBinding.progressLayout.isProgress()) return;
         cancelConfigAwait();
+        // ⓪ 开机宽限：只要还在「开机阶段 + 冷启动 + 本次没真拉成功」，一律先留在启动画面。
+        //    注意它排在 S 判定之前 —— 这就是 R123 的关键：缓存不再等于放行。
+        if (gateHold()) {
+            holdGate();
+            return;
+        }
         if (!VodConfig.get().getSites().isEmpty()) {
+            // R124：直达目标已经就绪时，「收启动画面（不设焦点）+ 立即跳」——
+            //   全程只有一次画面变化，老人不会看到「首页闪一下再跳走」。
+            //   ⚠ 不能先跳再收：progressLayout 没收到内容态，用户按返回回来看到的是启动画面。
+            if (tryFireBootDirect()) return;
             showContent();
             awaitBootDirect();
             return;
         }
         if (NetAwait.isOnline()) {
             showContent();
+            // 出口② 的补丁：有网却拿不到源，照样挂后台退避重试。
+            armSourceRetry();
+            return;
+        }
+        // 出口④：数据源没就绪、也还没网。
+        // R129：等太久就先放行进首页 —— 空态卡会给出「暂时连接不上 + 重试」，
+        //   比让老人对着一个永不结束的转圈强。R131 前的极端成因是「固件 VALIDATED 恒 false、
+        //   网络判据永不放行」（已随 isOnline 放宽而消除）；现在它兜的是「真没网 / DNS 坏」
+        //   —— 这两种 whenReady 同样等不到，到点放行 + 空态卡重试仍是唯一体面出路。
+        if (prepareBootWaitOverflow()) {
+            showContent();
+            armSourceRetry();
             return;
         }
         showBootHint();
-        awaitConfigNetwork();
+        armSourceRetry();
     }
 
     /**
-     * 配置加载失败后挂网络恢复监听：网络一就绪就自动重新加载配置并刷新首页。
-     *
-     * <p><b>为什么需要它</b>：电视盒子冷启动时网络可能还没连上，此时配置拉取失败、首页停在
-     * 「没有任何内容」的状态。<b>原实现在这种情况下永远不会自己恢复</b> —— 上游除了
-     * {@code BootReceiver} 给直播源做过一次网络恢复重载，点播侧完全没有。老人能做的只有
-     * 「关机重开」，而重开时的网络状态可能更糟。</p>
-     *
-     * <p><b>为什么不设超时</b>（{@code timeoutMs = 0}）：回调本身没有副作用，只是「等网络好了替我
-     * 重载一次」，等到用户离开首页（{@code onDestroy}）就撤销。</p>
-     *
-     * <p><b>⚠ 必须只在「现在没网」时挂</b>：{@code NetAwait} 在已经联网时会<b>立即</b>执行回调。
-     * 若网络正常、只是数据源服务器挂了，配置同样会失败 —— 此时若还挂监听，就会变成
-     * 「失败 → 立即重载 → 又失败 → 立即重载」的忙循环，把 CPU 和网络都打满。
-     * 数据源侧异常只提示「电视源暂时连不上」，重试交给老人按确定（或切源），不做自动轮询。</p>
+     * 出口④ 的等待超时判定：首次进来记时间，超过 {@link #BOOT_WAIT_MAX_MS} 返回 true 并清零。
      */
-    private void awaitConfigNetwork() {
-        cancelConfigAwait();
-        // 有网仍失败 = 数据源那边的问题，自动重试只会忙循环，交给用户手动重试。
-        if (NetAwait.isOnline()) return;
-        configAwait = NetAwait.whenReady(0L, this::reloadConfig, () -> {
-        });
+    private boolean prepareBootWaitOverflow() {
+        long now = SystemClock.elapsedRealtime();
+        if (bootWaitStart == 0L) {
+            bootWaitStart = now;
+            return false;
+        }
+        if (now - bootWaitStart < BOOT_WAIT_MAX_MS) return false;
+        bootWaitStart = 0L;
+        return true;
     }
 
-    /** 网络恢复后的重载：先撤销等待（一次即够），再重走一遍配置加载。 */
+    /**
+     * 是否要吃「开机宽限」：开机阶段的一次冷启动，且本次还没真正把配置拉成功过。
+     *
+     * <p>四条同时成立才算：① 启动场景是 {@link LaunchKind#COLD_BOOT_DESKTOP}/{@link LaunchKind#COLD_BOOT}；
+     * ② 本次配置还没真拉成功；③ 宽限没用尽；④ 当前确实还停在启动画面。</p>
+     *
+     * <p>⛔ 明确排除的三种情况：日常打开（{@link LaunchKind#COLD_NORMAL}）、热启动（WARM_*）、
+     * 同进程重建（分类时归到 COLD_NORMAL）—— 它们都在开机窗口之外或内存态完好，不该多等一毫秒。</p>
+     */
+    private boolean gateHold() {
+        if (gateExpired) return false;
+        if (configLoadedThisRun) return false;
+        if (!mLaunchKind.isBootCold()) return false;
+        return mBinding.progressLayout.isProgress();
+    }
+
+    /** 进入宽限等待：显示「正在连接网络…」、每 3 秒重试一次、12 秒后到点放行（幂等）。 */
+    private void holdGate() {
+        showBootHint();
+        armSourceRetry();
+        if (gateExpired) return;
+        long now = SystemClock.elapsedRealtime();
+        if (gateDeadline == 0L) gateDeadline = now + GATE_GRACE_MS;
+        long left = gateDeadline - now;
+        if (left <= 0) {
+            gateExpired = true;
+            showContent();
+            return;
+        }
+        // 只按「剩余时间」重新排队：App.post 内部先 removeCallbacks 再 post，
+        // 所以重复调用不会叠出多个定时器，也不会把 12 秒无限续期。
+        App.post(mGateTimeout, left);
+    }
+
+    /** 门控宽限到点：放行首页（不改变后台重试）。 */
+    private void onGateTimeout() {
+        gateExpired = true;
+        if (!mBinding.progressLayout.isProgress()) return;
+        showContent();
+    }
+
+    /**
+     * 本进程是否仍处在「开机阶段」。
+     *
+     * <p>R124：判据已从「{@code elapsedRealtime < 90 秒}」换成「<b>进程启动时刻</b>在开机 5 分钟内」
+     * （见 {@link BootSession#inBootPhase()}）。旧判据在「待机唤醒」这一中国老人最常见的开机方式上
+     * 必然判错 —— {@code elapsedRealtime} 包含深睡，第二天早上它早就过了 90 秒。</p>
+     */
+    private static boolean inBootPhase() {
+        return BootSession.inBootPhase();
+    }
+
+    /** 是否是「系统把本应用当默认桌面拉起」的 HOME 意图。 */
+    private static boolean isHomeIntent(Intent intent) {
+        return intent != null
+                && Intent.ACTION_MAIN.equals(intent.getAction())
+                && intent.hasCategory(Intent.CATEGORY_HOME);
+    }
+
+    /**
+     * 给本次界面定性（R123）：冷启动 / 热启动 / 开机默认桌面 / 日常打开。
+     *
+     * @param intent 触发本次启动的意图
+     * @param reuse  true = 来自 {@code onNewIntent}（进程还活着，实例复用）
+     * @param warm   true = 内存里已有配置（同进程重建：切主题 / 转屏 / 字号档位）
+     */
+    private void classifyLaunch(Intent intent, boolean reuse, boolean warm) {
+        boolean home = isHomeIntent(intent);
+        // R124：系统/自启拉起（{@code BootLauncher}）会打这个标记，用的是不带 HOME 的普通 Intent。
+        boolean bootLaunch = intent != null && intent.getBooleanExtra(EXTRA_BOOT_LAUNCH, false);
+        if (reuse) {
+            mLaunchKind = home ? LaunchKind.WARM_HOME : LaunchKind.WARM_REOPEN;
+        } else if (warm) {
+            // 同进程重建：既不是冷启动也不是开机拉起，硬归 COLD_NORMAL（零等待、可续播）
+            mLaunchKind = LaunchKind.COLD_NORMAL;
+        } else if (bootLaunch || home) {
+            // R124：只有「系统/自启拉起」与「默认桌面（HOME）」才是开机会话。
+            //   图标 / 遥控器快捷键启动一律 COLD_NORMAL —— 即便恰好落在开机 5 分钟内，
+            //   也不能让老人点一下图标也吃 12 秒门控宽限。
+            //   HOME 且不在开机窗口 = 进程刚被系统回收、用户按主页键让系统新建了实例
+            //   （WARM_HOME 语义：用户只是想回桌面，不能把他弹进上次那部剧里）。
+            //   R134 例外：若持久化快照证明这是「待机唤醒」后的冷启动，mBootSession 会另行置 true
+            //   （见下方赋值处）—— LaunchKind 仍是 WARM_HOME（不吃门控宽限），但直达允许。
+            if (inBootPhase()) mLaunchKind = home ? LaunchKind.COLD_BOOT_DESKTOP : LaunchKind.COLD_BOOT;
+            else mLaunchKind = home ? LaunchKind.WARM_HOME : LaunchKind.COLD_NORMAL;
+        } else {
+            mLaunchKind = LaunchKind.COLD_NORMAL;
+        }
+        // R124：「本次是不是开机会话」与 LaunchKind 分开记 —— 唤醒会话没有新 intent（只能由 onResume 置位），
+        //   而 onNewIntent 复用实例时不能把它清掉（系统在开机时可能重复投递 HOME 意图）。
+        // R134：唤醒会话也算开机会话 —— 快速待机（<10 分钟）杀进程后的唤醒冷启动走不到
+        //   inBootPhase()（早已过开机 5 分钟窗口），但持久化的熄屏/亮屏快照能证明这是唤醒。
+        //   ⚠ 唤醒资格用掉即清（consumeWake）：否则随后的 onResume isWakeSession 分支会再 rearm 一次。
+        //   inBootPhase() 命中时不清 —— 那是开机窗口内的普通冷启动，唤醒标记与它无关。
+        if (!reuse && !warm && (bootLaunch || home)) {
+            mBootSession = inBootPhase() || BootSession.isWakeSession();
+            if (mBootSession && !inBootPhase()) BootSession.consumeWake();
+        }
+    }
+
+    /**
+     * 统一的「配置没拉成功就自己再试」调度器（R123：替换原先只认「网络从无到有」的
+     * {@code awaitConfigNetwork()}）。
+     *
+     * <p><b>为什么原来的实现等于没有重试</b>：它第一行就是 {@code if (NetAwait.isOnline()) return;}
+     * —— 只处理「网络从无到有」。而开机早期最常见的状态恰恰是「系统说已联网（VALIDATED）、
+     * 但 DNS / 首包还没就绪」，于是它<b>什么都不挂</b>就返回了；首页空态卡那句
+     * 「网络好了会自动重试」从来没有任何代码在兑现。</p>
+     *
+     * <p><b>现在两种形态二选一</b>：</p>
+     * <ul>
+     *   <li>真没网 → 仍用 {@link NetAwait#whenReady}（事件驱动，不通就不动，不会耗电空转）；</li>
+     *   <li>有网但这次失败 → 退避重试 10 / 30 / 60 / 120 秒（封顶后每 120 秒一次），
+     *       直到成功或页面销毁。间隔足够长，不会形成「失败 → 立即重载 → 又失败」的忙循环。</li>
+     * </ul>
+     *
+     * <p>门控期（还停在启动画面）用 {@link #GATE_RETRY_STEP_MS} 的短间隔，因为老人正盯着看。</p>
+     */
+    private void armSourceRetry() {
+        cancelConfigAwait();
+        if (isFinishing() || isDestroyed()) return;
+        if (!NetAwait.isOnline()) {
+            // 真没网：事件驱动。网络一通立即重载，且把退避档位清零（下一轮从最短间隔重新开始）。
+            sourceRetryStep = 0;
+            configAwait = NetAwait.whenReady(0L, this::reloadConfig, () -> {
+            });
+            // R129：再挂一条固定间隔的兜底轮询。R131 之前是因为 whenReady 依赖 VALIDATED
+            //   （坏固件恒 false ⇒ 只靠它永远不触发）；R131 已删该判据，本条改为兜「网络能力
+            //   回调压根不上报 / 回调早于监听注册」的机型 —— 保证仍会周期性真的试一次。
+            App.post(mSourceRetry, RESILIENT_RETRY_MS);
+            return;
+        }
+        App.post(mSourceRetry, retryDelay());
+    }
+
+    /** 下一次重试间隔：门控期固定 3 秒；门控结束后按退避阶梯，封顶 120 秒。 */
+    private long retryDelay() {
+        if (mBinding.progressLayout.isProgress()) return GATE_RETRY_STEP_MS;
+        int index = Math.min(sourceRetryStep, SOURCE_RETRY_STEPS.length - 1);
+        return SOURCE_RETRY_STEPS[index];
+    }
+
+    /** 退避定时器到点：先加一档，再判网络是否可用，可用就真去重载。 */
+    private void runSourceRetry() {
+        if (isFinishing() || isDestroyed()) return;
+        sourceRetryStep++;
+        // R129：不再用 isOnline() 二次拦截 —— R131 前它要求 VALIDATED、坏固件上恒 false
+        //   ⇒ 每次都在这里退回、永远不真正重试；R131 后判据虽已放宽，这里**仍不**二次拦截：
+        //   真没网时请求自己会失败（OkHttp 30s 超时），失败后又回到 armSourceRetry 的
+        //   兜底轮询，间隔固定 20s，不会形成忙循环。
+        reloadConfig();
+    }
+
+    /**
+     * 网络恢复 / 退避到点后的重载。
+     *
+     * <p>门控期（还停在启动画面）只重试点播配置 —— 每 3 秒把直播配置、壁纸配置也全量拉一遍
+     * 是纯浪费，还会让 {@code ConfigEvent.COMMON} 反复刷新功能区。进了首页之后再走全量。</p>
+     */
     private void reloadConfig() {
         configAwait = NetAwait.Handle.NONE;
         if (isFinishing() || isDestroyed()) return;
+        if (mBinding.progressLayout.isProgress()) {
+            VodConfig.get().init().load(getCallback());
+            // R124：门控期也要把直播配置拉回来 —— 直播直达依赖 LiveConfig 就绪，
+            //   而 R123 的门控期只重试点播配置 ⇒ 无网开机超过 12 秒后，直播配置永远拿不到，直达必失效。
+            //   ⚠ 必须先判「还没就绪」：LiveConfig#load() 没有 isLoaded 守卫，每次调用都会重新下载一遍。
+            if (LiveConfig.get().getHome().getGroups().isEmpty()) LiveConfig.get().init().load();
+            return;
+        }
         // 配置成功后 success() 会 showContent()；失败则 error() 再判一次 —— 有网了就不再挂，
         // 仍是没网才重新挂上，形成「断网就等、通了就试一次」的闭环，不会忙循环。
         initConfig();
@@ -766,14 +1213,39 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
     private void cancelConfigAwait() {
         configAwait.cancel();
         configAwait = NetAwait.Handle.NONE;
+        // R123：退避定时器必须一起撤销，否则「成功之后又冒一次重载」「销毁后回调已死的 Activity」。
+        App.removeCallbacks(mSourceRetry);
     }
 
     /** 切到「内容态」（结束启动画面）。开机直达的判定不在这里 —— 见 {@code initView} 末尾的说明。 */
     private void showContent() {
-        mBinding.progressLayout.showContent();
-        hideBootHint();
+        showContentSilent();
         checkAction(getIntent());
         setFocus();
+    }
+
+    /**
+     * 只收启动画面，<b>不设焦点</b>（R124）。
+     *
+     * <p>直达跳转前用它：焦点框在首页上闪一下再跳走，是老人最反感的那种「画面乱动」。</p>
+     */
+    private void showContentSilent() {
+        mBinding.progressLayout.showContent();
+        hideBootHint();
+    }
+
+    /**
+     * 直达目标已经就绪时：收启动画面（不设焦点）并立即跳转。
+     *
+     * @return true = 已经跳转（调用方不要再 {@code showContent()}，否则会再闪一次）
+     */
+    private boolean tryFireBootDirect() {
+        if (mBootTarget == BootTarget.NONE || bootInteracted) return false;
+        if (isFinishing() || isDestroyed()) return false;
+        if (!isBootDirectReady()) return false;
+        showContentSilent();
+        fireBootDirect();
+        return true;
     }
 
     /**
@@ -809,21 +1281,45 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
      * <p>判定提前到 {@code initView} 而不是等 {@code showContent()}：现在数据源没就绪时首页会保持
      * 启动画面继续等，{@code showContent()} 可能很晚才被调用，而续播必须从进入首页那一刻就并行开始等。</p>
      */
-    private void checkBootDirect() {
-        if (bootDirectDone) return;
+    private void checkBootDirect(boolean reuse) {
+        diag("check: reuse=" + reuse + " done=" + bootDirectDone + " backHome=" + backHomePending
+                + " recreate=" + internalRecreatePending + " bootLive=" + Setting.isBootLive()
+                + " autoResume=" + Setting.isAutoResume() + " target=" + mBootTarget);
+        if (bootDirectDone) { diag("check: bootDirectDone 已消费过，早退"); return; }
         bootDirectDone = true;
         // 两个瞬时标记必须先消费再判断：若门控提前 return，标记会残留到下一次冷启动，误伤直达。
-        if (consumeBackHome()) return;
-        if (consumeInternalRecreate()) return;
+        if (consumeBackHome()) { diag("check: backHome 命中，放弃"); return; }
+        if (consumeInternalRecreate()) { diag("check: internalRecreate 命中，放弃"); return; }
+        // R125（P0）：**直播分支必须排在「点播续播关闭」早退之前**。
+        //   两个开关在设置页是互斥的（见 ElderSettingsActivity#setBootLive / #setAutoResume），
+        //   「直播直达开」必然意味着「点播续播关」—— 而旧代码把 !isAutoResume() 的早退放在前面，
+        //   于是直播分支<b>永远走不到</b>（100% 不可达）：开关打开的效果只是「把点播续播关掉」，
+        //   直播页一次也不会跳。这正是「设成默认桌面后直播开机直达好像有问题」的直接根因。
+        //   现在直播优先：两个开关若因历史脏数据同时为真，以直播为准（直播是更具体的那一个）。
+        if (Setting.isBootLive()) {
+            // 与点播续播同一套「普通启动」判据：排除回退 / 内部重建 / 桌面守护拉回 / 带 data / 分享 / 搜索。
+            //   HOME 意图在 isPlainLaunch 里另有约束（必须是开机会话）⇒ 用户按主页键回桌面不会抢屏。
+            boolean plainLive = isPlainLaunch(getIntent(), reuse);
+            diag("check: LIVE plain=" + plainLive + " intent=" + getIntent());
+            if (!plainLive) return;
+            mBootTarget = BootTarget.LIVE;
+            diag("check: LIVE 目标已登记，进入两级门控");
+            awaitBootDirect();
+            return;
+        }
         // 退出自动续播关闭：不再自动跳入上次观看的节目，落在首页
+        diag("check: 直播开关关，看点播续播 autoResume=" + Setting.isAutoResume());
         if (!Setting.isAutoResume()) return;
-        if (!isPlainLaunch(getIntent())) return;
+        // ⛔ R123：是否「普通启动」必须带上下文 —— 冷启动的 HOME 是「开机把桌面拉起来」，
+        //   热启动的 HOME 是「用户按主页键回来」，两者对续播的期望正好相反。见 isPlainLaunch 注释。
+        if (!isPlainLaunch(getIntent(), reuse)) return;
         List<History> items = History.get();
         if (items.isEmpty()) return;
         History item = items.get(0);
         if (TextUtils.isEmpty(item.getVodId())) return;
         // 只登记「本次应当续播」；什么时候跳、能不能跳，交给两级门控。
         mBootDirect = item;
+        mBootTarget = BootTarget.VOD;
         awaitBootDirect();
     }
 
@@ -837,15 +1333,18 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
      * （{@code getCallback().success()}）来推进，不重新注册任何网络回调。</p>
      */
     private void awaitBootDirect() {
-        if (mBootDirect == null) return;
+        // R124：主控从「待续播项」换成「直达目标」—— 直播目标没有 History，只有目标本身。
+        if (mBootTarget == BootTarget.NONE) { diag("await: 无目标，早退"); return; }
         // 老人已经在操作了 → 彻底放弃本次抢屏（清掉待续播项，之后配置成功也不会再被拉起）。
         if (bootInteracted) {
-            mBootDirect = null;
+            diag("await: 用户已操作，清目标放弃");
+            clearBootDirect();
             return;
         }
         if (isFinishing() || isDestroyed()) return;
         if (!bootNetReady) {
             // 第一级：等网络。已经联网时 whenReady 会立即回调（onReady 里置标记后再走进来）。
+            diag("await: 一级挂网络等待（online=" + NetAwait.isOnline() + "）");
             // 不设超时：网络一直不来就一直不跳，页面停在首页让老人自己操作，绝不乱跳。
             // ⛔ 已在等待中则不重复注册：本方法有 4 个入口（checkBootDirect / evaluateBoot 的源就绪分支 /
             // ConfigEvent.VOD / getCallback().success），每次进来都 new 一个 Waiter 会覆盖句柄，
@@ -860,6 +1359,7 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
         }
         // 第二级：网络已就绪，只看数据源。没就绪就交给延迟重试（见 tryBootDirect）与
         // success() 回调两条驱动共同推进。
+        diag("await: 二级（网络已就绪），推进 tryBootDirect");
         tryBootDirect();
     }
 
@@ -868,10 +1368,14 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
      *
      * <p>⚠ 2026-10-16 审计修复（P2）：原先第二级只在「一级网络回调触发的这一次」与
      * {@code success()} 里被推进。而一级的 {@code whenReady} 用的是「网络 available」，
-     * 第二级的 {@code isBootDirectReady()} 却要求 {@code NET_CAPABILITY_VALIDATED}
+     * 第二级的 {@code isBootDirectReady()} 当时还要求 {@code NET_CAPABILITY_VALIDATED}
      * —— 开机头几秒 available 已 true 但 VALIDATED 还没就绪是常态 ⇒ 那一次必然判 false，
      * 而 {@code onReady} 只触发一次、{@code success()} 又会被 isProgress 守卫挡掉
      * ⇒ <b>慢网开机续播被静默吞掉</b>（同一台电视有时播、有时不播）。</p>
+     *
+     * <p>⛔ R131：那条 VALIDATED 判据已从 {@code isBootDirectReady()} 删除（国内固件恒 false
+     * ⇒ 续播/直达 100% 不触发，比「慢网吞一次」严重得多）。本方法的有限重试<b>仍然保留</b>：
+     * 它兜的是「配置还没拉完」这一级（站点列表为空 / 历史 siteKey 缺失），与网络判据无关。</p>
      *
      * <p>⛔ 这里**不能**再次调用 {@code NetAwait.whenReady} 来实现重试：它在「已认为联网」时
      * 会**立即**回调 ⇒ 递归自旋。改用固定 1 秒间隔的有限次轮询（最多
@@ -879,14 +1383,62 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
      * 就不该再抢屏了。</p>
      */
     private void tryBootDirect() {
-        if (mBootDirect == null || bootInteracted) return;
+        if (mBootTarget == BootTarget.NONE || bootInteracted) return;
         if (isFinishing() || isDestroyed()) return;
-        if (isBootDirectReady()) {
+        boolean ready = isBootDirectReady();
+        diag("try: target=" + mBootTarget + " ready=" + ready + " retry=" + bootDirectRetry
+                + " liveGroups=" + LiveConfig.get().getHome().getGroups().size()
+                + " vodSites=" + VodConfig.get().getSites().size());
+        if (ready) {
             bootDirectRetry = 0;
             fireBootDirect();
             return;
         }
+        // R132：直播目标未就绪时必须**真的重新拉配置** —— LiveConfig 只在 initConfig() 里
+        // 加载一次且不带回调；BaseConfig#loadConfig 失败也会派发 ConfigEvent（finally 里），
+        // 于是本方法会被推进，但旧逻辑只「复查」分组列表、从不重新加载 ⇒ 开机头几秒 DNS/网关
+        // 没就绪导致首次加载失败时，15 次复查全是空转，直播直达必然失效（实测 100% 复现）。
+        //   · 限频 {@link #LIVE_RELOAD_MIN_INTERVAL_MS}：不能把还在路上的下载反复取消；
+        //   · BaseConfig#load 自带 taskId 去重（新一轮取消上一轮），不会叠加并发请求；
+        //   · 就绪即停：fireBootDirect 消费目标后本方法首行即早退；用户一按键（bootInteracted）同样停。
+        //   预算 {@link #LIVE_BOOT_DIRECT_MAX_RETRY} 比点播长：直达直播是明确要求的行为。
+        if (mBootTarget == BootTarget.LIVE) {
+            // R136：数据「根本不可得」时立即放弃，不再空转 30 秒：
+            //   · 直播源从未配置（url 为空）——没有任何可加载的数据；
+            //   · sync（直播配置与主数据源同源）：直播数据只能由主数据源 JSON 内嵌的 lives
+            //     灌入（见 VodConfig#initLive），独立重拉会被 LiveConfig#load() 的 sync 早退吞掉，
+            //     主数据源已加载完成仍无 lives ⇒ 永远等不到。
+            //   「独立直播源 + 网络慢」不在此列：那种场景重拉有意义，仍走下面的限频重试预算。
+            if (LiveConfig.isUnreachable()) {
+                diag("try: 直播数据不可得，快速放弃");
+                abandonLiveDirect();
+                return;
+            }
+            long now = SystemClock.elapsedRealtime();
+            if (liveDirectLoadAt == 0L || now - liveDirectLoadAt >= LIVE_RELOAD_MIN_INTERVAL_MS) {
+                liveDirectLoadAt = now;
+                diag("try: 直播未就绪，重载直播配置 @tick" + bootDirectRetry);
+                LiveConfig.get().init().load();
+            }
+            if (bootDirectRetry++ < LIVE_BOOT_DIRECT_MAX_RETRY) App.post(mBootDirectRetry, 1000);
+                // R136：预算用尽不再静默——旧版这里自然停摆，老人只看到「没跳」，不知道发生了什么。
+            else abandonLiveDirect();
+            return;
+        }
         if (bootDirectRetry++ < BOOT_DIRECT_MAX_RETRY) App.post(mBootDirectRetry, 1000);
+    }
+
+    /**
+     * R136：直播直达的统一「放弃出口」——数据不可得（{@link LiveConfig#isUnreachable()}）
+     * 或限频重试预算用尽时走这里：清掉等待与登记（clearBootDirect），并给出一次明确提示。
+     * 旧版两处都静默：直播不跳、续播又被互斥开关关掉，老人两头落空且毫无线索。
+     * 提示后落回首页；下次打开软件时重新判定。本方法<b>不降级续播</b>——两个开关互斥，
+     * 「直播直达开」意味着用户明确选择了直播，擅自转跳点播违背设置。
+     */
+    private void abandonLiveDirect() {
+        if (mBootTarget != BootTarget.LIVE) return;
+        clearBootDirect();
+        Notify.show(R.string.boot_live_unready);
     }
 
     /**
@@ -897,7 +1449,20 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
      * 详情页依然取不到站点、依然会失败。少这一条就堵不住这个口子。</p>
      */
     private boolean isBootDirectReady() {
-        if (!NetAwait.isOnline()) return false;
+        // ⛔ R131：这里原本是 `if (!NetAwait.isOnline()) return false;` —— **已删**。
+        //   原因见 NetAwait#isOnline()：它曾要求 NET_CAPABILITY_VALIDATED，该位在国内固件上
+        //   恒 false ⇒ 本方法恒返回 false ⇒ 点播续播与直播直达 100% 不触发。
+        //   现在判据只留「数据源是否就绪」—— 配置能拉下来本身就证明网是通的，不必再判一次。
+        // R133：直播目标 —— 判「直播配置已就绪」= lives 非空且已选定源（LiveConfig#hasData()）。
+        //   ⛔ 不能用 getHome().getGroups().isEmpty()：URL 型直播源（type≥1）的频道分组要等
+        //   LiveActivity 打开后自行拉取才会填充，配置解析完成时恒为空 ⇒ 旧判据对这类源永远为假，
+        //   直播直达永远不跳（小米电视实测：手动进直播正常播放，开机直达永不触发，BDiag 全程
+        //   liveGroups=0）。跳转后的频道拉取由 LiveActivity 自身负责，与手动进入同一条路径。
+        //   （R124 时以 groups 为等价公开表达式的推断对内嵌型源成立，对 URL 型源不成立。）
+        if (mBootTarget == BootTarget.LIVE) return LiveConfig.hasData();
+        // R125（P0）：**待续播项可能已被消费**（fireBootDirect 置空后 mBootTarget 还没清的旧逻辑，
+        //   或 clearBootDirect 之后又被重新驱动）—— 这里必须先判空，否则 mBootDirect.getSiteKey() 直接 NPE。
+        if (mBootDirect == null) return false;
         if (VodConfig.get().getSites().isEmpty()) return false;
         if (!VodConfig.get().getSite(mBootDirect.getSiteKey()).isEmpty()) return true;
         // ⛔ 2026-10-24 修（与手机端同口径）：历史记录里的 siteKey 一旦不在当前配置里
@@ -909,12 +1474,28 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
 
     /** 三绿后真正发起续播。此时详情页必定能取到站点，不存在「跳进去再失败」。 */
     private void fireBootDirect() {
-        History item = mBootDirect;
-        mBootDirect = null;
+        // R124：一次性。直播配置在一次开机里会被解析两次（冷启动 initConfig 一次 + BootReceiver 预加载一次），
+        //   旧实现每次解析都发一次 BOOT 事件 ⇒ 直播页被 start 两次（singleTop 也会重进一次，表现为闪一下）。
+        if (bootDirectFired) return;
+        if (mBootTarget == BootTarget.NONE || bootInteracted) return;
+        if (isFinishing() || isDestroyed()) return;
+        bootDirectFired = true;
+        diag("fire: 发起直达跳转");
         bootDirectAwait.cancel();
         bootDirectAwait = NetAwait.Handle.NONE;
-        if (item == null || bootInteracted) return;
-        if (isFinishing() || isDestroyed()) return;
+        // R125（P0）：**目标一次性消费**。旧逻辑只把 mBootDirect 置空、mBootTarget 仍留着 VOD，
+        //   于是后续任何一次 awaitBootDirect / tryBootDirect 都会走到 isBootDirectReady()，
+        //   在 mBootDirect == null 上崩（mBootDirect.getSiteKey() NPE）。
+        //   现在发完就把目标清成 NONE：后续驱动自然早退，不会二次跳、也不会空指针。
+        BootTarget target = mBootTarget;
+        mBootTarget = BootTarget.NONE;
+        if (target == BootTarget.LIVE) {
+            LiveActivity.start(this);
+            return;
+        }
+        History item = mBootDirect;
+        mBootDirect = null;
+        if (item == null) return;
         // siteKey 失效时用当前主站点打开（与 isBootDirectReady 的降级判据配套，与手机端同口径）
         String key = item.getSiteKey();
         if (VodConfig.get().getSite(key).isEmpty()) key = VodConfig.get().getHome().getKey();
@@ -923,14 +1504,35 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
 
     /** 重新判定开机直达前清掉上一轮的等待与进度标记（{@code onNewIntent} 会走到）。 */
     private void resetBootDirectState() {
+        clearBootDirect();
+    }
+
+    /** 撤销一次直达的所有等待与登记（R124：新增「目标」与「已跳转」两个状态）。 */
+    private void clearBootDirect() {
+        diag("clear: 直达状态清零");
         bootDirectAwait.cancel();
         bootDirectAwait = NetAwait.Handle.NONE;
         App.removeCallbacks(mBootDirectRetry);
         bootDirectRetry = 0;
+        liveDirectLoadAt = 0L;
         mBootDirect = null;
         bootNetReady = false;
-        // 还是一次新的「打开软件」，允许续播；已操作标记随之复位。
         bootInteracted = false;
+        mBootTarget = BootTarget.NONE;
+        bootDirectFired = false;
+    }
+
+    /**
+     * 唤醒会话：把直达状态清零并重新判定一次（R124）。
+     *
+     * <p>一次唤醒只跳一次：{@code bootDirectFired} 也要清零，否则上次开机已经跳过就再也不会跳。</p>
+     */
+    private void rearmBootDirect() {
+        clearBootDirect();
+        bootDirectDone = false;
+        mBootSession = true;
+        // 电视刚亮，用户还没按任何键（clearBootDirect 已把 bootInteracted 重置）。
+        checkBootDirect(false);
     }
 
     /**
@@ -944,22 +1546,43 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
      *
      * <p>改为只排除<b>确实带着别的事来</b>的启动：内部回退 / 内部重建 / 携带 data（打开文件或链接）/
      * 分享 / 搜索；其余一律视为用户主动打开软件。这样任何厂商的自定义 action 都不会再误伤。</p>
+     *
+     * <p>⛔⛔ R123：<b>带 CATEGORY_HOME 的启动要分两种情况</b>，这是「设成默认桌面后点播开机直达失效」
+     * 的根因 —— autostart 树 R101 已恢复 HOME intent-filter（见 leanback/AndroidManifest.xml），
+     * 系统开机就是用 HOME 意图把我们拉起来的；旧代码一律 {@code return false}，于是<b>开机那一次</b>
+     * 必然被判成「不是用户主动打开」⇒ 续播永远不触发。而直播直达走的是
+     * {@code ConfigEvent.BOOT → LiveActivity.start()}，根本不经过本方法 ⇒ 「点播不生效、直播生效」。</p>
+     *
+     * <ul>
+     *   <li><b>冷启动 + 开机窗口内</b>（{@link LaunchKind#COLD_BOOT_DESKTOP}）→ 允许续播。
+     *       这就是「开机自动进桌面，顺手接着上次那部剧」，正是产品要的；</li>
+     *   <li><b>热启动</b>（{@link LaunchKind#WARM_HOME}，用户按主页键回来）→ 禁止续播。
+     *       用户只是想回桌面，不能把他弹进详情页；</li>
+     *   <li><b>冷启动但已过开机窗口</b>（进程刚被回收、用户按主页键让系统新建实例）→ 禁止。
+     *       归到 WARM_HOME 语义，见 {@code classifyLaunch}。R134 例外：待机唤醒后的冷启动
+     *       会在 classifyLaunch 里把 mBootSession 置 true，此处照样放行。</li>
+     * </ul>
+     *
+     * <p>⚠ 只排除 HOME，不动 LAUNCHER：图标 / 遥控器快捷键启动（ACTION_MAIN + CATEGORY_LAUNCHER）
+     * 仍然要续播，那是「用户主动打开软件」的正常语义。</p>
+     *
+     * @param reuse true = 来自 {@code onNewIntent}（进程还活着）。只有这种「按主页键回来」才拦 HOME。
      */
-    private boolean isPlainLaunch(Intent intent) {
+    private boolean isPlainLaunch(Intent intent, boolean reuse) {
         if (intent == null) return true;
         if (intent.getBooleanExtra(EXTRA_BACK_HOME, false)) return false;
         if (intent.getBooleanExtra(EXTRA_REFRESH, false)) return false;
+        // R124：桌面守护把用户从别的应用拉回来 ⇒ 用户只想回首页，不该被弹进上次那部剧。
+        if (intent.getBooleanExtra(EXTRA_GUARD_PULL, false)) return false;
         if (intent.getData() != null) return false;
         String action = intent.getAction();
-        // ⛔ 2026-10-30（R103）：按主页键落到本应用，不算「用户主动打开软件」。
-        // ⚠ 2026-10-30 晚：本应用已**不再声明 CATEGORY_HOME**（见 leanback/AndroidManifest.xml 里的删除说明：
-        //   多一个桌面候选会在「默认桌面为空」的机器上弹选择器，老人误选就变成默认桌面、退不出去）。
-        //   所以这一行现在是**防呆**而非主路径：正常不会再收到带 HOME 的启动。
-        //   保留它的理由只有一条 —— 万一将来重新声明 HOME，或不 root 的机器上有人用
-        //   「把 HOME 指向本应用」的方式启动，也不能把「想回首页」当成「想继续上次那部剧」。
-        // ⚠ 只排除 HOME，不动 LAUNCHER：图标 / 遥控器快捷键启动（ACTION_MAIN + CATEGORY_LAUNCHER）
-        //   仍然要续播，那是「用户主动打开软件」的正常语义。
-        if (Intent.ACTION_MAIN.equals(action) && intent.hasCategory(Intent.CATEGORY_HOME)) return false;
+        if (Intent.ACTION_MAIN.equals(action) && intent.hasCategory(Intent.CATEGORY_HOME)) {
+            // R124：HOME（默认桌面形态）只有「本次是开机会话」才续播。
+            //   开机会话 = 冷启动且进程落在开机窗口内（系统开机把桌面拉起来），或待机唤醒会话；
+            //   其余（热启动 / 已过开机窗口）= 用户按主页键回桌面 ⇒ 不续播。
+            //   ⚠ 判据用 mBootSession 而不是 mLaunchKind：唤醒会话没有新 intent，LaunchKind 还是旧的。
+            return !reuse && mBootSession;
+        }
         return !Intent.ACTION_SEND.equals(action)
                 && !Intent.ACTION_SENDTO.equals(action)
                 && !Intent.ACTION_SEARCH.equals(action);
@@ -1356,13 +1979,14 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
      *    <li><b>从未导入数据源</b>（{@code configFailed && sites.isEmpty()}）→
      *        「还没有导入数据源，请到 设置 → 数据源 导入」：直接指路，这是唯一能让页面有内容的动作。</li>
      *    <li><b>有数据源但这次没连上</b> → 「暂时连接不上，网络恢复后会自动重试」：
-     *        交付给自动恢复（{@link #getCallback()} 的 error 分支挂 {@code awaitConfigNetwork}）。</li>
+     *        交付给自动恢复（{@link #getCallback()} 的 error 分支挂 {@code armSourceRetry}，R123）。</li>
      *    <li><b>配置正常、只是这个分类确实没内容</b> → 「暂无推荐内容 / 该分类暂无数据」。</li>
      *  </ul>
      *
      *  <p><b>刻意不按 {@code NetAwait.isOnline()} 细分</b>：无网时根本进不到首页（会停在启动画面
      *  显示「正在连接网络…」，见 {@link #evaluateBoot()}），那句「网络未连接」属于重复提示；
-     *  且 {@code isOnline()} 要等系统 VALIDATED（异步），有网的头一两秒会误报无网，文案会跳变。
+     *  且 {@code isOnline()} 本身有异步窗口（网络能力上报有先后），有网的头一两秒仍可能
+     *  误报无网，文案会跳变（R131 前还要叠加「等系统 VALIDATED」的更长延迟）。
      *  这类空态绝不能显示成「暂无推荐内容」—— 那等于把故障说成「本来就没内容」。</p>
      */
     /**
@@ -1376,11 +2000,30 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
      * <p>判据三条同时成立才算「没拿到」：这次配置加载失败 + 当前站点为空 + <b>网络尚未就绪</b>。
      * 只要网络已就绪（确实有网、也确实没导入过源），仍然正常显示「去设置里添加」的指路文案。</p>
      *
-     * <p>保持 progress 后不会「一直转」：网络恢复时 {@code awaitConfigNetwork()} 会重载配置，
+     * <p>保持 progress 后不会「一直转」：网络恢复时 {@code armSourceRetry()} 会重载配置，
      * 成功回调里的 {@code getVideo()} 会重新请求内容并替换掉进度行。</p>
      */
     private boolean keepLoadingInsteadOfEmpty() {
         return configFailed && VodConfig.get().getSites().isEmpty() && !NetAwait.isOnline();
+    }
+
+    /**
+     * R132：首页内容级自动重试的调度端。
+     *
+     * <p>阶梯 5s/10s/20s 共 3 次；tick 里走 {@link #loadChip(Object, boolean)} 强制路径
+     * （等价于老人手动点了一下当前分类）。拿到内容由 onContentResult 成功分支清零计数；
+     * 3 次全空停在空态卡，手动点按仍然可用。真没内容的源会白试 3 次 —— 有界、静默、可接受，
+     * 换取「开机头几秒站点没就绪」场景的自愈。</p>
+     */
+    private void scheduleContentRetry() {
+        if (contentRetryCount >= CONTENT_RETRY_STEPS.length) return;
+        App.post(mContentRetry, CONTENT_RETRY_STEPS[contentRetryCount++]);
+    }
+
+    private void retryContentOnce() {
+        if (isFinishing() || isDestroyed()) return;
+        if (!NetAwait.isOnline()) return;   // 没网不空转；空态卡与手动重试仍在
+        loadChip(mShownChip, true);
     }
 
     private void showContentEmpty() {
@@ -1682,8 +2325,25 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
             case COMMON:
                 setFunc();
                 break;
+            case LIVE:
+                diag("event: LIVE 到达（target=" + mBootTarget + "）");
+                // R126：与手机端同口径 —— 直播配置加载完成（LiveConfig#postEvent）后再推进一次。
+                //   BOOT 在 setHome 那一刻就派发，此时频道列表可能还没填完 ⇒ isBootDirectReady()
+                //   会判 false；若只有 BOOT 一条驱动，电视端就只能等 1 秒轮询（手机端有本分支，不用等）。
+                //   补这一条让双端严格一致：直播配置一就绪就跳，不依赖轮询次数。
+                if (mBootTarget == BootTarget.LIVE) awaitBootDirect();
+                break;
             case BOOT:
-                LiveActivity.start(this);
+                diag("event: BOOT 到达（target=" + mBootTarget + "）");
+                // R124/R125：BOOT 事件不再直接跳直播页，改由统一出口裁决。
+                //   BOOT 现在只有一个来源：直播配置解析完成 + 「直播开机直达」开关打开（LiveConfig#setHome）。
+                //   它<b>不新建</b>目标，只推进已经登记好的直播目标 —— 否则运行期任何一次直播配置重载
+                //   （换源、重试）都会把老人从正在看的页面上拽走（这是 R123 之前的老问题）。
+                //   R125：原先还有一个 tvbus 分量（「用户刚换了直播内核」）—— 该语义已由
+                //   TVBus 原地重建引擎取代（换内核不再需要杀进程再跳回来），故一并删除。
+                if (mBootTarget == BootTarget.LIVE) {
+                    awaitBootDirect();
+                }
                 break;
         }
     }
@@ -1915,37 +2575,56 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
         // 从二级页 / 播放页回到首页：退出连按从头计，避免「按了一下又离开、回来再按一下就退」。
         resetBackTaps();
         mClock.start();
-        // ⛔ R101 实时性：用户可能刚在系统设置里把「默认主页」改掉就回来了。
+        // ⛔ R101 实时性：用户可能刚在系统设置里把「默认桌面」改掉就回来了。
         //   LauncherInfo 的缓存只有 3 秒（够挡住连按返回键的密集调用），这里再强制刷新一次，
-        //   保证回到首页这一瞬间「是不是默认主页」就是新值 —— 否则返回键行为会慢一拍。
+        //   保证回到首页这一瞬间「是不是默认桌面」就是新值 —— 否则返回键行为会慢一拍。
         LauncherInfo.refresh(this);
-        refreshWarnBar();
+        // R124：待机唤醒 —— 中国老人最常见的「开机」是按遥控器上的关机键（待机 STR），不是拔插头。
+        //   熄屏时首页在前台、待机 ≥60 秒、距亮屏 ≤60 秒（R134）⇒ 这一次算「开机会话」，重新发起一次直达。
+        //   ⚠ 判定必须在 onHomeVisible() 之前：后者会把「首页最后一次可见时刻」推到当前，
+        //   熄屏时刻就变成「早于首页可见」⇒ 判定恒为 false。
+        if (BootSession.isWakeSession()) {
+            diag("onResume: 唤醒会话，重新判定直达");
+            BootSession.consumeWake();
+            rearmBootDirect();
+        }
+        BootSession.onHomeVisible();
+        // R132：退后台补偿 —— isWakeSession 要求待机满 60 秒（R134），更短的快速待机（几秒~几十秒）
+        // 回来什么都不做；而「开机那次没跳成」的直达目标（例如直播配置当时没就绪）会一直挂着，
+        // 用户感知就是「直达失效」。这里放宽为：退后台超过 60 秒回来，只要还有未消费、未抢屏、
+        // 用户未操作的直达目标，就重新驱动一次。awaitBootDirect 内部有去重（bootDirectAwait 已挂
+        // 就 return）与放弃判据（bootInteracted / isFinishing），不会重复抢屏；直播目标未就绪时
+        // 会经 tryBootDirect 的 R132 重载逻辑自动重拉直播配置。
+        if (mBootTarget != BootTarget.NONE && !bootDirectFired && !bootInteracted
+                && mPausedAt > 0 && SystemClock.elapsedRealtime() - mPausedAt >= QUICK_RESUME_REDRIVE_MS) {
+            diag("onResume: 快速待机补偿触发（间隔 " + (SystemClock.elapsedRealtime() - mPausedAt) + "ms）");
+            awaitBootDirect();
+        }
+        // ⛔ R123：这里原本还有 refreshWarnBar()（首页「安全阀提示条」）。整条提示条已删除 ——
+        //   它的判据「本机静态有几个 HOME 候选」在「本应用刚被设为默认桌面」的 ROM 上必然误报，
+        //   而它又在 onResume 无条件刷新，表现为每次回首页都糊一条错误提示。替代出口见
+        //   activity_home.xml 里删除处的注释（应用列表的「换回电视自带的主页」+ 体检页静态告知）。
     }
 
-    /**
-     * 安全阀提示条的显隐（R101）。
-     *
-     * <p>只在「本应用已是默认主页，且本机除自己以外再没有任何 HOME 候选」时显示 ——
-     * 那正是各类「第三方桌面把电视困住」事故的现场（原厂桌面被禁用 / 卸载）。
-     * 正常机器（有原厂桌面）**永远不显示**，不打扰任何一个普通用户。</p>
-     *
-     * <p>⛔ 判据不能用 {@code DesktopResolver#get().isEmpty()}：那个方法按设计在「自己是默认桌面」时
-     * 就返回空集，拿它当判据会让每一台设了默认桌面的机器都误报（复审 R10）。</p>
-     */
-    private void refreshWarnBar() {
-        boolean show = LauncherCapability.isOnlyHome(this);
-        mBinding.warnBar.setVisibility(show ? View.VISIBLE : View.GONE);
-        if (!show) return;
-        mBinding.warnGo.setOnClickListener(view -> {
-            bootInteracted = true;
-            if (!LauncherCapability.openSettings(this)) Notify.show(R.string.warn_single_home_failed);
-        });
-    }
+    // ⛔⛔ R123：refreshWarnBar() 已整体删除（连同 activity_home.xml 里的 warnBar / warnText / warnGo
+    //   与 warn_single_home 三条文案）。删除理由见 activity_home.xml 删除处的注释：判据是
+    //   「本机静态有几个 HOME 候选」，而「设本应用为默认桌面」这件事本身就会让部分 ROM 把原厂桌面
+    //   从解析结果里摘掉 ⇒ 必然误报；而它又挂在 onResume 上无条件刷新 ⇒ 每次回首页都糊一条。
+    //   ⛔ 不要再加回来：误报的根因是「查询式判据」本身，换个显示时机也只是把错误藏起来。
+    //   真出不去时的出路仍然齐全：应用列表第一格「系统设置」+ 列表右上胶囊「换回电视自带的主页」+
+    //   体检页那一行静态告知（SelfcheckActivity，用户主动打开才看到，用的是修好后的 isOnlyHome）。
 
     @Override
     protected void onPause() {
         super.onPause();
         mClock.stop();
+        // R132：记「退后台/熄屏」时刻 —— 快速待机补偿（见 onResume）用它量间隔。
+        mPausedAt = SystemClock.elapsedRealtime();
+        // R125（P1）：记「首页退到后台」的时刻 —— 唤醒会话要靠它区分
+        //   「熄屏时首页在前台」与「用户自己切走了首页」。
+        //   熄屏本身也会让首页退到后台，所以 BootSession 里对「隐藏时刻落在熄屏前后 2 秒内」
+        //   做了容错，不会把真正的唤醒误杀。
+        BootSession.onHomeHidden();
     }
 
     /**
@@ -1974,7 +2653,7 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
 
     @Override
     protected void onBackInvoked() {
-        // ⓪⓪⓪ R101（v5 定稿）：**本应用已是系统默认主页** ⇒ 首页的返回键什么都不做。
+        // ⓪⓪⓪ R101（v5 定稿）：**本应用已是系统默认桌面** ⇒ 首页的返回键什么都不做。
         //
         // 为什么这是对的，而不是「砍功能」：
         //   ① 桌面的根没有「后面」。原生 Android TV 桌面、小米桌面、EMUI 桌面在主页按返回键
@@ -2052,6 +2731,8 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
         bootDirectRetry = 0;
         // 同理撤销「等网络恢复就重载配置」的监听：本页已销毁，重载只会在一个死掉的实例上刷界面。
         cancelConfigAwait();
+        // R123：门控宽限的 12 秒定时器同理必须撤销 —— 否则页面已销毁它还会回来 showContent()。
+        App.removeCallbacks(mGateTimeout);
         App.removeCallbacks(mChipRunnable); // 防抖回调在页面销毁后不得再触发加载
         // ⛔⛔ 2026-10-16 R66 的「内存释放加固」已在 R67 **回退**（真机堆栈取证）：
         // 这里曾加 `mBinding.recycler.setAdapter(null)` + `Glide.get(this).clearMemory()`，

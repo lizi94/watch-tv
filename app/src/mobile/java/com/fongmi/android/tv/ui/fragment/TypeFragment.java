@@ -28,6 +28,7 @@ import com.fongmi.android.tv.ui.activity.VideoActivity;
 import com.fongmi.android.tv.ui.adapter.VodAdapter;
 import com.fongmi.android.tv.ui.base.BaseFragment;
 import com.fongmi.android.tv.ui.custom.CustomScroller;
+import com.fongmi.android.tv.utils.NetAwait;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.ResUtil;
 
@@ -40,6 +41,10 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
     private CustomScroller mScroller;
     private SiteViewModel mViewModel;
     private VodAdapter mAdapter;
+
+    // R132：首页内容级自动重试（与电视端 HomeActivity 同口径）：阶梯 5s/10s/20s 共 3 次。
+    private static final long[] CONTENT_RETRY_STEPS = {5_000L, 10_000L, 20_000L};
+    private int contentRetryCount;
 
     public static TypeFragment newInstance(String key, String typeId, Style style, HashMap<String, String> extend, boolean folder, int y) {
         Bundle args = new Bundle();
@@ -162,7 +167,24 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
         mBinding.progressLayout.showContent(first, size);
         mBinding.swipeLayout.setRefreshing(false);
         mScroller.endLoading(result);
-        if (size > 0) addVideo(result);
+        if (size > 0) {
+            contentRetryCount = 0;   // R132：拿到内容即清零，下次空态重新计满
+            addVideo(result);
+            return;
+        }
+        // R132：首页内容级自动重试 —— 配置成功但站点内容请求失败（开机头几秒 DNS/站点服务器
+        // 未就绪很常见）时，本页原本画完空态就结束，再无人重试。阶梯 5s/10s/20s 共 3 次，
+        // 拿到内容即停并清零；全空停在空态（下拉刷新仍可手动）。真没内容的源会白试 3 次 ——
+        // 有界、静默、可接受。回调挂在 view 上并带 isAdded 守卫，页面销毁后不会误发。
+        if (first && contentRetryCount < CONTENT_RETRY_STEPS.length) {
+            long delay = CONTENT_RETRY_STEPS[contentRetryCount++];
+            mBinding.recycler.postDelayed(() -> {
+                if (!isAdded() || getContext() == null) return;
+                if (!NetAwait.isOnline()) return;
+                if (isHome()) mViewModel.homeContent();
+                else getVideo(getTypeId(), "1");
+            }, delay);
+        }
     }
 
     private void addVideo(Result result) {

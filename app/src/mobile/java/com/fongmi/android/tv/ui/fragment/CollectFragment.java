@@ -105,8 +105,12 @@ public class CollectFragment extends BaseFragment implements MenuProvider, Colle
 
     private void setViewModel() {
         mViewModel = new ViewModelProvider(this).get(SiteViewModel.class).init();
-        mViewModel.getSearch().observe(this, this::setCollect);
-        mViewModel.getResult().observe(this, this::setSearch);
+        // ⛔ 2026-11-06（R116）：改用 getViewLifecycleOwner()。
+        //   原来用 this（Fragment 生命周期）—— onDestroyView 之后 Fragment 还活着，
+        //   此时若搜索结果刚好回来，回调会去操作已经销毁的 mBinding（BaseFragment 不清空它，
+        //   但 View 已 detach / 被回收）⇒ 偶发 NPE。视图级观察者能自动切断这条路径。
+        mViewModel.getSearch().observe(getViewLifecycleOwner(), this::setCollect);
+        mViewModel.getResult().observe(getViewLifecycleOwner(), this::setSearch);
     }
 
     private void setSites() {

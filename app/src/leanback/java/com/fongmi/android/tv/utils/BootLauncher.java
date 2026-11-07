@@ -30,6 +30,11 @@ import com.fongmi.android.tv.ui.activity.HomeActivity;
  *
  * <p><b>Intent 必须是「普通启动」</b>：不带 data、不带 {@code EXTRA_BACK_HOME}/{@code EXTRA_REFRESH}，
  * 否则 {@code HomeActivity#isPlainLaunch} 会判定为「带着别的事来」，开机直达（续播）就失效了。</p>
+ *
+ * <p>⛔ 但 R124 起，本类会打<b>一个</b>标记：{@code forBoot} 打 {@code EXTRA_BOOT_LAUNCH}
+ * （这是「系统替老人打开」）、{@code forGuard} 打 {@code EXTRA_GUARD_PULL}
+ * （这是「用户按了主页键，守护把他拉回来」）。这两个标记都不是「带着别的事来」，
+ * 但后者必须让首页知道「用户只想回首页」⇒ 不该触发续播。</p>
  */
 public final class BootLauncher {
 
@@ -68,7 +73,7 @@ public final class BootLauncher {
             Log.i(TAG, "界面已在前台，跳过（" + reason + "）");
             return;
         }
-        start(context, reason);
+        start(context, reason, true);
     }
 
     /**
@@ -80,10 +85,10 @@ public final class BootLauncher {
      * 会慢到 4 秒（详见 {@code HomeGuardService} 里的取证注释）。</p>
      */
     public static void forGuard(Context context, String reason) {
-        start(context, reason);
+        start(context, reason, false);
     }
 
-    private static void start(Context context, String reason) {
+    private static void start(Context context, String reason, boolean boot) {
         long now = SystemClock.elapsedRealtime();
         if (now - lastLaunchAt < MIN_INTERVAL_MS) return;
         lastLaunchAt = now;
@@ -98,6 +103,9 @@ public final class BootLauncher {
         try {
             Intent i = new Intent(context, HomeActivity.class);
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            // R124：告诉首页这次是「谁拉起的」—— 系统/自启拉起 vs 守护拉回。
+            //   前者是「开机」语义（可续播），后者是「用户按主页键回来」（不可续播）。
+            i.putExtra(boot ? HomeActivity.EXTRA_BOOT_LAUNCH : HomeActivity.EXTRA_GUARD_PULL, true);
             context.startActivity(i);
             Log.i(TAG, "已拉起界面（" + reason + "）");
         } catch (Throwable t) {

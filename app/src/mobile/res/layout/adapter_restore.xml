@@ -1,10 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 备份文件列表项（手机版）：与主数据源弹窗行（选择模式）同构 ——
+     shape_site_pick_row（10dp 圆角淡白行 + 按下主色高亮），内边距显式补 12/8dp。
+     双行结构保留（文件名 + 修改时间），主文字对齐家族 16sp。 -->
 <androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@drawable/shape_accent"
+    android:layout_marginBottom="8dp"
+    android:background="@drawable/shape_site_pick_row"
     android:gravity="center_vertical"
-    android:orientation="horizontal">
+    android:minHeight="48dp"
+    android:orientation="horizontal"
+    android:paddingStart="12dp"
+    android:paddingTop="8dp"
+    android:paddingEnd="12dp"
+    android:paddingBottom="8dp">
 
     <androidx.appcompat.widget.LinearLayoutCompat
         android:layout_width="0dp"
@@ -17,9 +26,10 @@
             android:id="@+id/name"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:ellipsize="middle"
             android:singleLine="true"
-            android:textColor="?attr/colorOnSurface"
-            android:textSize="14sp" />
+            android:textColor="@color/white"
+            android:textSize="16sp" />
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/time"
@@ -35,6 +45,7 @@
         android:id="@+id/delete"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:src="@drawable/ic_setting_delete" />
 

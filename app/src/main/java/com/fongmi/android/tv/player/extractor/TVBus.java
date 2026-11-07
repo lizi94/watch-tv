@@ -7,7 +7,6 @@ import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.api.config.LiveConfig;
 import com.fongmi.android.tv.bean.Core;
 import com.fongmi.android.tv.exception.ExtractException;
-import com.fongmi.android.tv.setting.LiveSetting;
 import com.fongmi.android.tv.utils.Download;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.UrlUtil;
@@ -27,6 +26,12 @@ public class TVBus implements Source.Extractor, Listener {
     private TVCore tvcore;
     private String hls;
     private Core core;
+    /**
+     * 引擎代号（R125）：每「作废一个引擎」或「建一个引擎」就 +1。
+     *
+     * <p>用途只有一个：让<b>旧引擎迟到的回调</b>被丢弃（见 {@link EngineListener}）。</p>
+     */
+    private int gen;
 
     @Override
     public boolean match(Uri uri) {
@@ -35,7 +40,8 @@ public class TVBus implements Source.Extractor, Listener {
 
     private void init(Core core) {
         try {
-            tvcore = new TVCore(getPath(core.getSo())).listener(this).auth(core.getAuth()).name(core.getName()).pass(core.getPass()).domain(core.getDomain()).broker(core.getBroker());
+            final int id = ++gen;
+            tvcore = new TVCore(getPath(core.getSo())).listener(new EngineListener(id)).auth(core.getAuth()).name(core.getName()).pass(core.getPass()).domain(core.getDomain()).broker(core.getBroker());
             for (Core.Option option : core.getOption()) tvcore.option(option.getKey(), option.getValues());
             tvcore.serv(0).play(8902).mode(1).init();
         } catch (Throwable ignored) {
@@ -67,17 +73,31 @@ public class TVBus implements Source.Extractor, Listener {
         return check();
     }
 
-    private void change() throws Exception {
-        LiveSetting.putBoot(true);
-        // 上游原实现在这里是 App.post(() -> System.exit(0), 100)：换了直播源后 core 变了，需要用
-        // 新 core 重新初始化引擎，而它选的是「延迟 100ms 硬杀进程」这种最粗暴的方式 —— 不分界面、
-        // 不分前后台，用户感知就是「看着看着突然闪退」，还会丢掉当前播放进度。
-        // 改成原地重建引擎：停掉旧引擎、清空引用（core 置空后下一次 fetch() 会用新 core 重新 init），
-        // 语义和重启一致，但不再退出应用。
+    /**
+     * 换内核：停掉旧引擎、清空引用，让 {@link #fetch} 用新 core 重建引擎并<b>继续播放</b>。
+     *
+     * <p><b>R125 改法（这一段原来是上游原样搬过来的）</b>：上游写的是
+     * 「{@code LiveSetting.putBoot(true)} + {@code App.post(() -> System.exit(0), 100)}」——
+     * 置一个持久化的一次性标记，再延迟 100ms <b>硬杀进程</b>，等用户重开 App 时靠那个标记
+     * 跳回直播页。两个问题：</p>
+     * <ul>
+     *   <li>用户感知是「看着看着突然闪退」，还得自己重开、重进直播、重选频道，播放进度也丢了；</li>
+     *   <li>标记写在 {@code Prefers} 里 ⇒ <b>跨天残留</b>：某天换了一次内核，第二天打开 App
+     *       还会莫名其妙被弹进直播页（P1）。</li>
+     * </ul>
+     *
+     * <p>现在改成<b>原地重建</b>：停旧引擎 → 清引用 → {@link #fetch} 里用新 core 重新
+     * {@link #init} → 继续播放。语义与「重启后用新内核播放」一致，但用户无感、不丢进度、
+     * 不产生任何跨天残留；「换内核后还能不能回到直播页」也天然闭环了（人本来就在直播页上）。</p>
+     */
+    private void change() {
+        // 先作废旧引擎的回调资格，再停它 —— 否则它迟到的 onPrepared / onStop 会打到新引擎的等待上。
+        gen++;
         if (tvcore != null) tvcore.stop();
         tvcore = null;
         core = null;
-        throw new ExtractException(ResUtil.getString(R.string.error_play_url));
+        latch = null;
+        hls = null;
     }
 
     private String check() throws Exception {
@@ -98,13 +118,70 @@ public class TVBus implements Source.Extractor, Listener {
         hls = null;
     }
 
+    /**
+     * 引擎监听器：把「这是第几代引擎」带进回调。
+     *
+     * <p><b>为什么必须有它</b>：{@link #latch} 是实例字段，换内核之后它已经指向<b>新</b>引擎的等待；
+     * 而旧引擎在 {@code stop()} 之后仍可能<b>迟到</b>一个 {@code onPrepared} / {@code onStop}
+     * （原生侧的消息队列里已经排着的那一条）。旧回调会把新引擎的等待提前唤醒，
+     * 于是「刚换完内核就报播放失败」—— 正好是这次要修的那类症状。</p>
+     */
+    private class EngineListener implements Listener {
+
+        private final int id;
+
+        EngineListener(int id) {
+            this.id = id;
+        }
+
+        private boolean stale() {
+            return id != gen;
+        }
+
+        @Override
+        public void onPrepared(String result) {
+            if (stale()) return;
+            TVBus.this.onPrepared(result);
+        }
+
+        @Override
+        public void onStop(String result) {
+            if (stale()) return;
+            TVBus.this.onStop(result);
+        }
+
+        @Override
+        public void onInited(String result) {
+            if (stale()) return;
+            TVBus.this.onInited(result);
+        }
+
+        @Override
+        public void onStart(String result) {
+            if (stale()) return;
+            TVBus.this.onStart(result);
+        }
+
+        @Override
+        public void onInfo(String result) {
+            if (stale()) return;
+            TVBus.this.onInfo(result);
+        }
+
+        @Override
+        public void onQuit(String result) {
+            if (stale()) return;
+            TVBus.this.onQuit(result);
+        }
+    }
+
     @Override
     public void onPrepared(String result) {
         Logger.t(TAG).d(result);
         JsonObject json = App.gson().fromJson(result, JsonObject.class);
         if (json.get("hls") == null) return;
         hls = json.get("hls").getAsString();
-        latch.countDown();
+        if (latch != null) latch.countDown();
     }
 
     @Override
@@ -112,7 +189,7 @@ public class TVBus implements Source.Extractor, Listener {
         Logger.t(TAG).d(result);
         JsonObject json = App.gson().fromJson(result, JsonObject.class);
         hls = json.get("errno").getAsString();
-        if (hls.startsWith("-")) latch.countDown();
+        if (latch != null && hls.startsWith("-")) latch.countDown();
     }
 
     @Override

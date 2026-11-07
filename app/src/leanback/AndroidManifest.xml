@@ -17,6 +17,9 @@
          无隐私面），真正的授权动作由系统弹框完成，用户随时可拒。
          ⚠ 若某台电视的固件裁掉了这个确认页，跳转会失败 —— 体检页里已有兜底（见 SelfCheckActivity）。 -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <!-- 应用管理「卸载应用」：ACTION_DELETE 对别的包发起卸载在 API 26+ 必须声明本权限，
+         不加则静默失败（部分 ROM 连提示都没有）。normal 级权限，无需运行时请求。 -->
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
 
     <!-- Android 11+ 默认有包可见性过滤，未在 queries 里声明的包查不到。
          ① MAIN+HOME：桌面守护用。没有它，DesktopResolver 的 queryIntentActivities(MAIN+HOME)

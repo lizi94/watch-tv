@@ -7,6 +7,7 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.api.config.LiveConfig;
 import com.fongmi.android.tv.bean.Live;
 import com.fongmi.android.tv.databinding.AdapterLiveBinding;
@@ -17,7 +18,6 @@ public class LiveAdapter extends RecyclerView.Adapter<LiveAdapter.ViewHolder> {
 
     private final OnClickListener listener;
     private final List<Live> mItems;
-    private boolean action;
 
     public LiveAdapter(OnClickListener listener) {
         this.listener = listener;
@@ -27,18 +27,6 @@ public class LiveAdapter extends RecyclerView.Adapter<LiveAdapter.ViewHolder> {
     public interface OnClickListener {
 
         void onItemClick(Live item);
-
-        void onBootClick(int position, Live item);
-
-        void onPassClick(int position, Live item);
-
-        boolean onBootLongClick(Live item);
-
-        boolean onPassLongClick(Live item);
-    }
-
-    public void setAction(boolean action) {
-        this.action = action;
     }
 
     @Override
@@ -57,15 +45,11 @@ public class LiveAdapter extends RecyclerView.Adapter<LiveAdapter.ViewHolder> {
         Live item = mItems.get(position);
         holder.binding.text.setText(item.getName());
         holder.binding.text.setSelected(item.isSelected());
-        holder.binding.boot.setImageResource(item.getBootIcon());
-        holder.binding.pass.setImageResource(item.getPassIcon());
-        holder.binding.boot.setVisibility(action ? View.VISIBLE : View.GONE);
-        holder.binding.pass.setVisibility(action ? View.VISIBLE : View.GONE);
-        holder.binding.text.setOnClickListener(v -> listener.onItemClick(item));
-        holder.binding.boot.setOnClickListener(v -> listener.onBootClick(position, item));
-        holder.binding.pass.setOnClickListener(v -> listener.onPassClick(position, item));
-        holder.binding.boot.setOnLongClickListener(v -> listener.onBootLongClick(item));
-        holder.binding.pass.setOnLongClickListener(v -> listener.onPassLongClick(item));
+        // 「使用中」标注：当前生效的直播源（LiveConfig 加载时已对该项标记 selected），一眼可辨。
+        holder.binding.state.setVisibility(item.isSelected() ? View.VISIBLE : View.GONE);
+        if (item.isSelected()) holder.binding.state.setText(R.string.site_pick_in_use);
+        // 点行 = 换直播源：绑整行根布局（与电视端同构，保持双端代码一致）。
+        holder.binding.getRoot().setOnClickListener(v -> listener.onItemClick(item));
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder {

@@ -32,7 +32,7 @@ public final class LauncherCapability {
 
     // ------------------------------------------------------------------ 状态
 
-    /** 本应用是不是系统默认主页（HOME 键真正会去的那一个）。 */
+    /** 本应用是不是系统默认桌面（HOME 键真正会去的那一个）。 */
     public static boolean isSelfHome(Context context) {
         return LauncherInfo.isSelfHome(context);
     }
@@ -42,21 +42,35 @@ public final class LauncherCapability {
         return LauncherInfo.getOthers(context);
     }
 
-    /** 强制重算（{@code onResume} 用：用户可能刚在系统设置里改完默认主页就回来了）。 */
+    /** 本机是否还存在别的桌面（R123：三源交叉，含被停用 / 官方接口，见 LauncherInfo#hasOtherLauncher）。 */
+    public static boolean hasOtherLauncher(Context context) {
+        return LauncherInfo.hasOtherLauncher(context);
+    }
+
+    /** 强制重算（{@code onResume} 用：用户可能刚在系统设置里改完默认桌面就回来了）。 */
     public static void refresh(Context context) {
         LauncherInfo.refresh(context);
     }
 
     /**
-     * 安全阀：本机<b>只剩我们一个</b> HOME 候选 —— 这正是各类「第三方桌面把电视困住」事故的现场
+     * 安全阀判据：本机<b>只剩我们一个</b> HOME 候选 —— 这正是各类「第三方桌面把电视困住」事故的现场
      * （原厂桌面被禁用 / 卸载）。
      *
-     * <p>⛔ 判据必须是「自己是默认桌面 <b>且</b> 除自己以外没有任何 HOME 候选」。
+     * <p>⛔ 判据必须是「自己是默认桌面 <b>且</b> 本机确实没有别的桌面」。
      * 不能只看 {@code DesktopResolver#get()} 是否为空 —— 那个方法按设计在「自己是默认桌面」时
      * 就返回空集，拿它当判据会让每一台设了默认桌面的机器都误报（复审 R10）。</p>
+     *
+     * <p>⛔⛔ R123：第二条不能再用 {@code getOthers().isEmpty()}。单次
+     * {@code queryIntentActivities(MAIN+HOME, 0)} 在「本应用刚被设为默认桌面」的 ROM 上会漏掉
+     * 原厂桌面（被系统摘掉 / 被冻结），于是「设了默认桌面」的绝大多数正常机器都被判成
+     * 「本机只剩我一个」⇒ 首页那条提示条每次都误报。改用 {@link #hasOtherLauncher(Context)}
+     * 的三源交叉：任一源查到别的桌面就不算「只剩我」。</p>
+     *
+     * <p>⚠ R123 起首页那条提示条已整条删除，本方法只剩两处调用：应用列表的「换回电视自带的主页 /
+     * 去设置」按钮文案、体检页的静态告知。两处都是用户主动打开才看到，误报代价远小于首页常驻。</p>
      */
     public static boolean isOnlyHome(Context context) {
-        return LauncherInfo.isSelfHome(context) && LauncherInfo.getOthers(context).isEmpty();
+        return LauncherInfo.isSelfHome(context) && !LauncherInfo.hasOtherLauncher(context);
     }
 
     /**
@@ -98,7 +112,7 @@ public final class LauncherCapability {
     // ------------------------------------------------------------------ 跳转
 
     /**
-     * 跳到「默认主页」相关的系统设置页，四级兜底：
+     * 跳到「默认桌面」相关的系统设置页，四级兜底：
      *
      * <pre>
      * ① android.settings.HOME_SETTINGS                  —— 标准页
@@ -129,6 +143,15 @@ public final class LauncherCapability {
         Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
                 .setData(Uri.fromParts("package", activity.getPackageName(), null));
         return start(activity, intent);
+    }
+
+    /**
+     * 发起卸载（R122）：跳系统卸载页，页面自带二次确认。
+     * ⚠ manifest 必须声明 REQUEST_DELETE_PACKAGES，否则 API 26+ 对别的包静默失败。
+     */
+    public static boolean uninstall(Activity activity, String pkg) {
+        if (activity == null || pkg == null || pkg.isEmpty()) return false;
+        return start(activity, new Intent(Intent.ACTION_DELETE, Uri.fromParts("package", pkg, null)));
     }
 
     /** 系统的「无障碍 / 已安装的服务」页（让用户打开看电视的那个开关）。 */

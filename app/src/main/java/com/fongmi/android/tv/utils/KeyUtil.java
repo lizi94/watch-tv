@@ -44,14 +44,6 @@ public class KeyUtil {
         return isActionUp(event) && event.getKeyCode() == KeyEvent.KEYCODE_MENU;
     }
 
-    public static boolean isMediaPlayPause(KeyEvent event) {
-        return isActionUp(event) && (event.getKeyCode() == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE || event.getKeyCode() == KeyEvent.KEYCODE_MEDIA_PLAY || event.getKeyCode() == KeyEvent.KEYCODE_MEDIA_PAUSE);
-    }
-
-    public static boolean isMediaStop(KeyEvent event) {
-        return isActionUp(event) && event.getKeyCode() == KeyEvent.KEYCODE_MEDIA_STOP;
-    }
-
     public static boolean isMediaRewind(KeyEvent event) {
         return isActionUp(event) && event.getKeyCode() == KeyEvent.KEYCODE_MEDIA_REWIND;
     }

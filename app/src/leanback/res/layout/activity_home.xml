@@ -90,57 +90,14 @@
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 
-        <!-- 安全阀提示条（R101）：只在「本应用已是默认主页，且本机除自己以外再没有任何 HOME 候选」
-             时显示 —— 那正是各类「第三方桌面把电视困住」事故的现场（原厂桌面被禁用 / 卸载）。
-             恒占位（GONE 时不占高度），不进 ProgressLayout，避免被注册成「内容视图」（同 bootHint 的坑）。
-
-             令牌口径：底/描边/圆角 = shape_item_normal（ag_card + ag_stroke hairline + ag_radius_m），
-             图标 = ic_widget_error + tint ag_warn_text(#A35A00)，按钮 = Ag.Button.Secondary。
-             ⛔ 不要新造 ag_warn / ag_warn_bg —— ag_warn_bg 在 2026-10-13 的死资源清理中已删除，
-                造回来等于复活死资源。 -->
-        <androidx.appcompat.widget.LinearLayoutCompat
-            android:id="@+id/warnBar"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/ag_space_6"
-            android:layout_marginEnd="@dimen/ag_space_6"
-            android:layout_marginBottom="@dimen/ag_space_2"
-            android:background="@drawable/shape_item_normal"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingStart="@dimen/ag_space_4"
-            android:paddingTop="@dimen/ag_space_3"
-            android:paddingEnd="@dimen/ag_space_4"
-            android:paddingBottom="@dimen/ag_space_3"
-            android:visibility="gone"
-            tools:visibility="visible">
-
-            <androidx.appcompat.widget.AppCompatImageView
-                android:layout_width="@dimen/ag_icon_36"
-                android:layout_height="@dimen/ag_icon_36"
-                android:layout_marginEnd="@dimen/ag_space_3"
-                android:src="@drawable/ic_widget_error"
-                app:tint="@color/ag_warn_text" />
-
-            <com.google.android.material.textview.MaterialTextView
-                android:id="@+id/warnText"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/warn_single_home"
-                android:textColor="@color/ag_text"
-                android:textSize="@dimen/ag_text_body" />
-
-            <com.google.android.material.textview.MaterialTextView
-                android:id="@+id/warnGo"
-                style="@style/Ag.Button.Secondary"
-                android:layout_height="@dimen/ag_button_h"
-                android:layout_width="wrap_content"
-                android:layout_marginStart="@dimen/ag_space_4"
-                android:singleLine="true"
-                android:text="@string/warn_single_home_go" />
-
-        </androidx.appcompat.widget.LinearLayoutCompat>
+        <!-- ⛔⛔ 2026-11-06（R123）：首页「安全阀提示条」（warnBar）**整条删除**。
+             原因（用户定案）：它的判据是「本机静态有几个 HOME 候选」，而「设本应用为默认桌面」
+             这件事本身就会让部分 ROM 把原厂桌面从 HOME 解析结果里摘掉 ⇒ 集合为空 ⇒
+             每次 onResume 都误报成「本机没有其它主页」，与同文件
+             HomeActivity#onBackInvoked 里「默认桌面形态下不留指路提示」的定案也自相矛盾。
+             替代出口（都在，不需要这条条幅）：应用列表第一格「系统设置」+ 列表右上胶囊
+             「换回电视自带的主页」+ 体检页那一行静态告知（SelfCheckActivity，用户主动打开才看到）。
+             ⛔ 不要再把它加回来：误报的根因是「查询式判据」本身，不是显示时机。 -->
 
         <!-- 内容容器：承载「进度网格」。
              空态占位卡由 EmptyCardPresenter 作为内容流中的一行渲染，不再使用独立的浮层区域。

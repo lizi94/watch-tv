@@ -74,10 +74,6 @@ public class Core {
         return TextUtils.isEmpty(sign) ? "" : getString(sign);
     }
 
-    public String getPkg() {
-        return TextUtils.isEmpty(pkg) ? "" : getString(pkg);
-    }
-
     public String getSo() {
         return TextUtils.isEmpty(so) ? "" : UrlUtil.convert(so);
     }

@@ -49,4 +49,12 @@ public class Migrations {
             database.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_Track_key_type` ON `Track` (`key`, `type`)");
         }
     };
+
+    /** Config 加启停标记：历史配置弹窗「删除→启停」改造，存量配置默认全部启用，升级不清库。 */
+    public static final Migration MIGRATION_35_36 = new Migration(35, 36) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("ALTER TABLE Config ADD COLUMN checked INTEGER NOT NULL DEFAULT 1");
+        }
+    };
 }

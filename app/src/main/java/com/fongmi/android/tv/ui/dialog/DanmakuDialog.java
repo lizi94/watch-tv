@@ -61,6 +61,9 @@ public final class DanmakuDialog extends BaseBottomSheetDialog implements Danmak
         binding.recycler.post(() -> binding.recycler.scrollToPosition(adapter.getSelected()));
         binding.recycler.setVisibility(adapter.getItemCount() == 0 ? View.GONE : View.VISIBLE);
         binding.search.setVisibility(player.getMetadata() == null || DanmakuSetting.getEffectiveApiUrl().isEmpty() ? View.GONE : View.VISIBLE);
+        // R128：首焦点给弹幕列表（主操作），原先落在「搜索」按钮（辅助）上。
+        //   列表为空时它是 GONE，此时不强行聚焦 —— 交给系统自然落到搜索按钮。
+        if (binding.recycler.getVisibility() == View.VISIBLE) binding.recycler.requestFocus();
     }
 
     @Override

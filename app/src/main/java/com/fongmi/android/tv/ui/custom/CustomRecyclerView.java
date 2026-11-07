@@ -53,16 +53,8 @@ public class CustomRecyclerView extends RecyclerView {
         a.recycle();
     }
 
-    public void setMinWidth(int minWidth) {
-        this.minWidth = minWidth;
-    }
-
     public void setMaxWidth(int maxWidth) {
         this.maxWidth = maxWidth;
-    }
-
-    public void setMinHeight(int minHeight) {
-        this.minHeight = minHeight;
     }
 
     public void setMaxHeight(int maxHeight) {

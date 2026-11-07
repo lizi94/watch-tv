@@ -89,10 +89,6 @@
     <style name="Ag" />
 
     <!-- 分组标题：左侧主色竖条 + 大字 -->
-    <style name="Ag.SectionHeader" parent="Ag.Text.Headline">
-        <item name="android:drawablePadding">@dimen/ag_space_3</item>
-        <item name="android:paddingStart">@dimen/ag_space_3</item>
-    </style>
 
     <!-- 详情页 chips 区的小节标题（线路 / 清晰度 / 选集 / 排序）：次文字色 + 加粗，随行显隐。
          字号对齐首页行头（adapter_header.xml 的 ag_text_title = 32sp）的下沿：取 headline 28sp，

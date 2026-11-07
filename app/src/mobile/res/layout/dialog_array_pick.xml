@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 通用单选弹窗容器（手机版）：与直播源弹窗（dialog_live.xml）同一套 ——
+     CustomRecyclerView 直接作根，标题由 builder().setTitle() 提供。
+     列表限高走 app:maxHeight（与主数据源弹窗同一上限 376dp）。 -->
+<com.fongmi.android.tv.ui.custom.CustomRecyclerView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/recycler"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:overScrollMode="never"
+    android:padding="24dp"
+    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+    app:maxHeight="376dp" />

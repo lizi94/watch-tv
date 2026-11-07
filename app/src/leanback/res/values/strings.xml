@@ -49,7 +49,6 @@
     <string name="elder_exit_hint">Press Back again to exit</string>
     <string name="elder_confirm_delete_history">Delete this record?</string>
     <string name="elder_confirm_clear_history">Clear all watch records?</string>
-    <string name="elder_confirm_delete_config">Delete this configuration?</string>
     <string name="elder_confirm_delete_backup">Delete this backup file?</string>
 
     <!-- Playback behaviour -->
@@ -72,7 +71,7 @@
     <string name="elder_lock_unlock_entry">Unlock</string>
     <string name="elder_lock_none">Not selected</string>
     <string name="elder_lock_hint_off">Pick the items above, then press Lock now. After that the elder only needs Play.</string>
-    <string name="elder_lock_hint_on">Locked. To change the source or live source, unlock first. Playback route and search priority can be toggled anytime.</string>
+    <string name="elder_lock_hint_on">Locked. To change the source or live source, unlock first. Auto source switch and search priority can be toggled anytime.</string>
     <string name="elder_lock_need_unlock_first">Locked. Unlock it before switching.</string>
     <string name="elder_lock_need_source">Please pick an available source first</string>
     <string name="elder_lock_on">Locked: %1$s</string>
@@ -84,8 +83,6 @@
     <string name="elder_lock_live">Live source</string>
     <string name="elder_lock_live_none">Not imported</string>
     <string name="elder_live_need_config">Add a live source in Settings first</string>
-    <string name="elder_live_on">Live source locked</string>
-    <string name="elder_live_off">Live source unlocked</string>
     <string name="elder_live_blocked">Live source is locked. Unlock it before switching.</string>
     <string name="keep_none_selected">Select favorites to delete first</string>
 
@@ -94,7 +91,8 @@
     <string name="elder_setting_title">Elder settings</string>
     <string name="elder_setting_lock_entry">One-tap lock</string>
     <string name="elder_setting_full_entry">Auto fullscreen on play</string>
-    <string name="elder_setting_resume_entry">Resume VOD after exit</string>
+    <string name="elder_setting_resume_entry">VOD direct on startup</string>
+    <string name="elder_setting_boot_live_entry">Live on startup</string>
     <string name="accessibility_home_guard_label">Watch TV · Home guard</string>
     <string name="accessibility_home_guard_desc">Switches back to Watch TV when the TV\'s own launcher comes to the front after you press Home. You can turn this off in Senior Settings; when off, the Home key returns to the TV launcher as usual.</string>
     <string name="elder_setting_sound_entry">Remote key sound</string>
@@ -113,8 +111,6 @@
     <string name="elder_search_empty">Please enter a keyword first</string>
     <string name="elder_search_no_source">No source available to search</string>
     <string name="elder_detail_empty_search">This source has nothing playable. Searching for “%1$s”</string>
-    <string name="detail_meta_placeholder">None</string>
-    <string name="elder_search_source_locked">Search source is locked</string>
     <string name="setting_cache_confirm">Clear cache? Videos and images will need to reload.</string>
     <string name="elder_site_blocked">Data source is locked. Unlock it before switching.</string>
     <string name="elder_site_locked_hint">Locked · unlock first to change</string>
@@ -136,6 +132,9 @@
     <string name="site_pick_title">Choose a source</string>
     <string name="site_pick_empty">No available sources</string>
     <string name="site_pick_in_use">In use</string>
+    <!-- R121 历史配置弹窗「启用/停用」：停用项不可选用、使用中项不可停用 -->
+    <string name="config_disabled_tip">This config is disabled. Enable it before use.</string>
+    <string name="config_in_use_cannot_off">The config in use cannot be disabled.</string>
     <string name="error_no_matching_source">No other source has the same title</string>
     <string name="error_no_playable_line">No playable source on this site</string>
     <string name="site_manage_disable_confirm">Disable all sources? Nothing will be playable.</string>
@@ -145,7 +144,6 @@
     <string name="list_no_more">No more content</string>
     <string name="error_retry_hint">Tap to retry</string>
     <string name="error_exit_hint">Press Back to exit</string>
-    <string name="site_pick_close_hint">Press Back to close</string>
     <string name="player_service_lost">Playback stopped. Press Back to return</string>
 
     <!-- ===== R101：应用列表 + 桌面闭环 ===== -->
@@ -154,7 +152,7 @@
     <string name="app_chip_all">All</string>
     <string name="app_chip_mine">My apps</string>
     <string name="app_chip_hidden">Hidden (%1$d)</string>
-    <string name="app_switch_home">Switch back to the TV home</string>
+    <string name="app_switch_home">Switch back to the TV launcher</string>
     <string name="app_open_settings">Open system settings</string>
     <string name="app_switch_home_failed">Change it on this TV under Settings &gt; Apps &gt; Default apps</string>
     <string name="app_empty">No other apps found on this TV</string>
@@ -164,15 +162,15 @@
     <string name="app_menu_hide">Hide</string>
     <string name="app_menu_unhide">Show</string>
     <string name="app_menu_info">App info</string>
+    <string name="app_menu_uninstall">Uninstall</string>
     <string name="app_manage_target">Managing “%1$s”</string>
     <string name="app_pin_hint">Up to 6 apps can be put first. Unpin one first.</string>
     <string name="app_hide_confirm">After hiding, it can only be found under Hidden. Hide “%1$s”?</string>
     <string name="app_open_failed">This app won\'t open</string>
     <string name="app_info_failed">This TV can\'t open the App info page</string>
+    <string name="app_uninstall_confirm">Uninstall "%1$s"?</string>
+    <string name="app_uninstall_failed">Couldn&#8217;t start uninstalling</string>
     <string name="home_live_empty">No live source yet. Press OK to add one, or ask your family for help.</string>
-    <string name="warn_single_home">No other home app on this TV. You can restore the TV\'s own home in system settings.</string>
-    <string name="warn_single_home_go">Settings</string>
-    <string name="warn_single_home_failed">Open Settings on this TV and restore the TV\'s own home</string>
 
     <!-- ===== R101：启动与桌面体检 ===== -->
     <string name="self_check_title">Startup &amp; home check</string>
@@ -180,13 +178,14 @@
     <string name="self_check_boot">Open on startup</string>
     <string name="self_check_battery">Keep the TV from closing it</string>
     <string name="self_check_guard">Home button brings it back</string>
-    <string name="self_check_guard_by_home">Handled by the TV home, no need to turn on</string>
-    <string name="self_check_home">Make it the TV home (not all TVs)</string>
+    <string name="self_check_guard_by_home">Handled by the TV launcher, no need to turn on</string>
+    <string name="self_check_boot_by_home">Already the default launcher</string>
+    <string name="self_check_home">Make it the default launcher (not all TVs)</string>
     <string name="self_check_fix">Check and fix</string>
     <string name="self_check_ok">Done</string>
     <string name="self_check_todo">Not set</string>
     <string name="self_check_off">Off</string>
-    <string name="self_check_only_home">This TV now has only this app as home (not recommended)</string>
+    <string name="self_check_only_home">This TV now has only this app as the default launcher (not recommended)</string>
     <string name="self_check_all_ok">All set</string>
     <string name="self_check_need_manual">This TV doesn\'t support the shortcut. Please change it in system settings.</string>
     <string name="a11y_guide">To make the Home button bring this app back, turn on this app\'s switch in the system.</string>

@@ -16,7 +16,6 @@ import com.fongmi.android.tv.databinding.DialogRestoreBinding;
 import com.fongmi.android.tv.db.BackupManager;
 import com.fongmi.android.tv.impl.Callback;
 import com.fongmi.android.tv.ui.adapter.RestoreAdapter;
-import com.fongmi.android.tv.ui.custom.SpaceItemDecoration;
 
 import java.io.File;
 
@@ -46,7 +45,6 @@ public class RestoreDialog extends BaseBottomSheetDialog implements RestoreAdapt
         binding.recycler.setItemAnimator(null);
         binding.recycler.setHasFixedSize(false);
         binding.recycler.setAdapter(adapter = new RestoreAdapter(this));
-        binding.recycler.addItemDecoration(new SpaceItemDecoration(1, 16));
         binding.recycler.setVisibility(adapter.getItemCount() == 0 ? View.GONE : View.VISIBLE);
     }
 

@@ -26,6 +26,7 @@ import com.fongmi.android.tv.ui.activity.ElderSettingsActivity;
 import com.fongmi.android.tv.utils.ElderLock;
 import com.fongmi.android.tv.ui.activity.HomeActivity;
 import com.fongmi.android.tv.ui.base.BaseFragment;
+import com.fongmi.android.tv.ui.dialog.ArrayPickDialog;
 import com.fongmi.android.tv.ui.dialog.ConfigDialog;
 import com.fongmi.android.tv.ui.dialog.HistoryDialog;
 import com.fongmi.android.tv.ui.dialog.RestoreDialog;
@@ -36,7 +37,6 @@ import com.fongmi.android.tv.utils.PermissionUtil;
 import com.fongmi.android.tv.utils.Util;
 import com.github.catvod.bean.Doh;
 import com.github.catvod.net.OkHttp;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -314,10 +314,8 @@ public class SettingFragment extends BaseFragment implements ConfigListener, The
     }
 
     private void setDoh(View view) {
-        new MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.setting_doh).setNegativeButton(R.string.dialog_negative, null).setSingleChoiceItems(getDohList(), getDohIndex(), (dialog, which) -> {
-            setDoh(VodConfig.get().getDoh().get(which));
-            dialog.dismiss();
-        }).show();
+        // 通用单选弹窗（行列表 + 「使用中」标注），替代系统 setSingleChoiceItems，与主数据源弹窗同构。
+        ArrayPickDialog.create().title(R.string.setting_doh).items(getDohList()).select(getDohIndex()).listener(which -> setDoh(VodConfig.get().getDoh().get(which))).show(this);
     }
 
     private void setDoh(Doh doh) {

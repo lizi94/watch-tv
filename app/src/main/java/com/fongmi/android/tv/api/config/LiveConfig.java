@@ -16,7 +16,7 @@ import com.fongmi.android.tv.bean.Rule;
 import com.fongmi.android.tv.db.AppDatabase;
 import com.fongmi.android.tv.event.ConfigEvent;
 import com.fongmi.android.tv.impl.Callback;
-import com.fongmi.android.tv.setting.LiveSetting;
+import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.utils.UrlUtil;
 import com.github.catvod.bean.Header;
 import com.github.catvod.bean.Proxy;
@@ -96,6 +96,31 @@ public class LiveConfig extends BaseConfig {
      */
     public static boolean hasData() {
         return !get().getLives().isEmpty() && !get().getHome().isEmpty();
+    }
+
+    /**
+     * R136：直播数据是否「根本不可得」（开机直达重试循环的快速失败判据）。
+     *
+     * <p>以下两种情况无论重试多少次都不会有直播数据，继续轮询只是让老人对着首页干等
+     * （{@code LIVE_BOOT_DIRECT_MAX_RETRY} × 1 秒），随后静默落回首页：</p>
+     *
+     * <ul>
+     *   <li>直播源从未配置（{@code config} 无 url）——没有任何可加载的数据；</li>
+     *   <li>{@code sync} 模式（直播配置与主数据源同 url）：直播数据只能由主数据源 JSON
+     *       内嵌的 {@code lives} 灌入（见 {@code VodConfig#initLive}），独立重拉会被
+     *       {@link #load()} 开头的 sync 早退吞掉；主数据源已加载完成（sites 非空）仍无
+     *       lives ⇒ 这份数据源里就是没有直播，永远等不到。</li>
+     * </ul>
+     *
+     * <p>「独立直播源 + 网络慢」不在此列：那种场景重拉有意义，仍交给调用方的限频重试预算。
+     * 本方法只读内存态（不读库、不联网），可安全地在主线程的重试 tick 里逐秒调用。</p>
+     */
+    public static boolean isUnreachable() {
+        Config config = get().config;
+        if (config == null || TextUtils.isEmpty(config.getUrl())) return true;
+        return get().needSync(VodConfig.getUrl())
+                && !VodConfig.get().getSites().isEmpty()
+                && get().getLives().isEmpty();
     }
 
     /**
@@ -333,7 +358,10 @@ public class LiveConfig extends BaseConfig {
         config.setHome(home.getName());
         if (save) config.save();
         getLives().forEach(item -> item.setSelected(home));
-        if (!save && (home.isBoot() || LiveSetting.isBoot())) ConfigEvent.boot();
+        // R125：BOOT 事件只剩一个触发条件 —— 用户打开了「直播开机直达」。
+        //   R124 时这里还有 TVBus 的换内核标记（LiveSetting.isBoot()），已随「原地重建引擎」删除。
+        //   ⚠ 事件本身<b>不新建</b>直达目标，只推进首页已登记的目标（见 HomeActivity#onConfigEvent）。
+        if (!save && Setting.isBootLive()) ConfigEvent.boot();
     }
 
     private static class Loader {

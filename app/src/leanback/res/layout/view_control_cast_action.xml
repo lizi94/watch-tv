@@ -14,6 +14,8 @@
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/player"
             style="@style/Control"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_marginEnd="@dimen/ag_space_2"
             android:nextFocusLeft="@id/video"
             android:text="@string/play_exo" />
@@ -21,18 +23,24 @@
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/decode"
             style="@style/Control"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_marginEnd="@dimen/ag_space_2"
             android:text="@string/play_decode" />
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/reset"
             style="@style/Control"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_marginEnd="@dimen/ag_space_2"
             android:text="@string/play_reset" />
 
         <com.fongmi.android.tv.ui.custom.CustomUpDownView
             android:id="@+id/speed"
             style="@style/Control"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_marginEnd="@dimen/ag_space_2"
             android:fontFeatureSettings="tnum"
             android:text="@string/play_speed" />
@@ -40,12 +48,16 @@
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/scale"
             style="@style/Control"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_marginEnd="@dimen/ag_space_2"
             android:text="@string/play_scale" />
 
         <com.fongmi.android.tv.ui.custom.CustomUpDownView
             android:id="@+id/text"
             style="@style/Control"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_marginEnd="@dimen/ag_space_2"
             android:tag="3"
             android:text="@string/play_track_text" />
@@ -53,6 +65,8 @@
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/audio"
             style="@style/Control"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_marginEnd="@dimen/ag_space_2"
             android:tag="1"
             android:text="@string/play_track_audio" />
@@ -60,6 +74,8 @@
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/video"
             style="@style/Control"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:nextFocusRight="@id/player"
             android:tag="2"
             android:text="@string/play_track_video" />

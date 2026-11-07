@@ -155,15 +155,26 @@ public class ConfigDialog extends BaseAlertDialog {
         String name = binding.name.getText().toString().trim();
         if (edit) Config.find(ori, type).url(url).name(name).update();
         if (url.isEmpty()) Config.delete(ori, type);
-        ((ConfigListener) requireParentFragment()).setConfig(Config.find(url, type));
+        applyConfig(Config.find(url, type));
         dismiss();
+    }
+
+    /**
+     * 手动添加 / 选用配置：命中的库记录若曾被停用，恢复为启用。
+     *
+     * <p>「手动输入地址」是<b>明确意图</b>（用户就是要用它），不该被历史的停用状态拦住；
+     * 否则会出现「我明明添加了它，却仍是停用态、点不动也换不掉」的僵死 ——
+     * 与「在历史列表里误点一条停用项」不同，那种必须拦（见 ConfigAdapter）。</p>
+     */
+    private void applyConfig(Config config) {
+        ((ConfigListener) requireParentFragment()).setConfig(config.enable());
     }
 
     private final ActivityResultLauncher<Intent> launcher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> FileChooser.getUri(result, this::setConfig));
 
     private void setConfig(Uri uri) {
         if (!isAdded()) return;
-        ((ConfigListener) requireParentFragment()).setConfig(Config.find(UrlUtil.toLocalUrl(uri), type));
+        applyConfig(Config.find(UrlUtil.toLocalUrl(uri), type));
         dismiss();
     }
 }

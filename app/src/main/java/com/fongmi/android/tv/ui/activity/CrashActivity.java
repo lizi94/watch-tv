@@ -10,6 +10,7 @@ import androidx.viewbinding.ViewBinding;
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.databinding.ActivityCrashBinding;
 import com.fongmi.android.tv.ui.base.BaseActivity;
+import com.fongmi.android.tv.utils.Util;
 import com.github.catvod.utils.Prefers;
 
 import cat.ereza.customactivityoncrash.CustomActivityOnCrash;
@@ -68,10 +69,15 @@ public class CrashActivity extends BaseActivity {
     }
 
     private void showError() {
+        String detail = CustomActivityOnCrash.getAllErrorDetailsFromIntent(this, getIntent());
+        // 2026-11-06（R115）：原来只有一个「关闭」按钮 —— 老人 / 用户想把报错内容发出来求助时
+        // 根本拿不到文本（电视上尤其没法手动选中长文本）。这里加「复制」：
+        // Util.copy 内部已带「已复制」提示，不需要额外 Toast。
         new AlertDialog.Builder(this)
                 .setTitle(R.string.crash_details_title)
-                .setMessage(CustomActivityOnCrash.getAllErrorDetailsFromIntent(this, getIntent()))
-                .setPositiveButton(R.string.crash_details_close, null)
+                .setMessage(detail)
+                .setPositiveButton(R.string.crash_details_copy, (dialog, which) -> Util.copy(detail))
+                .setNegativeButton(R.string.crash_details_close, null)
                 .show();
     }
 }

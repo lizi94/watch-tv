@@ -16,7 +16,6 @@
     <color name="ag_card">#FFFFFF</color>
     <color name="ag_group_bg">#FFFFFF</color>
     <color name="ag_stroke">#DFE3EA</color>
-    <color name="ag_divider">#E6EAF0</color>
     <color name="ag_btn_bg">#E7EBF2</color>
     <color name="ag_btn_stroke">#C4CDD9</color>
 
@@ -49,9 +48,8 @@
 
     <!-- ==== 状态色 ====
          2026-10-13 死资源清理：ag_disabled / ag_ok_bg / ag_warn_bg 全站零引用已删除。
-         ag_ok_text 仅被已废弃的 Ag.Text.Safe 样式引用（属 B 级「传递死」，按授权本轮保留）；
+         2026-11-07（R128）：ag_ok_text 随 Ag.Text.Safe 一并删除（已无任何引用）。
          ag_warn_text 是活的 —— Theme 的 colorError 在用。 -->
-    <color name="ag_ok_text">#166B3E</color>
     <color name="ag_warn_text">#A35A00</color>
 
     <!-- ==== 视频层（深色浮层专用，功能性要求，非风格混搭） ==== -->

@@ -48,7 +48,6 @@
     <string name="elder_exit_hint">再按一次「返回」鍵結束</string>
     <string name="elder_confirm_delete_history">確定要刪除這筆觀看紀錄嗎？</string>
     <string name="elder_confirm_clear_history">確定要清空全部觀看紀錄嗎？</string>
-    <string name="elder_confirm_delete_config">確定要刪除這個設定嗎？</string>
     <string name="elder_confirm_delete_backup">確定要刪除這個備份檔嗎？</string>
 
     <!-- 播放行為 -->
@@ -62,7 +61,7 @@
     <string name="elder_lock_source">資料源</string>
     <string name="elder_lock_route">自動換源</string>
     <string name="elder_lock_route_auto">開啟</string>
-    <string name="elder_lock_route_manual">關閉</string>
+    <string name="elder_lock_route_manual">未開啟</string>
     <string name="elder_lock_search">搜尋優先源</string>
     <string name="elder_lock_search_on">已開啟</string>
     <string name="elder_lock_search_off">未開啟</string>
@@ -71,7 +70,7 @@
     <string name="elder_lock_unlock_entry">解鎖</string>
     <string name="elder_lock_none">未選擇</string>
     <string name="elder_lock_hint_off">選好上面幾項後按「一鍵鎖定」，之後長輩只需按「播放」。</string>
-    <string name="elder_lock_hint_on">已鎖定。要換資料源或直播源請先「解鎖」；「播放線路」和「搜尋優先源」可隨時切換。</string>
+    <string name="elder_lock_hint_on">已鎖定。要換資料源或直播源請先「解鎖」；「自動換源」和「搜尋優先源」可隨時切換。</string>
     <string name="elder_lock_need_unlock_first">已鎖定，如需更換請先解鎖</string>
     <string name="elder_lock_need_source">請先選擇一個可用的資料源</string>
     <string name="elder_lock_on">已鎖定：%1$s</string>
@@ -83,8 +82,6 @@
     <string name="elder_lock_live">直播源</string>
     <string name="elder_lock_live_none">未匯入</string>
     <string name="elder_live_need_config">請先在設定裡新增直播源</string>
-    <string name="elder_live_on">已鎖定直播源</string>
-    <string name="elder_live_off">已解鎖直播源</string>
     <string name="elder_live_blocked">直播源已鎖定，如需更換請先解鎖</string>
     <string name="keep_none_selected">請先點選要刪除的收藏</string>
 
@@ -93,7 +90,8 @@
     <string name="elder_setting_title">長輩設定</string>
     <string name="elder_setting_lock_entry">一鍵鎖定</string>
     <string name="elder_setting_full_entry">隨選自動全螢幕</string>
-    <string name="elder_setting_resume_entry">點播退出自動續播</string>
+    <string name="elder_setting_resume_entry">點播開機直達</string>
+    <string name="elder_setting_boot_live_entry">直播開機直達</string>
     <string name="accessibility_home_guard_label">看電視 · 桌面守護</string>
     <string name="accessibility_home_guard_desc">按主頁鍵回到電視桌面時，自動切回「看電視」。在長輩設定裡可以關閉；關閉後主頁鍵正常回到電視桌面。</string>
     <string name="elder_setting_sound_entry">按鍵音</string>
@@ -112,8 +110,6 @@
     <string name="elder_search_empty">請先輸入要搜尋的內容</string>
     <string name="elder_search_no_source">沒有可用的搜尋源，請先匯入資料源</string>
     <string name="elder_detail_empty_search">這個源沒有可播放的內容，正在為你搜尋「%1$s」</string>
-    <string name="detail_meta_placeholder">空</string>
-    <string name="elder_search_source_locked">搜尋源已鎖定，不能在搜尋頁更換</string>
     <string name="setting_cache_confirm">確定清空快取嗎？清空後看片和圖片都要重新載入</string>
     <string name="elder_site_blocked">資料來源已鎖定，如需更換請先解鎖</string>
     <string name="elder_site_locked_hint">已鎖定 · 如需更換請先解鎖</string>
@@ -135,6 +131,9 @@
     <string name="site_pick_title">選擇資料源</string>
     <string name="site_pick_empty">沒有可用的站源</string>
     <string name="site_pick_in_use">使用中</string>
+    <!-- R121 历史配置弹窗「启用/停用」：停用项不可选用、使用中项不可停用 -->
+    <string name="config_disabled_tip">該配置已停用，如需使用請先啟用</string>
+    <string name="config_in_use_cannot_off">使用中的配置不能停用</string>
     <string name="error_no_matching_source">未找到同一影片的其他站源</string>
     <string name="error_no_playable_line">該站源沒有可播放的線路</string>
     <string name="site_manage_disable_confirm">停用全部站源？停用後將無法觀看任何內容。</string>
@@ -144,7 +143,6 @@
     <string name="list_no_more">沒有更多內容了</string>
     <string name="error_retry_hint">點擊重試</string>
     <string name="error_exit_hint">按「返回」鍵退出</string>
-    <string name="site_pick_close_hint">按「返回」鍵關閉</string>
     <string name="player_service_lost">播放已停止，按「返回」鍵退出</string>
 
     <!-- ===== R101：應用列表 + 桌面閉環 ===== -->
@@ -153,7 +151,7 @@
     <string name="app_chip_all">全部</string>
     <string name="app_chip_mine">我的應用</string>
     <string name="app_chip_hidden">已隱藏（%1$d）</string>
-    <string name="app_switch_home">換回電視自帶的主頁</string>
+    <string name="app_switch_home">換回電視自帶的桌面</string>
     <string name="app_open_settings">開啟系統設定</string>
     <string name="app_switch_home_failed">這台電視要自己到「設定 → 應用 → 預設應用」裡改</string>
     <string name="app_empty">這台電視上沒找到別的應用</string>
@@ -163,15 +161,15 @@
     <string name="app_menu_hide">隱藏起來</string>
     <string name="app_menu_unhide">顯示出來</string>
     <string name="app_menu_info">應用資訊</string>
+    <string name="app_menu_uninstall">解除安裝</string>
     <string name="app_manage_target">正在管理「%1$s」</string>
     <string name="app_pin_hint">最多只能把 6 個應用放到最前，先取消一個吧。</string>
     <string name="app_hide_confirm">隱藏後要按「已隱藏」才找得回來，確定隱藏「%1$s」嗎？</string>
     <string name="app_open_failed">這個應用打不開</string>
     <string name="app_info_failed">這台電視打不開「應用資訊」頁</string>
+    <string name="app_uninstall_confirm">確定要解除安裝「%1$s」嗎？</string>
+    <string name="app_uninstall_failed">這台電視打不開「解除安裝」頁</string>
     <string name="home_live_empty">還沒有新增直播源。點「確定」去新增，也可以讓家裡人幫忙設定。</string>
-    <string name="warn_single_home">本機沒有其它主頁，可以在系統設定裡恢復電視自帶的桌面</string>
-    <string name="warn_single_home_go">去設定</string>
-    <string name="warn_single_home_failed">請到系統設定裡恢復電視自帶的桌面</string>
 
     <!-- ===== R101：啟動與桌面健檢 ===== -->
     <string name="self_check_title">啟動與桌面健檢</string>
@@ -179,8 +177,9 @@
     <string name="self_check_boot">開機就開啟看電視</string>
     <string name="self_check_battery">讓電視別把看電視關掉</string>
     <string name="self_check_guard">按主頁鍵回到看電視</string>
-    <string name="self_check_guard_by_home">已由電視主頁接管，不用開</string>
-    <string name="self_check_home">把看電視設為電視主頁（部分電視不支援）</string>
+    <string name="self_check_guard_by_home">已由電視桌面接管，不用開</string>
+    <string name="self_check_boot_by_home">已經是電視預設桌面了</string>
+    <string name="self_check_home">把看電視設為預設桌面（部分電視不支援）</string>
     <string name="self_check_fix">一鍵檢查並修復</string>
     <string name="self_check_ok">已設定</string>
     <string name="self_check_todo">需要設定</string>

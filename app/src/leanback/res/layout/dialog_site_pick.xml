@@ -41,16 +41,4 @@
             tools:visibility="visible" />
     </FrameLayout>
 
-    <!-- 电视版没有底部按钮（纯遥控器：点一行即选中并关闭），用一行灰字说明怎么退出。
-         ⛔ 必须 focusable=false：否则会成为一个空的焦点停靠点，遥控器按「下」会停在这里。 -->
-    <com.google.android.material.textview.MaterialTextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        style="@style/Ag.Text.Caption"
-        android:layout_marginTop="@dimen/ag_space_3"
-        android:clickable="false"
-        android:focusable="false"
-        android:gravity="center"
-        android:text="@string/site_pick_close_hint" />
-
 </LinearLayout>

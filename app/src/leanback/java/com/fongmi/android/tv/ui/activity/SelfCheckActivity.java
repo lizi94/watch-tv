@@ -22,7 +22,7 @@ import com.fongmi.android.tv.utils.Notify;
  * 「设为电视主页 → 按主页键回到看电视 → 后台不被清理」的顺序逐步引导 ——
  * 每步只做一件事，做完回本页刷新，不一次弹三个系统页面（那会把人绕晕）。</p>
  *
- * <p><b>为什么第 3 行在「已是默认主页」时必须明说「不用开」</b>：那种形态下
+ * <p><b>为什么第 3 行在「已是默认桌面」时必须明说「不用开」</b>：那种形态下
  * {@code HomeGuardService} 是<b>空转</b>的（DesktopResolver 把自己排除后集合为空），
  * 开关打开也不会有任何效果。不明说就又是一个「开关是骗人的」（复审 I3）。</p>
  */
@@ -48,10 +48,7 @@ public class SelfCheckActivity extends BaseActivity {
     @Override
     protected void initEvent() {
         mBinding.fix.setOnClickListener(view -> onFix());
-        mBinding.boot.setOnClickListener(view -> {
-            Setting.putBootAutostart(!Setting.isBootAutostart());
-            refresh();
-        });
+        mBinding.boot.setOnClickListener(view -> onBoot());
         mBinding.battery.setOnClickListener(view -> {
             if (!LauncherCapability.requestBattery(this)) Notify.show(R.string.self_check_need_manual);
             else refresh();
@@ -63,17 +60,27 @@ public class SelfCheckActivity extends BaseActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // 从系统页面回来必须重算 —— 用户可能刚在系统里把「默认主页」或那个开关改掉了。
+        // 从系统页面回来必须重算 —— 用户可能刚在系统里把「默认桌面」或那个开关改掉了。
         LauncherCapability.refresh(this);
         refresh();
     }
 
     private void refresh() {
         if (mBinding == null) return;
-        mBinding.bootText.setText(Setting.getSwitch(Setting.isBootAutostart()));
+        boolean selfHome = LauncherCapability.isSelfHome(this);
+        // 第 1 行「开机就打开看电视」：默认桌面形态下这一行是**关不掉**的 ——
+        // 系统一定会在开机时把本应用当桌面拉起来，这个开关只对「需要主动拉起」的形态有效。
+        // 旧实现照样让用户点一下翻转，结果是「显示已关闭、开机照样打开」—— 一个骗人的开关。
+        // 现在默认桌面形态下只陈述事实、整行弱化，点击也只提示（与第 3 行守护同一口径）。
+        if (selfHome) {
+            mBinding.bootText.setText(R.string.self_check_boot_by_home);
+            mBinding.boot.setAlpha(0.6f);
+        } else {
+            mBinding.boot.setAlpha(1f);
+            mBinding.bootText.setText(Setting.getSwitch(Setting.isBootAutostart()));
+        }
         mBinding.batteryText.setText(Setting.getSwitch(LauncherCapability.isBatteryOk(this)));
 
-        boolean selfHome = LauncherCapability.isSelfHome(this);
         if (selfHome) {
             // 默认桌面形态：守护空转，必须明说「不用开」，并把这一行视觉上弱化
             mBinding.guardText.setText(R.string.self_check_guard_by_home);
@@ -88,6 +95,24 @@ public class SelfCheckActivity extends BaseActivity {
 
         mBinding.homeText.setText(selfHome ? R.string.self_check_ok : R.string.self_check_todo);
         mBinding.warn.setVisibility(LauncherCapability.isOnlyHome(this) ? View.VISIBLE : View.GONE);
+    }
+
+    /**
+     * 第 1 行：开机自动打开。
+     *
+     * <p><b>默认桌面形态下这一行不能改</b>：系统开机必然把本应用当桌面拉起来，
+     * 这个开关只对「需要主动拉起」的形态有效。旧实现照样翻转它，表现为
+     * 「显示已关闭、开机照样打开」—— 又一个骗人的开关。
+     * 现在这一形态下只提示一句事实、不动底层值（万一以后换回非默认桌面，
+     * 尊重他当初的选择）。</p>
+     */
+    private void onBoot() {
+        if (LauncherCapability.isSelfHome(this)) {
+            Notify.show(R.string.self_check_boot_by_home);
+            return;
+        }
+        Setting.putBootAutostart(!Setting.isBootAutostart());
+        refresh();
     }
 
     /**
@@ -111,7 +136,7 @@ public class SelfCheckActivity extends BaseActivity {
         }
     }
 
-    /** 第 4 行：去系统里设默认主页（已设时这里就是「换回电视自带的主页」）。 */
+    /** 第 4 行：去系统里设默认桌面（已设时这里就是「换回电视自带的主页」）。 */
     private void onHome() {
         if (!LauncherCapability.openHomeSettings(this)) Notify.show(R.string.self_check_need_manual);
     }
@@ -119,7 +144,7 @@ public class SelfCheckActivity extends BaseActivity {
     /**
      * 一键检查并修复：按顺序只做**下一件没做的事**。
      *
-     * <p>顺序不是随便排的：设成默认主页之后，第 3 行（按主页键回到看电视）本来就是空转的，
+     * <p>顺序不是随便排的：设成默认桌面之后，第 3 行（按主页键回到看电视）本来就是空转的，
      * 所以默认桌面形态下无障碍那一步要一并跳过 —— 引导老人去开一个不会生效的开关，
      * 比不引导更糟。</p>
      */

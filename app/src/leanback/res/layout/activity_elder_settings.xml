@@ -156,7 +156,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/ag_space_4"
-            android:nextFocusDown="@id/selfCheck"
+            android:nextFocusDown="@id/bootLive"
             android:orientation="horizontal">
 
             <com.google.android.material.textview.MaterialTextView
@@ -174,7 +174,32 @@
                 tools:text="开启" />
         </androidx.appcompat.widget.LinearLayoutCompat>
 
-        <!-- 6.5 启动与桌面体检（R101）：四行状态 + 「一键检查并修复」，
+        <!-- 6.5 直播开机直达 -->
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/bootLive"
+            style="@style/Ag.ListItem"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ag_space_4"
+            android:nextFocusDown="@id/selfCheck"
+            android:orientation="horizontal">
+
+            <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Body"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/ag_space_4"
+                android:text="@string/elder_setting_boot_live_entry" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/bootLiveText"
+                style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                tools:text="关闭" />
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <!-- 6.8 启动与桌面体检（R101）：四行状态 + 「一键检查并修复」，
              把「开机自启 / 后台不被清理 / 按主页键回到看电视 / 设为电视主页」四件事收在一页，
              子女帮老人装机时按顺序点一遍即可。 -->
         <androidx.appcompat.widget.LinearLayoutCompat

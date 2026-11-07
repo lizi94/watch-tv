@@ -171,7 +171,34 @@
                     tools:text="开启" />
             </androidx.appcompat.widget.LinearLayoutCompat>
 
-            <!-- 6. 首页快速搜索 -->
+            <!-- 6. 直播开机直达 -->
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:id="@+id/bootLive"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/shape_item"
+                android:orientation="horizontal">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="16dp"
+                    android:text="@string/elder_setting_boot_live_entry"
+                    android:textColor="@color/white"
+                    android:textSize="16sp" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/bootLiveText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="end"
+                    android:textColor="@color/white"
+                    android:textSize="16sp"
+                    tools:text="关闭" />
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+            <!-- 7. 首页快速搜索 -->
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:id="@+id/indexSearch"
                 android:layout_width="match_parent"
@@ -198,7 +225,7 @@
                     tools:text="关闭" />
             </androidx.appcompat.widget.LinearLayoutCompat>
 
-            <!-- 7. 底部导航直播入口 -->
+            <!-- 8. 底部导航直播入口 -->
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:id="@+id/navLive"
                 android:layout_width="match_parent"
@@ -225,7 +252,7 @@
                     tools:text="开启" />
             </androidx.appcompat.widget.LinearLayoutCompat>
 
-            <!-- 8. 恢复默认设置（破坏性操作，固定最后） -->
+            <!-- 9. 恢复默认设置（破坏性操作，固定最后） -->
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:id="@+id/restore"
                 android:layout_width="match_parent"

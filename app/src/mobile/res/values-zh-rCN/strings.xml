@@ -63,11 +63,10 @@
     <string name="dialog_delete_selected_keep">确定要删除所选的 %1$d 条收藏吗？</string>
 
     <!-- 长辈锁：直播源 -->
-    <string name="elder_lock_live">锁定直播源</string>
+    <string name="elder_lock_live">直播源</string>
+    <string name="elder_lock_desc">锁定后只用这里选的数据源，首页、搜索、播放都跟着它，放不出来会自动换线路。</string>
     <string name="elder_lock_live_none">未导入</string>
     <string name="elder_live_need_config">还没有直播源，请先在 设置 › 直播 中添加</string>
-    <string name="elder_live_on">直播源已锁定</string>
-    <string name="elder_live_off">直播源已解锁</string>
     <string name="elder_live_blocked">直播源已锁定，如需更换请先解锁</string>
     <string name="elder_site_blocked">数据源已锁定，如需更换请先解锁</string>
 
@@ -76,7 +75,7 @@
     <string name="elder_lock_source">数据源</string>
     <string name="elder_lock_route">自动换源</string>
     <string name="elder_lock_route_auto">开启</string>
-    <string name="elder_lock_route_manual">关闭</string>
+    <string name="elder_lock_route_manual">未开启</string>
     <string name="elder_lock_search">搜索优先源</string>
     <string name="elder_lock_search_on">已开启</string>
     <string name="elder_lock_search_off">未开启</string>
@@ -87,7 +86,7 @@
     <string name="elder_lock_unlock_entry">解锁</string>
     <string name="elder_lock_none">未选择</string>
     <string name="elder_lock_hint_off">选好上面几项后按「一键锁定」，之后老人只需按「播放」。</string>
-    <string name="elder_lock_hint_on">已锁定。要换数据源或直播源请先「解锁」；「播放线路」和「搜索优先源」可随时切换。</string>
+    <string name="elder_lock_hint_on">已锁定。要换数据源或直播源请先「解锁」；「自动换源」和「搜索优先源」可随时切换。</string>
     <string name="elder_lock_need_unlock_first">已锁定，如需更换请先解锁</string>
     <string name="elder_lock_need_source">请先选择一个可用的数据源</string>
     <string name="elder_lock_on">已锁定：%1$s</string>
@@ -96,12 +95,12 @@
     <!-- 长辈：退出提示 -->
     <string name="elder_exit_hint">再按一次返回键退出</string>
 
-    <string name="setting_exit_resume">退出自动续播</string>
     <string name="elder_setting_entry">长辈设置</string>
     <string name="elder_setting_title">长辈设置</string>
     <string name="elder_setting_lock_entry">一键锁定</string>
     <string name="elder_setting_full_entry">点播自动全屏</string>
-    <string name="elder_setting_resume_entry">点播退出自动续播</string>
+    <string name="elder_setting_resume_entry">点播开机直达</string>
+    <string name="elder_setting_boot_live_entry">直播开机直达</string>
     <string name="elder_setting_index_search_entry">首页快速搜索</string>
     <string name="elder_setting_size_entry">图片尺寸</string>
     <string name="elder_setting_restore_entry">恢复默认设置</string>
@@ -130,6 +129,9 @@
     <string name="site_pick_title">选择数据源</string>
     <string name="site_pick_empty">没有可用的站源</string>
     <string name="site_pick_in_use">使用中</string>
+    <!-- R121 历史配置弹窗「启用/停用」：停用项不可选用、使用中项不可停用 -->
+    <string name="config_disabled_tip">该配置已停用，如需使用请先启用</string>
+    <string name="config_in_use_cannot_off">使用中的配置不能停用</string>
     <string name="error_no_matching_source">未找到同一影片的其他站源</string>
     <string name="error_no_playable_line">该站源没有可播放的线路</string>
     <string name="site_manage_disable_confirm">停用全部站源？停用后将无法观看任何内容。</string>
@@ -140,5 +142,4 @@
     <string name="detail_switch_searching">正在查找其它站源……</string>
     <string name="list_no_more">没有更多内容了</string>
     <string name="error_retry_hint">点击重试</string>
-    <string name="site_pick_close_hint">按「返回」键关闭</string>
 </resources>

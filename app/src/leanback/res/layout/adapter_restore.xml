@@ -1,22 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 备份文件列表项（电视版）：「双动作行」（恢复 + 删除）⇒ 双焦点目标结构（同 adapter_config.xml）。
+     ⛔ 行根不能 focusable（否则行内删除按钮永远不可达）；text 与 delete 各自承接焦点、
+     各带 selector_item 焦点框。删除图标保留（功能件）。 -->
 <androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    style="@style/Ag.ListItem"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal">
+    android:layout_marginBottom="@dimen/ag_space_2"
+    android:orientation="horizontal"
+    android:focusable="false"
+    android:focusableInTouchMode="false">
 
     <com.google.android.material.textview.MaterialTextView
         android:id="@+id/text"
+        style="@style/Ag.Text.Body"
         android:layout_width="0dp"
-        android:layout_height="@dimen/ag_dialog_item_h"
+        android:layout_height="match_parent"
         android:layout_weight="1"
-        android:background="@drawable/selector_chip_round"
+        android:background="@drawable/selector_item"
         android:ellipsize="middle"
         android:focusable="true"
         android:focusableInTouchMode="true"
-        android:gravity="center"
-        style="@style/Ag.Text.Body"
+        android:gravity="center_vertical"
         android:singleLine="true"
         tools:text="2024-12-26.tv" />
 
@@ -26,7 +33,7 @@
         android:layout_width="@dimen/ag_icon_40"
         android:layout_height="@dimen/ag_icon_40"
         android:layout_marginStart="@dimen/ag_space_3"
-        android:background="@drawable/selector_chip_round"
+        android:background="@drawable/selector_item"
         android:focusable="true"
         android:focusableInTouchMode="true"
         android:padding="@dimen/ag_space_2"

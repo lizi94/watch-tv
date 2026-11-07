@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * 应用列表（R101）：首页功能行「应用」的落点，也是「看电视已是默认主页」形态下唯一的出口。
+ * 应用列表（R101）：首页功能行「应用」的落点，也是「看电视已是默认桌面」形态下唯一的出口。
  *
  * <p><b>第一格固定「系统设置」是硬需求</b>：第三方桌面把用户困住的事故几乎都死于同一个原因 ——
  * 桌面里没有任何通往系统设置的入口（详见方案 5.4）。系统设置的包名在拼音序里很靠后，
@@ -92,6 +92,7 @@ public class AppListActivity extends BaseActivity implements AppPresenter.OnClic
         mBinding.pinButton.setOnClickListener(view -> onPin());
         mBinding.hideButton.setOnClickListener(view -> onHide());
         mBinding.infoButton.setOnClickListener(view -> onInfo());
+        mBinding.uninstallButton.setOnClickListener(view -> onUninstall());
     }
 
     private void setRecyclerView() {
@@ -242,8 +243,8 @@ public class AppListActivity extends BaseActivity implements AppPresenter.OnClic
     }
 
     /**
-     * 右上角桌面胶囊（只在「本应用是默认主页」时出现）。
-     * 本机只剩我们一个 HOME 候选时，文案改成「打开系统设置」—— 那时候「换回默认主页」无处可选。
+     * 右上角桌面胶囊（只在「本应用是默认桌面」时出现）。
+     * 本机只剩我们一个 HOME 候选时，文案改成「打开系统设置」—— 那时候「换回默认桌面」无处可选。
      */
     private void refreshHomeSwitch() {
         if (!LauncherCapability.isSelfHome(this)) {
@@ -288,6 +289,8 @@ public class AppListActivity extends BaseActivity implements AppPresenter.OnClic
         boolean hidden = AppQuery.split(Setting.getHiddenApps()).contains(item.getPkg());
         mBinding.hideButton.setText(hidden ? R.string.app_menu_unhide : R.string.app_menu_hide);
         mBinding.hideButton.setVisibility(AppQuery.PKG_SETTINGS.equals(item.getPkg()) ? View.GONE : View.VISIBLE);
+        // 系统应用不可卸载（系统卸载页自己也会拒绝）：直接不给入口，含固定第一格的「系统设置」
+        mBinding.uninstallButton.setVisibility(item.isSystem() ? View.GONE : View.VISIBLE);
         mBinding.pinButton.requestFocus();
     }
 
@@ -350,6 +353,26 @@ public class AppListActivity extends BaseActivity implements AppPresenter.OnClic
         boolean ok = LauncherCapability.openAppDetails(this);
         exitManage();
         if (!ok) Notify.show(R.string.app_info_failed);
+    }
+
+    /**
+     * 卸载（R122）：确认弹窗 → 系统卸载页（自带二次确认，两道确认防误触）→ 返回后
+     * onResume 的 reload 自动重查列表（应用已消失），这里只需把管理态收掉。
+     */
+    private void onUninstall() {
+        if (manageTarget == null) return;
+        String pkg = manageTarget.getPkg();
+        ConfirmDialog.create()
+                .message(getString(R.string.app_uninstall_confirm, manageTarget.getLabel()))
+                .callback(() -> {
+                    if (LauncherCapability.uninstall(this, pkg)) {
+                        // 卸载页接管前台，管理态里那个目标随时会消失 —— 统一退出管理态
+                        exitManage();
+                    } else {
+                        Notify.show(R.string.app_uninstall_failed);
+                    }
+                })
+                .show(this);
     }
 
     @Override

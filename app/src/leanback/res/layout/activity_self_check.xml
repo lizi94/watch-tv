@@ -31,7 +31,7 @@
             android:text="@string/self_check_subtitle" />
 
         <!-- 一键检查并修复：按「设为电视主页 → 按主页键回到看电视 → 后台不被清理」的顺序，
-             每步只做一件事，做完回本页刷新。已是默认主页时第一步直接跳过（那时无障碍那步也没意义）。 -->
+             每步只做一件事，做完回本页刷新。已是默认桌面时第一步直接跳过（那时无障碍那步也没意义）。 -->
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/fix"
             style="@style/Ag.Button.Primary"

@@ -3,12 +3,10 @@ package com.fongmi.android.tv.ui.dialog;
 import androidx.fragment.app.FragmentActivity;
 import androidx.viewbinding.ViewBinding;
 
-import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.bean.Config;
 import com.fongmi.android.tv.databinding.DialogHistoryBinding;
 import com.fongmi.android.tv.impl.ConfigListener;
 import com.fongmi.android.tv.ui.adapter.ConfigAdapter;
-import com.fongmi.android.tv.ui.custom.SpaceItemDecoration;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 public class HistoryDialog extends BaseAlertDialog implements ConfigAdapter.OnClickListener {
@@ -75,7 +73,6 @@ public class HistoryDialog extends BaseAlertDialog implements ConfigAdapter.OnCl
         adapter = new ConfigAdapter(this);
         binding.recycler.setItemAnimator(null);
         binding.recycler.setHasFixedSize(false);
-        binding.recycler.addItemDecoration(new SpaceItemDecoration(1, 16));
         binding.recycler.setAdapter(adapter.readOnly(readOnly).addAll(type));
     }
 
@@ -85,17 +82,10 @@ public class HistoryDialog extends BaseAlertDialog implements ConfigAdapter.OnCl
         dismiss();
     }
 
+    /** 启停切换（原删除按钮功能替换）：就地翻转落库并刷新，不关弹窗。 */
     @Override
-    public void onDeleteClick(Config item) {
-        // 这里是列表条目的回调，宿主 Fragment / Activity 可能已经被销毁：
-        // requireActivity() 在未 attach 时会抛 IllegalStateException 而闪退，改用可空版本并判空。
-        FragmentActivity activity = getActivity();
-        if (activity == null) return;
-        ConfirmDialog.create().message(R.string.elder_confirm_delete_config).callback(() -> delete(item)).show(activity);
-    }
-
-    private void delete(Config item) {
-        if (adapter.remove(item) == 0) dismiss();
+    public void onActionClick(Config item) {
+        adapter.toggle(item);
     }
 
     @Override

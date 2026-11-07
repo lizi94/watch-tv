@@ -59,6 +59,7 @@ public class ElderSettingsActivity extends BaseActivity {
         mBinding.lock.setOnClickListener(this::onLock);
         mBinding.full.setOnClickListener(this::setAutoFullscreen);
         mBinding.resume.setOnClickListener(this::setAutoResume);
+        mBinding.bootLive.setOnClickListener(this::setBootLive);
         mBinding.indexSearch.setOnClickListener(this::setIndexQuickSearch);
         mBinding.siteManage.setOnClickListener(this::onSiteManage);
         mBinding.size.setOnClickListener(this::setSize);
@@ -79,6 +80,7 @@ public class ElderSettingsActivity extends BaseActivity {
         mBinding.lockText.setText(locked == null ? getString(R.string.elder_lock_none) : getString(R.string.elder_lock_on, locked.getName()));
         mBinding.fullText.setText(Setting.getSwitch(Setting.isAutoFullscreen()));
         mBinding.resumeText.setText(Setting.getSwitch(Setting.isAutoResume()));
+        mBinding.bootLiveText.setText(Setting.getSwitch(Setting.isBootLive()));
         mBinding.indexSearchText.setText(Setting.getSwitch(Setting.isIndexQuickSearch()));
         // 设置行右侧只放计数（行标题已经是「站源管理」，再写「已启用」会重复）
         mBinding.siteManageText.setText(getString(R.string.site_manage_count_short, SiteVisibility.countEnabled(VodConfig.get().getRawSites()), VodConfig.get().getRawSites().size()));
@@ -101,6 +103,22 @@ public class ElderSettingsActivity extends BaseActivity {
     private void setAutoResume(View view) {
         Setting.putAutoResume(!Setting.isAutoResume());
         mBinding.resumeText.setText(Setting.getSwitch(Setting.isAutoResume()));
+        // 与「直播开机直达」互斥：打开本开关时把另一个关掉（后开的关掉先开的）。
+        if (Setting.isAutoResume() && Setting.isBootLive()) {
+            Setting.putBootLive(false);
+            mBinding.bootLiveText.setText(Setting.getSwitch(false));
+        }
+    }
+
+    /** 直播开机直达开关：与电视版同一偏好键，开启后冷启动直接进直播页，与「退出自动续播」互斥。 */
+    private void setBootLive(View view) {
+        Setting.putBootLive(!Setting.isBootLive());
+        mBinding.bootLiveText.setText(Setting.getSwitch(Setting.isBootLive()));
+        // 与「退出自动续播」互斥：打开本开关时把另一个关掉（后开的关掉先开的）。
+        if (Setting.isBootLive() && Setting.isAutoResume()) {
+            Setting.putAutoResume(false);
+            mBinding.resumeText.setText(Setting.getSwitch(false));
+        }
     }
 
     /**
