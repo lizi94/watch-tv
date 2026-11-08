@@ -291,7 +291,7 @@ A：可以。配置和收藏/历史都存在本机，同签名覆盖安装不会
 | 分支 | 内容 | 版本 |
 |---|---|---|
 | `main` | **标准版**：不含开机自启、不含无障碍守护、不含应用页 | 6.3.0 / 630 |
-| `autostart` | **自启版**：在 main 基础上多 15 个新文件 + 18 个改动文件 | 6.3.3 / 633 |
+| `autostart` | **自启版**：在 main 基础上多 15 个新文件 + 17 个改动文件 | 6.3.3 / 633 |
 
 两个分支的差别有这些（其余逐字节相同）：
 
@@ -311,12 +311,17 @@ A：可以。配置和收藏/历史都存在本机，同签名覆盖安装不会
 新增  app/src/leanback/res/layout/{activity_app_list,adapter_app,activity_self_check}.xml
 改动  app/src/leanback/AndroidManifest.xml                              HOME intent-filter + singleTask、开机四通道广播、包可见性 queries、电池白名单、守护/保活两 service + 应用/体检两 Activity
 改动  app/src/leanback/java/.../receiver/BootReceiver.java               LOCKED_BOOT/USER_UNLOCKED/BOOT/预热四通道 + 3/8/15/30s 补偿重试
+改动  app/src/leanback/java/.../bean/Func.java                           「应用」格图标（复用四宫格 vector）
 改动  app/src/leanback/java/.../ui/activity/HomeActivity.java           功能行恒 5 项、设置搬标题区、桌面形态分支、开机直达门控、自动备份节流
 改动  app/src/leanback/java/.../ui/activity/ElderSettingsActivity.java   「启动与桌面体检」入口（替代原来的两个开关行）
+改动  app/src/leanback/java/.../ui/activity/ElderLockActivity.java       仅注释措辞
 改动  app/src/leanback/java/.../ui/presenter/FuncPresenter.java          「应用」格的焦点链
 改动  app/src/leanback/res/layout/{activity_home,activity_elder_settings}.xml  标题区齿轮 + 体检行
+改动  app/src/leanback/res/values{,-zh-rCN,-zh-rTW}/strings.xml          桌面守护无障碍标签 + 应用页/体检页文案
+改动  app/src/main/java/.../service/PlaybackService.java                 媒体库预热广播（服务连接时自发预热）
 改动  app/src/main/java/.../setting/Setting.java                         boot_autostart / home_guard / user_exited / pinned_apps / hidden_apps
 改动  app/src/main/java/.../utils/ElderMode.java                         恢复默认要能复位这几个 key
+改动  app/src/mobile/java/.../ui/activity/ElderLockActivity.java         仅注释措辞
 改动  app/build.gradle                                                   版本号（630 → 633）
 ```
 
