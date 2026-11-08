@@ -56,6 +56,9 @@
     <!-- ==== 字号（6 级语义 + 1 级展示数字，下限 20sp） ==== -->
     <dimen name="ag_text_title">32sp</dimen>
     <dimen name="ag_text_headline">28sp</dimen>
+    <!-- 全局浮层提示（view_toast）专用兜底字号：长提示 + 大字号档位下 28sp 两行装不下，
+         R137 降到 20sp 并放宽三行（2026-11-08），只给浮层用，不影响语义字号体系 -->
+    <dimen name="ag_toast_text_min">20sp</dimen>
     <dimen name="ag_text_body">24sp</dimen>
     <dimen name="ag_text_label">22sp</dimen>
     <dimen name="ag_text_caption">20sp</dimen>

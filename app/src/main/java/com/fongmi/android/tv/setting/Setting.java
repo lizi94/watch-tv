@@ -233,6 +233,21 @@ public class Setting {
         Prefers.put("boot_live_direct", bootLive);
     }
 
+    /* ===== R137（F4）唤醒拉起的守卫读取 =====
+     * 与自启树 Setting 同签名/同键/同默认值，保证 main 的 App.java 两树同码。
+     * 本树没有自启动与桌面守护设置入口：这两个键不会被写入，恒取默认值 ——
+     * user_exited=false（无「主动退出」拦截）、boot_autostart=true（不拦），即默认放行拉起。 */
+
+    /** 用户是否主动退出过（R99 语义，见自启树）。本树无写入者，恒 false。 */
+    public static boolean isUserExited() {
+        return Prefers.getBoolean("user_exited", false);
+    }
+
+    /** 开机自启动开关（R103 语义，见自启树）。本树无写入者，恒 true。 */
+    public static boolean isBootAutostart() {
+        return Prefers.getBoolean("boot_autostart", true);
+    }
+
     /**
      * 遥控器按键音（适老化操作反馈音）：焦点移动、按确定、出错时是否发出提示音。
      * 适老化默认开启（老人靠声音确认「遥控器收到了」）；关闭后
