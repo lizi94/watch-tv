@@ -24,7 +24,6 @@ import com.fongmi.android.tv.bean.Site;
 import com.fongmi.android.tv.bean.Value;
 import com.fongmi.android.tv.databinding.FragmentVodBinding;
 import com.fongmi.android.tv.event.CastEvent;
-import com.fongmi.android.tv.event.ConfigEvent;
 import com.fongmi.android.tv.event.RefreshEvent;
 import com.fongmi.android.tv.event.StateEvent;
 import com.fongmi.android.tv.impl.Callback;
@@ -38,7 +37,6 @@ import com.fongmi.android.tv.ui.adapter.TypeAdapter;
 import com.fongmi.android.tv.ui.base.BaseFragment;
 import com.fongmi.android.tv.ui.dialog.FilterDialog;
 import com.fongmi.android.tv.ui.dialog.ReceiveDialog;
-import com.fongmi.android.tv.utils.ImgUtil;
 import com.fongmi.android.tv.utils.NetAwait;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.ResUtil;
@@ -46,10 +44,6 @@ import com.fongmi.android.tv.utils.ResUtil;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
 
 public class VodFragment extends BaseFragment implements ConfigListener, FilterListener, TypeAdapter.OnClickListener {
 
@@ -81,10 +75,6 @@ public class VodFragment extends BaseFragment implements ConfigListener, FilterL
         return VodConfig.get().getHome();
     }
 
-    private Config getConfig() {
-        return VodConfig.get().getConfig();
-    }
-
     @Override
     protected ViewBinding getBinding(@NonNull LayoutInflater inflater, @Nullable ViewGroup container) {
         return mBinding = FragmentVodBinding.inflate(inflater, container, false);
@@ -100,8 +90,6 @@ public class VodFragment extends BaseFragment implements ConfigListener, FilterL
         // 若 showProgress() 排在后面，就把刚隐藏的转圈又盖回来，表现为「重建后一直转圈」。
         showProgress();
         setViewModel();
-        setTitle();
-        setLogo();
     }
 
     @Override
@@ -177,12 +165,10 @@ public class VodFragment extends BaseFragment implements ConfigListener, FilterL
         }
     }
 
-    private void setTitle() {
-        List<String> items = Arrays.asList(getHome().getName(), getConfig().getName(), getString(R.string.app_name));
-        Optional<String> optional = items.stream().filter(s -> !TextUtils.isEmpty(s)).findFirst();
-        optional.ifPresent(s -> mBinding.title.setText(s));
-    }
-
+    /**
+     * R138 起删除了 setTitle()（标题动态取「分类名→配置名→app 名」的逻辑）：
+     * 手机首页标题与电视端对齐 —— 恒为布局里的 app_name「看电视」，不再随站源/配置变动。
+     */
     private void onTop(View view) {
         getFragment().scrollToTop();
         mBinding.top.setVisibility(View.INVISIBLE);
@@ -352,20 +338,13 @@ public class VodFragment extends BaseFragment implements ConfigListener, FilterL
         return mResult == null ? new Result() : mResult;
     }
 
-    private void setLogo() {
-        ImgUtil.logo(mBinding.logo);
-    }
-
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    public void onConfigEvent(ConfigEvent event) {
-        if (event.type() == ConfigEvent.Type.VOD) setLogo();
-    }
+    /** R138 起删除了 setLogo()/onConfigEvent()：首页 logo 与电视端对齐 —— 恒为布局里的 ic_logo 软件图标，
+     *  不再被数据源配置的 logo 覆盖（电视端 R100 同口径）。首页刷新由 VodConfig 直接派发的 RefreshEvent.home() 驱动。 */
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onRefreshEvent(RefreshEvent event) {
         switch (event.getType()) {
             case HOME:
-                setTitle();
             case SIZE:
                 homeContent();
                 break;
@@ -399,8 +378,6 @@ public class VodFragment extends BaseFragment implements ConfigListener, FilterL
             public void start() {
                 showProgress();
                 hideContent();
-                setTitle();
-                setLogo();
             }
 
             @Override

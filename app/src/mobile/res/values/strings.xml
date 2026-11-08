@@ -102,6 +102,7 @@
     <string name="elder_setting_resume_entry">VOD direct on startup</string>
     <string name="elder_setting_boot_live_entry">Live on startup</string>
     <string name="elder_setting_index_search_entry">Quick search on home</string>
+    <string name="elder_setting_block_third_entry">Block content toasts</string>
     <string name="elder_setting_size_entry">Image size</string>
     <string name="elder_setting_restore_entry">Restore default settings</string>
     <string name="elder_setting_restore_confirm">Restore all settings to default? Sources, favorites and cache are kept.</string>

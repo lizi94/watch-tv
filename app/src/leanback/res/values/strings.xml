@@ -95,6 +95,7 @@
     <string name="elder_setting_boot_live_entry">Live on startup</string>
     <string name="elder_setting_sound_entry">Remote key sound</string>
     <string name="elder_setting_index_search_entry">Quick search on home</string>
+    <string name="elder_setting_block_third_entry">Block content toasts</string>
     <string name="elder_setting_font_entry">Font size</string>
     <string name="elder_setting_font_standard">Standard</string>
     <string name="elder_setting_font_large">Large</string>

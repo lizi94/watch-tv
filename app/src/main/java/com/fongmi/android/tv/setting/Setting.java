@@ -202,6 +202,15 @@ public class Setting {
         return Prefers.getBoolean("auto_resume", true);
     }
 
+    /** R138「屏蔽内容提示」：站源公告、解析来源、手机推送同步、弹幕/字幕搜索提示等内容侧提示不再弹出（默认开启）。 */
+    public static boolean isBlockThirdToast() {
+        return Prefers.getBoolean("block_third_toast", true);
+    }
+
+    public static void putBlockThirdToast(boolean value) {
+        Prefers.put("block_third_toast", value);
+    }
+
     public static void putAutoResume(boolean autoResume) {
         Prefers.put("auto_resume", autoResume);
     }

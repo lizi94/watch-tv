@@ -153,7 +153,7 @@ public class Action implements Process {
         try {
             OkHttp.newCall(OkHttp.client(Constant.TIMEOUT_SYNC), device.getIp().concat("/action?do=sync&mode=0&type=" + type), body.build()).execute();
         } catch (Exception e) {
-            App.post(() -> Notify.show(e.getMessage()));
+            App.post(() -> Notify.showThird(e.getMessage()));
         }
     }
 
@@ -166,7 +166,7 @@ public class Action implements Process {
             body.add("targets", App.gson().toJson(History.get(config.getId())));
             post(device, "history", body);
         } catch (Exception e) {
-            App.post(() -> Notify.show(e.getMessage()));
+            App.post(() -> Notify.showThird(e.getMessage()));
         }
     }
 
@@ -177,7 +177,7 @@ public class Action implements Process {
             body.add("configs", App.gson().toJson(Config.findUrls()));
             post(device, "keep", body);
         } catch (Exception e) {
-            App.post(() -> Notify.show(e.getMessage()));
+            App.post(() -> Notify.showThird(e.getMessage()));
         }
     }
 
@@ -208,7 +208,7 @@ public class Action implements Process {
 
             @Override
             public void error(String msg) {
-                Notify.show(msg);
+                Notify.showThird(msg);
             }
         };
     }
@@ -236,7 +236,7 @@ public class Action implements Process {
 
             @Override
             public void error(String msg) {
-                Notify.show(msg);
+                Notify.showThird(msg);
             }
         };
     }

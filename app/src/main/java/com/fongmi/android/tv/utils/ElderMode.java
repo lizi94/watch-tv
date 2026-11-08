@@ -67,6 +67,7 @@ public class ElderMode {
             "auto_resume",
             "boot_live_direct",
             "index_quick_search",
+            "block_third_toast",
             "elder_key_sound",
             "elder_font_size",
             "size",

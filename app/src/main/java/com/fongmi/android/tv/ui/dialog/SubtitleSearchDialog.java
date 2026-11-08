@@ -237,12 +237,12 @@ public final class SubtitleSearchDialog extends BaseBottomSheetDialog implements
 
     private void onEmpty() {
         showResults(adapter.getItemCount() == 0);
-        Notify.show(R.string.error_empty);
+        Notify.showThird(R.string.error_empty);
     }
 
     private void onError(Exception e) {
         showResults(adapter.getItemCount() == 0);
-        Notify.show(TextUtils.isEmpty(e.getMessage()) ? ResUtil.getString(R.string.error_empty) : e.getMessage());
+        Notify.showThird(TextUtils.isEmpty(e.getMessage()) ? ResUtil.getString(R.string.error_empty) : e.getMessage());
     }
 
     private void saveState() {

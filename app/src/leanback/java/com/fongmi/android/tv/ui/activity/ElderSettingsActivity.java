@@ -63,6 +63,7 @@ public class ElderSettingsActivity extends BaseActivity {
         mBinding.bootLive.setOnClickListener(this::setBootLive);
         mBinding.sound.setOnClickListener(this::setKeySound);
         mBinding.indexSearch.setOnClickListener(this::setIndexQuickSearch);
+        mBinding.blockThird.setOnClickListener(this::setBlockThird);
         mBinding.siteManage.setOnClickListener(this::onSiteManage);
         mBinding.font.setOnClickListener(this::onFont);
         mBinding.size.setOnClickListener(this::setSize);
@@ -85,6 +86,7 @@ public class ElderSettingsActivity extends BaseActivity {
         mBinding.bootLiveText.setText(Setting.getSwitch(Setting.isBootLive()));
         mBinding.soundText.setText(Setting.getSwitch(Setting.isKeySound()));
         mBinding.indexSearchText.setText(Setting.getSwitch(Setting.isIndexQuickSearch()));
+        mBinding.blockThirdText.setText(Setting.getSwitch(Setting.isBlockThirdToast()));
         // 设置行右侧只放计数（行标题已经是「站源管理」，再写「已启用」会重复）
         mBinding.siteManageText.setText(getString(R.string.site_manage_count_short, SiteVisibility.countEnabled(VodConfig.get().getRawSites()), VodConfig.get().getRawSites().size()));
         mBinding.fontText.setText(getFontName());
@@ -156,6 +158,12 @@ public class ElderSettingsActivity extends BaseActivity {
         Setting.putIndexQuickSearch(!Setting.isIndexQuickSearch());
         mBinding.indexSearchText.setText(Setting.getSwitch(Setting.isIndexQuickSearch()));
 
+    }
+
+    /** R138「屏蔽内容提示」：默认开。站源公告、解析/推送/弹幕字幕搜索提示不再打扰。 */
+    private void setBlockThird(View view) {
+        Setting.putBlockThirdToast(!Setting.isBlockThirdToast());
+        mBinding.blockThirdText.setText(Setting.getSwitch(Setting.isBlockThirdToast()));
     }
 
     /** 「选择能看的站」：站源由用户自己挑，关掉的从全站消失。 */

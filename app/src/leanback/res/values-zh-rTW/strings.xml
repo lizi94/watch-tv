@@ -94,6 +94,7 @@
     <string name="elder_setting_boot_live_entry">開機進直播</string>
     <string name="elder_setting_sound_entry">按鍵音</string>
     <string name="elder_setting_index_search_entry">首頁快速搜尋</string>
+    <string name="elder_setting_block_third_entry">屏蔽內容提示</string>
     <string name="elder_setting_font_entry">字號大小</string>
     <string name="elder_setting_font_standard">標準</string>
     <string name="elder_setting_font_large">大</string>

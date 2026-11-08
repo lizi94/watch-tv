@@ -142,12 +142,12 @@ public final class DanmakuSearchDialog extends BaseBottomSheetDialog implements 
     private void onSuccess(List<Danmaku> items) {
         adapter.addAll(items);
         showResults(items.isEmpty());
-        if (items.isEmpty()) Notify.show(R.string.error_empty);
+        if (items.isEmpty()) Notify.showThird(R.string.error_empty);
     }
 
     private void onError(Exception e) {
         showResults(true);
-        Notify.show(TextUtils.isEmpty(e.getMessage()) ? ResUtil.getString(R.string.error_empty) : e.getMessage());
+        Notify.showThird(TextUtils.isEmpty(e.getMessage()) ? ResUtil.getString(R.string.error_empty) : e.getMessage());
     }
 
     @Override

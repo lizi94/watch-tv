@@ -102,6 +102,7 @@
     <string name="elder_setting_resume_entry">开机看上次影片</string>
     <string name="elder_setting_boot_live_entry">开机进直播</string>
     <string name="elder_setting_index_search_entry">首页快速搜索</string>
+    <string name="elder_setting_block_third_entry">屏蔽内容提示</string>
     <string name="elder_setting_size_entry">图片尺寸</string>
     <string name="elder_setting_restore_entry">恢复默认设置</string>
     <string name="elder_setting_restore_confirm">确定恢复默认设置吗？数据源、收藏、缓存都保留。</string>

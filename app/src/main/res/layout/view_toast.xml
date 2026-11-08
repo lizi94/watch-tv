@@ -2,10 +2,11 @@
 <!-- 全局浮层提示（Toast）：app 内自绘，文字用 sp 字号 ——
      电视版会随「字号大小」档位与屏幕尺寸补偿等比放大，不再使用系统 Toast 的小字号。
 
-     ⚠ 手机版实际走不到这份布局：Notify.create() 里只有 leanback 分支 inflate(R.layout.view_toast)，
-     mobile 分支用系统 Toast（Toast.makeText）。本文件因此会作为「未引用资源」被打进 mobile 包，
-     属已知的良性冗余 —— 保留它是因为它是 Notify 的唯一布局契约来源，删除会让
-     「leanback 覆盖版一旦漏删就编译失败」的风险升高。需要清掉时应连同 leanback 覆盖版一起处理。 -->
+     ⛔ 2026-11-09（R138）手机端 Toast 样式统一：
+     之前手机端走系统 Toast（Toast.makeText），样式随手机深浅色模式翻转、字号偏小、不可控，
+     与电视端的深色圆角白字观感割裂。现在 Notify.makeTextInternal 的 mobile 分支也 inflate
+     本布局 —— 双端同一入口、同一观感：深色半透明圆角 + 白字居中，不随系统主题变。
+     手机端无「字号档位」缩放，15sp 起步、autoSize 缩到 12sp 兜底、最多 2 行、超长省略。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="wrap_content"
@@ -13,10 +14,10 @@
     android:background="@drawable/shape_toast"
     android:gravity="center"
     android:orientation="horizontal"
-    android:paddingStart="24dp"
-    android:paddingTop="12dp"
-    android:paddingEnd="24dp"
-    android:paddingBottom="12dp">
+    android:paddingStart="20dp"
+    android:paddingTop="10dp"
+    android:paddingEnd="20dp"
+    android:paddingBottom="10dp">
 
     <!-- ⚠ 与 leanback 覆盖版保持同一套「限行 + 自动缩放」契约（见那份的说明）。 -->
     <com.google.android.material.textview.MaterialTextView
@@ -28,9 +29,9 @@
         android:lineSpacingExtra="2dp"
         android:maxLines="2"
         android:textColor="@color/white"
-        android:textSize="24sp"
-        app:autoSizeMaxTextSize="24sp"
-        app:autoSizeMinTextSize="14sp"
+        android:textSize="15sp"
+        app:autoSizeMaxTextSize="15sp"
+        app:autoSizeMinTextSize="12sp"
         app:autoSizeStepGranularity="1sp"
         app:autoSizeTextType="uniform" />
 
