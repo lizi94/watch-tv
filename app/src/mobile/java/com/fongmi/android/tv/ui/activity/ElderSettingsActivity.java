@@ -61,6 +61,7 @@ public class ElderSettingsActivity extends BaseActivity {
         mBinding.resume.setOnClickListener(this::setAutoResume);
         mBinding.bootLive.setOnClickListener(this::setBootLive);
         mBinding.indexSearch.setOnClickListener(this::setIndexQuickSearch);
+        mBinding.blockThird.setOnClickListener(this::setBlockThird);
         mBinding.siteManage.setOnClickListener(this::onSiteManage);
         mBinding.size.setOnClickListener(this::setSize);
         mBinding.navLive.setOnClickListener(this::setNavLive);
@@ -82,6 +83,7 @@ public class ElderSettingsActivity extends BaseActivity {
         mBinding.resumeText.setText(Setting.getSwitch(Setting.isAutoResume()));
         mBinding.bootLiveText.setText(Setting.getSwitch(Setting.isBootLive()));
         mBinding.indexSearchText.setText(Setting.getSwitch(Setting.isIndexQuickSearch()));
+        mBinding.blockThirdText.setText(Setting.getSwitch(Setting.isBlockThirdToast()));
         // 设置行右侧只放计数（行标题已经是「站源管理」，再写「已启用」会重复）
         mBinding.siteManageText.setText(getString(R.string.site_manage_count_short, SiteVisibility.countEnabled(VodConfig.get().getRawSites()), VodConfig.get().getRawSites().size()));
         mBinding.sizeText.setText((size = ResUtil.getStringArray(R.array.select_size))[PlayerSetting.getSize()]);
@@ -130,6 +132,12 @@ public class ElderSettingsActivity extends BaseActivity {
         Setting.putIndexQuickSearch(!Setting.isIndexQuickSearch());
         mBinding.indexSearchText.setText(Setting.getSwitch(Setting.isIndexQuickSearch()));
 
+    }
+
+    /** R138「屏蔽内容提示」：默认开。站源公告、解析/推送/弹幕字幕搜索提示不再打扰。 */
+    private void setBlockThird(View view) {
+        Setting.putBlockThirdToast(!Setting.isBlockThirdToast());
+        mBinding.blockThirdText.setText(Setting.getSwitch(Setting.isBlockThirdToast()));
     }
 
     /** 底部导航栏直播入口开关：关闭后首页底部导航不再显示直播 tab。 */

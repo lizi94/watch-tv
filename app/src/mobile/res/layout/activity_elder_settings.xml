@@ -225,6 +225,33 @@
                     tools:text="关闭" />
             </androidx.appcompat.widget.LinearLayoutCompat>
 
+            <!-- R138「屏蔽内容提示」：站源公告、解析/推送/弹幕字幕搜索提示不再弹出 -->
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:id="@+id/blockThird"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/shape_item"
+                android:orientation="horizontal">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="16dp"
+                    android:text="@string/elder_setting_block_third_entry"
+                    android:textColor="@color/white"
+                    android:textSize="16sp" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/blockThirdText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="end"
+                    android:textColor="@color/white"
+                    android:textSize="16sp"
+                    tools:text="开启" />
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
             <!-- 8. 底部导航直播入口 -->
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:id="@+id/navLive"

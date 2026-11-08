@@ -71,6 +71,7 @@ public class ElderMode {
             "boot_autostart",
             "home_guard",
             "index_quick_search",
+            "block_third_toast",
             "elder_key_sound",
             "elder_font_size",
             "size",

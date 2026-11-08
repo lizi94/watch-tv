@@ -233,7 +233,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/ag_space_4"
-            android:nextFocusDown="@id/sound"
+            android:nextFocusDown="@id/blockThird"
             android:orientation="horizontal">
 
             <com.google.android.material.textview.MaterialTextView
@@ -249,6 +249,31 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 tools:text="关闭" />
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <!-- R138「屏蔽内容提示」：站源公告、解析/推送/弹幕字幕搜索提示不再弹出 -->
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/blockThird"
+            style="@style/Ag.ListItem"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/ag_space_4"
+            android:nextFocusDown="@id/sound"
+            android:orientation="horizontal">
+
+            <com.google.android.material.textview.MaterialTextView
+                style="@style/Ag.Text.Body"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/ag_space_4"
+                android:text="@string/elder_setting_block_third_entry" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/blockThirdText"
+                style="@style/Ag.Text.Value"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                tools:text="开启" />
         </androidx.appcompat.widget.LinearLayoutCompat>
 
         <!-- 8. 遥控器按键音 -->

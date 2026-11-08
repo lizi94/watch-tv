@@ -65,6 +65,23 @@ public class Notify {
     }
 
     /**
+     * 内容侧提示（R138）：站源公告、解析来源、手机推送同步、弹幕/字幕搜索提示。
+     *
+     * <p>受长辈设置「屏蔽内容提示」开关控制（默认开启屏蔽）——这些提示要么是纯信息展示、
+     * 要么 UI 已有空态兜底、要么是不阻塞观看的后台同步结果，对老人都是「乱七八糟的打扰」。
+     * App 功能提示（已复制、锁定成功、换台反馈等）不走这里，不受开关影响。</p>
+     */
+    public static void showThird(String text) {
+        if (Setting.isBlockThirdToast()) return;
+        show(text);
+    }
+
+    public static void showThird(int resId) {
+        if (Setting.isBlockThirdToast()) return;
+        show(resId);
+    }
+
+    /**
      * 居中提示：只给「退出确认」这类<b>必须让老人看见</b>的场合用。
      *
      * <p>系统 Toast 默认停在屏幕最底部，大屏电视上离视线远、3.5 秒就没了，
@@ -152,7 +169,9 @@ public class Notify {
         //   ⇒ 现在回到**单次 show()**（可靠显示），可读性由 32sp 大字（ag_text_title）承担。
         //   真需要「更长停留」时的正解是**自绘浮层**（往当前 Activity 的 decorView 里 addView +
         //   postDelayed 移除，时长完全自控、不受 toast 队列限制），而不是重复 show 同一个 Toast。
-        // 手机版：直接用系统 Toast，字号与时长保持系统正常状态。
+        // 手机版（R138）：与电视端同一套自绘浮层（深色半透明圆角 + 白字居中）。
+        // 之前走系统 Toast，样式随手机深浅色模式翻转、字号偏小且不可控，与电视端观感割裂。
+        // 手机端无「字号档位」缩放，sp 字号由布局直接换算，无需 leanback 的手动缩放退路。
         if (BuildConfig.FLAVOR.equals("leanback")) {
             Context context = App.activity() != null ? App.activity() : App.get();
             View view = LayoutInflater.from(context).inflate(R.layout.view_toast, null);
@@ -171,10 +190,20 @@ public class Notify {
             mToast = new Toast(context);
             mToast.setDuration(Toast.LENGTH_LONG);
             mToast.setView(view);
-            if (center) mToast.setGravity(Gravity.CENTER, 0, 0);
+            // R138：所有提示统一水平垂直居中显示（此前普通提示在底部、仅 center() 走居中，
+            // 老人视线焦点在屏幕中部，底部提示易被电视底栏/手机手势条遮挡）。
+            mToast.setGravity(Gravity.CENTER, 0, 0);
             mToast.show();
         } else {
-            mToast = Toast.makeText(App.get(), text, Toast.LENGTH_LONG);
+            Context context = App.activity() != null ? App.activity() : App.get();
+            View view = LayoutInflater.from(context).inflate(R.layout.view_toast, null);
+            ((TextView) view.findViewById(R.id.text)).setText(text);
+            mToast = new Toast(context);
+            mToast.setDuration(Toast.LENGTH_LONG);
+            mToast.setView(view);
+            // R138：所有提示统一水平垂直居中显示（此前普通提示在底部、仅 center() 走居中，
+            // 老人视线焦点在屏幕中部，底部提示易被电视底栏/手机手势条遮挡）。
+            mToast.setGravity(Gravity.CENTER, 0, 0);
             mToast.show();
         }
     }

@@ -97,6 +97,7 @@
     <string name="accessibility_home_guard_desc">Switches back to Watch TV when the TV\'s own launcher comes to the front after you press Home. You can turn this off in Senior Settings; when off, the Home key returns to the TV launcher as usual.</string>
     <string name="elder_setting_sound_entry">Remote key sound</string>
     <string name="elder_setting_index_search_entry">Quick search on home</string>
+    <string name="elder_setting_block_third_entry">Block content toasts</string>
     <string name="elder_setting_font_entry">Font size</string>
     <string name="elder_setting_font_standard">Standard</string>
     <string name="elder_setting_font_large">Large</string>
