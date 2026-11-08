@@ -6,7 +6,13 @@
      ⛔ 2026-10-27 修「提示文案莫名换行」：之前只给固定 32sp、不限行数。
      字号档位会等比放大 scaledDensity，档位 4 时单字约 75px（1080p 一行仅 14 字）⇒
      十几字的文案必然折行，还常出现「最后一行只剩一两个字」的孤字，非常难看。
-     现在：32sp 起步、20sp 兜底，由 autoSize 自动缩到能放下为止，最多两行、超出省略。
+     现在：32sp 起步、由 autoSize 自动缩到能放下为止，超出省略。
+
+     ⛔ 2026-11-08（R137）修「长提示显示不全」：当时兜底写的是 ag_text_headline，
+     实际值 28sp —— 档位 4 下 4sp 的收缩空间杯水车薪，两行也装不下
+     「这台电视要自己到『设置 → 应用 → 默认应用』里改」这类长文案，被 ellipsize 截断。
+     现在：① 兜底降到独立的 ag_toast_text_min（20sp）；② maxLines 放宽到 3。
+     长文案 + 大字号 + 三行的组合足够完整显示所有现有提示；ellipsize 仍保留作最后防线。
 
      main 同名布局保留手机版原样，手机端不继承电视版的老人友好令牌。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -28,11 +34,11 @@
         android:ellipsize="end"
         android:gravity="center"
         android:lineSpacingExtra="@dimen/ag_space_1"
-        android:maxLines="2"
+        android:maxLines="3"
         android:textColor="@color/white"
         android:textSize="@dimen/ag_text_title"
         app:autoSizeMaxTextSize="@dimen/ag_text_title"
-        app:autoSizeMinTextSize="@dimen/ag_text_headline"
+        app:autoSizeMinTextSize="@dimen/ag_toast_text_min"
         app:autoSizeStepGranularity="1sp"
         app:autoSizeTextType="uniform" />
 

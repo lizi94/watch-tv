@@ -105,7 +105,7 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
      * 桌面守护拉起用的是「什么都不带」的普通 Intent。两者在 {@link #isPlainLaunch} 里原本走同一条
      * 分支，于是「守护把用户从别的应用拉回来」也会被当成「用户主动打开软件」⇒ 触发续播。</p>
      */
-    public static final String EXTRA_BOOT_LAUNCH = "boot_launch";
+    public static final String EXTRA_BOOT_LAUNCH = BootSession.EXTRA_BOOT_LAUNCH;
 
     /** 「桌面守护拉回」标记（R124）：用户按主页键离开后被守护拉回来 ⇒ 不该触发续播。 */
     public static final String EXTRA_GUARD_PULL = "guard_pull";
@@ -172,6 +172,20 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
 
     /** 开机直达在每个界面实例的首次显示时只判定一次，避免多次加载回调重复触发。 */
     private boolean bootDirectDone;
+
+    /**
+     * R137（F6）：「历史查空但配置还没就绪」的补判标记。
+     *
+     * <p><b>为什么需要它</b>：{@link #checkBootDirect} 跑在 {@code initView} 里，而
+     * {@code History.get()} 是按 {@code VodConfig} 当前配置的 cid 过滤的 —— 冷启动早期若
+     * {@code loadFromCache()} 还没就绪，cid 为空 ⇒ 历史查询必空 ⇒ 点播目标没登记，而
+     * {@code bootDirectDone} 已经消费。之后配置加载成功的三个回调
+     * （{@code success()}/{@code error()}/{@code ConfigEvent.VOD}）只会推进「已有目标」的等待，
+     * 不会重新判定 ⇒ 慢网/无缓存的冷启动点播直达<b>静默失效一次</b>（用户 2026-11-08 反馈的
+     * 「偶发不生效」根因之一）。标记在 {@link #evaluateBoot()}（三个回调的汇聚点）里消费：
+     * 配置就绪后补查一次历史，登记目标走原有两级门控。</p>
+     */
+    private boolean pendingHistoryCheck;
 
     /**
      * 正在等待网络就绪的那次开机直达。
@@ -992,6 +1006,8 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
             holdGate();
             return;
         }
+        // R137（F6）：数据源就绪后补判一次没登记上的点播续播目标（见 recheckPendingHistory 注释）
+        recheckPendingHistory();
         if (!VodConfig.get().getSites().isEmpty()) {
             // R124：直达目标已经就绪时，「收启动画面（不设焦点）+ 立即跳」——
             //   全程只有一次画面变化，老人不会看到「首页闪一下再跳走」。
@@ -1130,7 +1146,10 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
         //   ⚠ 唤醒资格用掉即清（consumeWake）：否则随后的 onResume isWakeSession 分支会再 rearm 一次。
         //   inBootPhase() 命中时不清 —— 那是开机窗口内的普通冷启动，唤醒标记与它无关。
         if (!reuse && !warm && (bootLaunch || home)) {
-            mBootSession = inBootPhase() || BootSession.isWakeSession();
+            // R137（F3）：加第三条判据「快速开机唤醒」—— 部分固件的 QUICKBOOT_POWERON 实为待机唤醒
+            //（elapsedRealtime 未重置，inBootPhase() 为 false），且待机时不发 SCREEN_OFF 广播，
+            // R134 的熄屏/亮屏快照判据也拿不到 ⇒ 只能靠 BootReceiver 打的快速开机标记兜底。
+            mBootSession = inBootPhase() || BootSession.isWakeSession() || BootSession.isQuickBootWake();
             if (mBootSession && !inBootPhase()) BootSession.consumeWake();
         }
     }
@@ -1314,12 +1333,49 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
         //   热启动的 HOME 是「用户按主页键回来」，两者对续播的期望正好相反。见 isPlainLaunch 注释。
         if (!isPlainLaunch(getIntent(), reuse)) return;
         List<History> items = History.get();
-        if (items.isEmpty()) return;
+        if (items.isEmpty()) {
+            // R137（F6）：History.get() 按当前配置 cid 过滤 —— 冷启动早期配置未就绪时 cid 为空，
+            // 查空不代表「真没历史」。挂起补判标记，等配置就绪回调（evaluateBoot 汇聚点）再查一次；
+            // 配置已就绪还查空才是「真没历史」，直接放弃。
+            if (VodConfig.get().getSites().isEmpty()) {
+                pendingHistoryCheck = true;
+                diag("check: 历史查空且数据源未就绪，挂起补判标记");
+            }
+            return;
+        }
         History item = items.get(0);
         if (TextUtils.isEmpty(item.getVodId())) return;
         // 只登记「本次应当续播」；什么时候跳、能不能跳，交给两级门控。
         mBootDirect = item;
         mBootTarget = BootTarget.VOD;
+        awaitBootDirect();
+    }
+
+    /**
+     * R137（F6）：数据源就绪后补判一次「没登记上的点播续播目标」。
+     *
+     * <p>由 {@link #evaluateBoot()} 在 gate 放行后调用 —— {@code success()}/{@code error()}/
+     * {@code ConfigEvent.VOD} 三个回调都汇到那里，一处挂载全覆盖。</p>
+     *
+     * <p><b>为什么排在 gateHold 之后</b>：开机宽限期间若提前补判，两级门控全绿时会先于
+     * gate 放行直接跳转，启动画面没收起就切页（视觉跳变）。gate 每 3 秒重评一次
+     * {@code evaluateBoot}，放行后这里自然被调到，时序与原链路完全一致。</p>
+     */
+    private void recheckPendingHistory() {
+        if (!pendingHistoryCheck) return;
+        // 配置仍未就绪（error 回调也会进 evaluateBoot）：保留标记，等下一次成功回调再补
+        if (VodConfig.get().getSites().isEmpty()) return;
+        pendingHistoryCheck = false;
+        diag("recheck: 补判标记消费");
+        if (bootInteracted) { diag("recheck: 用户已操作，放弃"); return; }
+        if (mBootTarget != BootTarget.NONE) { diag("recheck: 已有目标，放弃"); return; }
+        List<History> items = History.get();
+        if (items.isEmpty()) { diag("recheck: 历史仍为空，放弃"); return; }
+        History item = items.get(0);
+        if (TextUtils.isEmpty(item.getVodId())) { diag("recheck: 无有效记录，放弃"); return; }
+        mBootDirect = item;
+        mBootTarget = BootTarget.VOD;
+        diag("recheck: VOD 目标补登记成功，进入两级门控");
         awaitBootDirect();
     }
 

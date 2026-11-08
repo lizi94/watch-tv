@@ -405,5 +405,5 @@
 <string name="setting_vod_source">點播源</string>
     <string name="setting_live_source">直播源</string>
     <string name="setting_wall_source">壁紙源</string>
-    <string name="boot_live_unready">直播源未就緒，未能自動進入直播</string>
+    <string name="boot_live_unready">直播還沒準備好，沒能自動進入</string>
 </resources>

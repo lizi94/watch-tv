@@ -16,6 +16,7 @@ import androidx.annotation.NonNull;
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.api.config.LiveConfig;
 import com.fongmi.android.tv.utils.BootLauncher;
+import com.fongmi.android.tv.utils.BootSession;
 
 /**
  * 开机拉起界面（2026-10-29 新增，2026-10-30 / R103 收敛为「四入口之一」）。
@@ -94,6 +95,13 @@ public class BootReceiver extends BroadcastReceiver {
             if (SystemClock.elapsedRealtime() > BootLauncher.BOOT_WINDOW_MS) return;
             BootLauncher.forBoot(context, "媒体库绑定");
             return;
+        }
+        // R137（F3）：「快速开机」固件的 QUICKBOOT_POWERON 若在开机 5 分钟窗之外送达，
+        // 说明这次「开机」实为待机唤醒（elapsedRealtime 未重置）—— 此时 inBootPhase() 为 false，
+        // 部分固件待机又不发 SCREEN_OFF 广播，熄屏/亮屏快照判据也拿不到 ⇒ 唤醒直达三判据全落空。
+        // 打上快速开机唤醒标记，首页把它也算进开机会话（90 秒内有效、用掉即清，见 BootSession）。
+        if (!retry && "android.intent.action.QUICKBOOT_POWERON".equals(action)) {
+            if (SystemClock.elapsedRealtime() > BootSession.BOOT_PHASE_MS) BootSession.markQuickBootWake();
         }
         // 直播配置预加载只做一次；重试不再重复注册网络回调，否则每次都会多挂一个 Callback
         if (!retry) registerCallback();

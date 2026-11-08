@@ -126,6 +126,17 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
     private long lastBackTime;
     /** 自动续播在每个界面实例的首次显示时只判定一次，避免多次加载回调重复触发。 */
     private boolean bootDirectDone;
+
+    /**
+     * R137（F6）：「历史查空但配置还没就绪」的补判标记（与电视版同语义）。
+     *
+     * <p>{@code History.get()} 按 {@code VodConfig} 当前配置的 cid 过滤 —— 冷启动早期配置
+     * 未就绪时 cid 为空 ⇒ 历史查询必空 ⇒ 点播目标没登记，而 {@code bootDirectDone} 已消费。
+     * 之后 {@code success()} 只推进「已有目标」的等待，不会重新判定 ⇒ 慢网冷启动点播直达
+     * <b>静默失效一次</b>。标记在 {@code success()}/{@code error()} 两个收敛点里消费：
+     * 配置就绪后补查一次历史，登记目标走原有两级门控。</p>
+     */
+    private boolean pendingHistoryCheck;
     /**
      * 正在等待网络就绪的那次自动续播（与电视版同语义）。
      *
@@ -300,6 +311,8 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
             public void success() {
                 cancelConfigAwait();
                 checkAction(getIntent());
+                // R137（F6）：数据源就绪后补判一次没登记上的点播续播目标（与电视版收敛点一致）
+                recheckPendingHistory();
                 // 首次进入：登记续播资格；数据源重载完成：推进已在等待的续播（与电视版收敛点一致）。
                 if (bootDirectDone) awaitBootDirect();
                 else checkBootDirect();
@@ -308,6 +321,8 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
             @Override
             public void error(String msg) {
                 checkAction(getIntent());
+                // R137（F6）：error 里也尝试补判 —— recheckPendingHistory 内部会因配置未就绪自行跳过
+                recheckPendingHistory();
                 if (bootDirectDone) awaitBootDirect();
                 else checkBootDirect();
                 StateEvent.empty();
@@ -350,10 +365,38 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
         if (!Setting.isAutoResume()) return;
         if (!isPlainLaunch(getIntent())) return;
         List<History> items = History.get();
-        if (items.isEmpty()) return;
+        if (items.isEmpty()) {
+            // R137（F6）：History.get() 按当前配置 cid 过滤 —— 冷启动早期配置未就绪时 cid 为空，
+            // 查空不代表「真没历史」。挂起补判标记，等配置就绪回调再查一次。
+            if (VodConfig.get().getSites().isEmpty()) pendingHistoryCheck = true;
+            return;
+        }
         History item = items.get(0);
         if (TextUtils.isEmpty(item.getVodId())) return;
         // 只登记「本次应当续播」；什么时候跳、能不能跳，交给两级门控。
+        mBootDirect = item;
+        mBootTarget = BootTarget.VOD;
+        awaitBootDirect();
+    }
+
+    /**
+     * R137（F6）：数据源就绪后补判一次「没登记上的点播续播目标」（与电视版同语义）。
+     *
+     * <p>由 {@code success()}/{@code error()} 两个收敛点调用；配置仍未就绪时保留标记
+     * 等下一次成功回调。用户已操作（{@link #bootInteracted}）或已有目标时立即放弃，
+     * 绝不把用户从当前页面拽走。</p>
+     */
+    private void recheckPendingHistory() {
+        if (!pendingHistoryCheck) return;
+        // 配置仍未就绪（error 回调也会进来）：保留标记，等下一次成功回调再补
+        if (VodConfig.get().getSites().isEmpty()) return;
+        pendingHistoryCheck = false;
+        if (bootInteracted) return;
+        if (mBootTarget != BootTarget.NONE) return;
+        List<History> items = History.get();
+        if (items.isEmpty()) return;
+        History item = items.get(0);
+        if (TextUtils.isEmpty(item.getVodId())) return;
         mBootDirect = item;
         mBootTarget = BootTarget.VOD;
         awaitBootDirect();

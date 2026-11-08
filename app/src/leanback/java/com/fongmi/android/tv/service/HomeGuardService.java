@@ -10,6 +10,7 @@ import android.view.accessibility.AccessibilityEvent;
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.utils.BootLauncher;
+import com.fongmi.android.tv.utils.BootSession;
 import com.fongmi.android.tv.utils.DesktopResolver;
 
 /**
@@ -34,6 +35,13 @@ import com.fongmi.android.tv.utils.DesktopResolver;
  * 「接管主页键」实际只在 TCL 上生效。现在改为向系统要「所有声明了 HOME 的应用」，
  * 小米 / 海信 / 创维 / 索尼 / 雷鸟 / 当贝 / IPTV 盒子等只要遵循 Android 标准即可识别，
  * 固件升级改名也不会失效。</p>
+ *
+ * <p><b>2026-11-08（R137）抢屏修复 + 唤醒直达</b>：修复「打开其他应用被抢屏拉回」——
+ * 兜底模式下桌面候选集合混入误声明 HOME 的 IPTV/市场类应用，用户点开就被当成
+ * 「回到桌面」拉回。新增<b>窗口来源判定</b>（见 {@link #lastWindowPkg}）：只有
+ * 「本应用/其他应用 → 桌面」的切换才算按主页键；同包驻留事件、桌面 → 应用 的切换一律放行。
+ * 另外待机唤醒会话期间拉回升级为 {@code BootLauncher.forBoot}（允许开机直达），
+ * 平时仍为 {@code forGuard}（不触发续播）。</p>
  */
 public class HomeGuardService extends AccessibilityService {
 
@@ -78,6 +86,28 @@ public class HomeGuardService extends AccessibilityService {
     private static int desktopHits;
     /** 上一次「我们自己把界面拉到前台」的时刻，用于区分「用户主动打开」与「被拉回来」。 */
     private static long lastPullAt;
+    /**
+     * 上一条窗口事件的前台包名（2026-11-08 / R137 来源判定）。
+     *
+     * <p><b>为什么必须记它</b>：兜底模式下桌面候选集合里会混进「也声明了 HOME 的普通应用」
+     * （IPTV / 市场类最常见）。只看当前事件包名无法区分「用户按主页键回到桌面」和
+     * 「用户在桌面里点开了这个应用」，后者会被当成回到桌面而反复拉回 —— 用户体感就是
+     * 「打开其他应用被抢屏」。</p>
+     *
+     * <p><b>方向区分法</b>：窗口事件是有顺序的 ——</p>
+     * <ul>
+     *   <li>本应用/其他应用 → 桌面候选：按主页键回桌面，<b>要拉回</b>；</li>
+     *   <li>桌面候选 → 另一个桌面候选：用户从桌面点开了它，<b>放行</b>；</li>
+     *   <li>同包连续事件：该应用驻留（弹窗、翻页、动画），<b>忽略</b> ——
+     *       顺带修掉旧版缺陷：部分 ROM 一次主页键连发多条桌面事件，
+     *       第二条会被凑成「连按两次」而误触发 3 分钟放行。</li>
+     * </ul>
+     *
+     * <p>判定用的是<b>事件前的旧值</b>，所以本字段必须在桌面命中判定之前更新。
+     * 服务被系统销毁重建后它会归 null：第一次事件按「未知来源」保守处理（拉回），
+     * 与「宁可漏不可误伤」的原则一致。</p>
+     */
+    private static String lastWindowPkg;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
 
@@ -126,7 +156,10 @@ public class HomeGuardService extends AccessibilityService {
                 if (SystemClock.elapsedRealtime() < graceUntil) return;
                 if (App.activity() != null) return;
                 markSelfPull();
-                BootLauncher.forGuard(HomeGuardService.this, "无障碍连接");
+                // 唤醒会话期间的拉起属于「开机直达」语义（R137）：允许进直播/续播，
+                // 平时按主页键拉回仍走 forGuard（打 EXTRA_GUARD_PULL，不触发续播）。
+                if (BootSession.isWakeSession()) BootLauncher.forBoot(HomeGuardService.this, "无障碍连接·待机唤醒");
+                else BootLauncher.forGuard(HomeGuardService.this, "无障碍连接");
             } catch (Throwable t) {
                 Log.w(TAG, "连接后主动拉起失败", t);
             }
@@ -164,14 +197,30 @@ public class HomeGuardService extends AccessibilityService {
         // 由 HomeActivity#initView 在下一次「真正打开本软件」时清零 ⇒ 守护随即恢复。
         if (Setting.isUserExited()) return;
         CharSequence name = event.getPackageName();
+        String pkg = name == null ? null : name.toString();
+        // R137：先记下「上一个前台包」再做桌面判定 —— 下面的来源判定依赖事件顺序，
+        // 所以无论这次事件是什么包，都必须在这里把窗口流记下来。
+        String prev = lastWindowPkg;
+        lastWindowPkg = pkg;
         // 是否为桌面由 DesktopResolver 判定（集合里不含自己，也不用再判 App.activity()）
-        if (!DesktopResolver.isDesktop(this, name == null ? null : name.toString())) return;
+        if (!DesktopResolver.isDesktop(this, pkg)) return;
         // ⛔ 这里不能再用 App.activity() 判空做「已在前台」的短路（2026-10-29 实测）：
         // 按主页键时「本 Activity 的 onPause」与「桌面窗口事件」在同一主线程消息队列里，
         // 事件常常先于 onPause 到达，此刻 activity 仍非 null ⇒ 该次事件被整个跳过，
         // 要等下一个窗口事件才会拉起。实测这样会让「按主页键回来看电视」慢到 4 秒，
         // 而 am start -W 实测本 Activity 从后台恢复只要 262ms，说明慢的是这段判断而非渲染。
         // 而包名命中桌面集合本身即说明桌面已在前台，本软件必然不在前台，无需额外判断。
+        // ⛔⛔ R137 来源判定（修「打开其他应用被抢屏拉回」）：
+        // 只看当前包名命中桌面集合，无法区分「用户按主页键回桌面」和「用户从桌面点开了
+        // 另一个也声明 HOME 的应用（IPTV/市场类）」——后者在兜底模式下会被反复拉回。
+        // 用窗口事件的顺序区分方向：
+        //   ① 同包连续事件 = 该应用驻留（弹窗/翻页/动画），忽略 —— 不拉、也不计入连按，
+        //      顺带修掉「一次主页键连发多条事件被凑成连按两次」的旧缺陷；
+        //   ② 上一个前台包也是桌面候选 = 用户从桌面切过来的，是他主动打开的应用，放行；
+        //   ③ 上一个前台包是本应用/其他应用/null = 按主页键回到桌面，走下面的拉回逻辑。
+        // 放行不更新 lastDesktopAt：这不是「回到桌面」，不该参与连按计数。
+        if (pkg != null && pkg.equals(prev)) return;
+        if (prev != null && DesktopResolver.isDesktop(this, prev)) return;
         long now = SystemClock.elapsedRealtime();
         // ① 放行期内：用户已经明确表示要用桌面，这时再抢就是在跟人较劲
         if (now < graceUntil) return;
@@ -185,9 +234,11 @@ public class HomeGuardService extends AccessibilityService {
             Log.i(TAG, "10 秒内第二次回到桌面，放行 " + (GRACE_MS / 1000) + " 秒");
             return;
         }
-        // ③ 第一次：老人误按了主页键，切回来
+        // ③ 第一次：老人误按了主页键，切回来。唤醒会话期间升级为 forBoot（允许直达），
+        //    平时仍是 forGuard（EXTRA_GUARD_PULL，首页不触发续播）。
         markSelfPull();
-        BootLauncher.forGuard(this, "回桌面");
+        if (BootSession.isWakeSession()) BootLauncher.forBoot(this, "回桌面·待机唤醒");
+        else BootLauncher.forGuard(this, "回桌面");
     }
 
     @Override

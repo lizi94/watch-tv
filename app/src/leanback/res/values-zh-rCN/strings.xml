@@ -57,7 +57,7 @@
 
     <!-- 一键锁定 -->
     <string name="elder_lock_title">一键锁定</string>
-    <string name="elder_lock_desc">锁定后只用这里选的数据源，首页、搜索、播放都跟着它，放不出来会自动换线路。</string>
+    <string name="elder_lock_desc">锁定后只用这个数据源，放不出来会自动换源。</string>
     <string name="elder_lock_source">数据源</string>
     <string name="elder_lock_route">自动换源</string>
     <string name="elder_lock_route_auto">开启</string>
@@ -65,14 +65,14 @@
     <string name="elder_lock_search">搜索优先源</string>
     <string name="elder_lock_search_on">已开启</string>
     <string name="elder_lock_search_off">未开启</string>
-    <string name="elder_lock_search_need_lock">请先锁定一个数据源</string>
+    <string name="elder_lock_search_need_lock">请先锁定数据源</string>
     <string name="elder_lock_apply">一键锁定</string>
     <string name="elder_lock_unlock_entry">解锁</string>
     <string name="elder_lock_none">未选择</string>
-    <string name="elder_lock_hint_off">选好上面几项后按「一键锁定」，之后老人只需按「播放」。</string>
-    <string name="elder_lock_hint_on">已锁定。要换数据源或直播源请先「解锁」；「自动换源」和「搜索优先源」可随时切换。</string>
-    <string name="elder_lock_need_unlock_first">已锁定，如需更换请先解锁</string>
-    <string name="elder_lock_need_source">请先选择一个可用的数据源</string>
+    <string name="elder_lock_hint_off">选好后按「一键锁定」，以后开机直接看。</string>
+    <string name="elder_lock_hint_on">已锁定。想换先「解锁」，下面两项随时可改。</string>
+    <string name="elder_lock_need_unlock_first">已锁定，想换请先解锁</string>
+    <string name="elder_lock_need_source">请先选择一个数据源</string>
     <string name="elder_lock_on">已锁定：%1$s</string>
     <string name="elder_lock_off">已解锁</string>
 
@@ -82,7 +82,7 @@
     <string name="elder_lock_live">直播源</string>
     <string name="elder_lock_live_none">未导入</string>
     <string name="elder_live_need_config">请先在设置里添加直播源</string>
-    <string name="elder_live_blocked">直播源已锁定，如需更换请先解锁</string>
+    <string name="elder_live_blocked">直播源已锁定，想换请先解锁</string>
     <string name="keep_none_selected">请先点选要删除的收藏</string>
 
     <string name="elder_setting_entry">长辈设置</string>
@@ -90,10 +90,10 @@
     <string name="elder_setting_title">长辈设置</string>
     <string name="elder_setting_lock_entry">一键锁定</string>
     <string name="elder_setting_full_entry">点播自动全屏</string>
-    <string name="elder_setting_resume_entry">点播开机直达</string>
-    <string name="elder_setting_boot_live_entry">直播开机直达</string>
+    <string name="elder_setting_resume_entry">开机看上次影片</string>
+    <string name="elder_setting_boot_live_entry">开机进直播</string>
     <string name="accessibility_home_guard_label">看电视 · 桌面守护</string>
-    <string name="accessibility_home_guard_desc">按主页键回到电视桌面时，自动切回「看电视」。在长辈设置里可以关闭；关闭后主页键正常回到电视桌面。</string>
+    <string name="accessibility_home_guard_desc">按主页键回桌面时，自动切回「看电视」。可在「长辈设置」里关闭。</string>
     <string name="elder_setting_sound_entry">按键音</string>
     <string name="elder_setting_index_search_entry">首页快速搜索</string>
     <string name="elder_setting_font_entry">字号大小</string>
@@ -104,17 +104,17 @@
     <string name="elder_setting_font_huge">极大</string>
     <string name="elder_setting_size_entry">图片尺寸</string>
     <string name="elder_setting_restore_entry">恢复默认设置</string>
-    <string name="elder_setting_restore_confirm">确定把本页设置恢复为默认吗？数据源、收藏、观看记录都会保留。</string>
+    <string name="elder_setting_restore_confirm">确定恢复默认设置吗？数据源、收藏、缓存都保留。</string>
     <string name="elder_setting_restore_done">已恢复默认设置</string>
 
     <string name="elder_search_empty">请先输入要搜索的内容</string>
-    <string name="elder_search_no_source">没有可用的搜索源，请先导入数据源</string>
-    <string name="elder_detail_empty_search">这个源没有可播放的内容，正在为你搜索「%1$s」</string>
-    <string name="setting_cache_confirm">确定清空缓存吗？清空后看片和图片都要重新加载</string>
-    <string name="elder_site_blocked">数据源已锁定，如需更换请先解锁</string>
-    <string name="elder_site_locked_hint">已锁定 · 如需更换请先解锁</string>
-    <string name="elder_live_locked_hint">已锁定 · 如需更换请先解锁</string>
-    <string name="elder_confirm_restore_backup">恢复会覆盖当前全部数据（收藏、历史、数据源配置），确定继续吗？</string>
+    <string name="elder_search_no_source">还没有数据源，请先在设置里添加</string>
+    <string name="elder_detail_empty_search">这个源没有内容，正在帮你搜「%1$s」</string>
+    <string name="setting_cache_confirm">确定清空缓存吗？看片和图片要重新加载</string>
+    <string name="elder_site_blocked">数据源已锁定，想换请先解锁</string>
+    <string name="elder_site_locked_hint">已锁定 · 想换请先解锁</string>
+    <string name="elder_live_locked_hint">已锁定 · 想换请先解锁</string>
+    <string name="elder_confirm_restore_backup">恢复会覆盖收藏、历史和数据源，确定继续吗？</string>
     <string name="site_manage_title">站源管理</string>
     <string name="site_manage_desc">停用后不显示在首页和搜索中</string>
     <string name="site_manage_count">已启用 %1$d / 共 %2$d</string>
@@ -122,7 +122,7 @@
     <string name="site_manage_all_off">全部停用</string>
     <string name="site_manage_on">启用</string>
     <string name="site_manage_off">停用</string>
-    <string name="home_empty_no_site">未启用任何站源，请在长辈设置中启用</string>
+    <string name="home_empty_no_site">还没有数据源，请到「长辈设置」里打开</string>
     <string name="elder_exit_count">再按两次返回键退出</string>
     <string name="site_manage_filter">只看停用</string>
     <string name="site_manage_filter_on">只看停用 · %1$d</string>
@@ -136,7 +136,7 @@
     <string name="config_in_use_cannot_off">使用中的配置不能停用</string>
     <string name="error_no_matching_source">未找到同一影片的其他站源</string>
     <string name="error_no_playable_line">该站源没有可播放的线路</string>
-    <string name="site_manage_disable_confirm">停用全部站源？停用后将无法观看任何内容。</string>
+    <string name="site_manage_disable_confirm">停用全部站源？停用后就看不了了。</string>
     <string name="site_manage_count_short">%1$d / %2$d</string>
     <string name="detail_change">换源</string>
     <string name="detail_switch_searching">正在查找其它站源……</string>
@@ -153,7 +153,7 @@
     <string name="app_chip_hidden">已隐藏（%1$d）</string>
     <string name="app_switch_home">换回电视自带的桌面</string>
     <string name="app_open_settings">打开系统设置</string>
-    <string name="app_switch_home_failed">这台电视要自己到「设置 → 应用 → 默认应用」里改</string>
+    <string name="app_switch_home_failed">请到「设置 → 应用 → 默认应用」里手动改</string>
     <string name="app_empty">这台电视上没找到别的应用</string>
     <string name="app_empty_hidden">这里还没有隐藏的应用</string>
     <string name="app_menu_pin">放到最前</string>
@@ -163,13 +163,13 @@
     <string name="app_menu_info">应用信息</string>
     <string name="app_menu_uninstall">卸载应用</string>
     <string name="app_manage_target">正在管理「%1$s」</string>
-    <string name="app_pin_hint">最多只能把 6 个应用放到最前，先取消一个吧。</string>
-    <string name="app_hide_confirm">隐藏后要按「已隐藏」才找得回来，确定隐藏「%1$s」吗？</string>
+    <string name="app_pin_hint">最多置顶 6 个应用，先取消一个吧。</string>
+    <string name="app_hide_confirm">隐藏后在「已隐藏」里找，确定隐藏「%1$s」吗？</string>
     <string name="app_open_failed">这个应用打不开</string>
     <string name="app_info_failed">这台电视打不开「应用信息」页</string>
     <string name="app_uninstall_confirm">确定要卸载「%1$s」吗？</string>
     <string name="app_uninstall_failed">这台电视打不开「卸载」页</string>
-    <string name="home_live_empty">还没有添加直播源。点「确定」去添加，也可以让家里人帮忙设置。</string>
+    <string name="home_live_empty">还没有直播源，点「确定」去添加。</string>
 
     <!-- ===== R101：启动与桌面体检 ===== -->
     <string name="self_check_title">启动与桌面体检</string>
@@ -177,17 +177,17 @@
     <string name="self_check_boot">开机就打开看电视</string>
     <string name="self_check_battery">让电视别把看电视关掉</string>
     <string name="self_check_guard">按主页键回到看电视</string>
-    <string name="self_check_guard_by_home">已由电视桌面接管，不用开</string>
+    <string name="self_check_guard_by_home">电视桌面已经管了，不用再开</string>
     <string name="self_check_boot_by_home">已经是电视默认桌面了</string>
     <string name="self_check_home">把看电视设为默认桌面（部分电视不支持）</string>
     <string name="self_check_fix">一键检查并修复</string>
     <string name="self_check_ok">已设置</string>
     <string name="self_check_todo">需要设置</string>
     <string name="self_check_off">已关闭</string>
-    <string name="self_check_only_home">本机只有看电视一个桌面（不建议）</string>
+    <string name="self_check_only_home">只有「看电视」一个桌面（不建议）</string>
     <string name="self_check_all_ok">都设置好了</string>
     <string name="self_check_need_manual">这台电视不支持直接跳转，请到系统设置里改</string>
-    <string name="a11y_guide">要让「按主页键回到看电视」生效，需要在系统里打开看电视的开关。</string>
+    <string name="a11y_guide">要在系统设置里打开「看电视」的开关才生效。</string>
     <string name="home_apps">应用</string>
     <string name="elder_setting_self_check_entry">启动与桌面体检</string>
     <string name="elder_setting_self_check_value">%1$d / %2$d 已就绪</string>

@@ -64,11 +64,11 @@
 
     <!-- 长辈锁：直播源 -->
     <string name="elder_lock_live">直播源</string>
-    <string name="elder_lock_desc">锁定后只用这里选的数据源，首页、搜索、播放都跟着它，放不出来会自动换线路。</string>
+    <string name="elder_lock_desc">锁定后只用这个数据源，放不出来会自动换源。</string>
     <string name="elder_lock_live_none">未导入</string>
     <string name="elder_live_need_config">还没有直播源，请先在 设置 › 直播 中添加</string>
-    <string name="elder_live_blocked">直播源已锁定，如需更换请先解锁</string>
-    <string name="elder_site_blocked">数据源已锁定，如需更换请先解锁</string>
+    <string name="elder_live_blocked">直播源已锁定，想换请先解锁</string>
+    <string name="elder_site_blocked">数据源已锁定，想换请先解锁</string>
 
     <!-- 长辈锁：一键锁定 -->
     <string name="elder_lock_title">一键锁定</string>
@@ -79,16 +79,16 @@
     <string name="elder_lock_search">搜索优先源</string>
     <string name="elder_lock_search_on">已开启</string>
     <string name="elder_lock_search_off">未开启</string>
-    <string name="elder_lock_search_need_lock">请先锁定一个数据源</string>
-    <string name="elder_detail_empty_search">这个源没有可播放的内容，正在为你搜索「%1$s」</string>
-    <string name="elder_search_no_source">没有可用的搜索源，请先导入数据源</string>
+    <string name="elder_lock_search_need_lock">请先锁定数据源</string>
+    <string name="elder_detail_empty_search">这个源没有内容，正在帮你搜「%1$s」</string>
+    <string name="elder_search_no_source">还没有数据源，请先在设置里添加</string>
     <string name="elder_lock_apply">一键锁定</string>
     <string name="elder_lock_unlock_entry">解锁</string>
     <string name="elder_lock_none">未选择</string>
-    <string name="elder_lock_hint_off">选好上面几项后按「一键锁定」，之后老人只需按「播放」。</string>
-    <string name="elder_lock_hint_on">已锁定。要换数据源或直播源请先「解锁」；「自动换源」和「搜索优先源」可随时切换。</string>
-    <string name="elder_lock_need_unlock_first">已锁定，如需更换请先解锁</string>
-    <string name="elder_lock_need_source">请先选择一个可用的数据源</string>
+    <string name="elder_lock_hint_off">选好后按「一键锁定」，以后开机直接看。</string>
+    <string name="elder_lock_hint_on">已锁定。想换先「解锁」，下面两项随时可改。</string>
+    <string name="elder_lock_need_unlock_first">已锁定，想换请先解锁</string>
+    <string name="elder_lock_need_source">请先选择一个数据源</string>
     <string name="elder_lock_on">已锁定：%1$s</string>
     <string name="elder_lock_off">已解锁</string>
 
@@ -99,12 +99,12 @@
     <string name="elder_setting_title">长辈设置</string>
     <string name="elder_setting_lock_entry">一键锁定</string>
     <string name="elder_setting_full_entry">点播自动全屏</string>
-    <string name="elder_setting_resume_entry">点播开机直达</string>
-    <string name="elder_setting_boot_live_entry">直播开机直达</string>
+    <string name="elder_setting_resume_entry">开机看上次影片</string>
+    <string name="elder_setting_boot_live_entry">开机进直播</string>
     <string name="elder_setting_index_search_entry">首页快速搜索</string>
     <string name="elder_setting_size_entry">图片尺寸</string>
     <string name="elder_setting_restore_entry">恢复默认设置</string>
-    <string name="elder_setting_restore_confirm">确定恢复全部设置为默认吗？数据源、收藏与缓存都会保留。</string>
+    <string name="elder_setting_restore_confirm">确定恢复默认设置吗？数据源、收藏、缓存都保留。</string>
     <string name="elder_setting_restore_done">已恢复默认设置</string>
     <string name="elder_setting_nav_live_entry">底部导航直播入口</string>
 
@@ -112,7 +112,7 @@
          文案与电视版（home_empty_source / home_empty_retry）保持完全一致。 -->
     <string name="empty_source">暂时连接不上</string>
     <string name="empty_retry">重新加载</string>
-    <string name="elder_confirm_restore_backup">恢复会覆盖当前全部数据（收藏、历史、数据源配置），确定继续吗？</string>
+    <string name="elder_confirm_restore_backup">恢复会覆盖收藏、历史和数据源，确定继续吗？</string>
     <string name="elder_confirm_delete_backup">确定要删除这个备份文件吗？</string>
     <string name="site_manage_title">站源管理</string>
     <string name="site_manage_desc">停用后不显示在首页和搜索中</string>
@@ -121,7 +121,7 @@
     <string name="site_manage_all_off">全部停用</string>
     <string name="site_manage_on">启用</string>
     <string name="site_manage_off">停用</string>
-    <string name="home_empty_no_site">未启用任何站源，请在长辈设置中启用</string>
+    <string name="home_empty_no_site">还没有数据源，请到「长辈设置」里打开</string>
     <string name="site_manage_filter">只看停用</string>
     <string name="site_manage_filter_on">只看停用 · %1$d</string>
     <string name="site_manage_empty_no_config">暂无站源，请先导入配置</string>
@@ -134,9 +134,9 @@
     <string name="config_in_use_cannot_off">使用中的配置不能停用</string>
     <string name="error_no_matching_source">未找到同一影片的其他站源</string>
     <string name="error_no_playable_line">该站源没有可播放的线路</string>
-    <string name="site_manage_disable_confirm">停用全部站源？停用后将无法观看任何内容。</string>
-    <string name="elder_site_locked_hint">已锁定 · 如需更换请先解锁</string>
-    <string name="elder_live_locked_hint">已锁定 · 如需更换请先解锁</string>
+    <string name="site_manage_disable_confirm">停用全部站源？停用后就看不了了。</string>
+    <string name="elder_site_locked_hint">已锁定 · 想换请先解锁</string>
+    <string name="elder_live_locked_hint">已锁定 · 想换请先解锁</string>
     <string name="site_manage_count_short">%1$d / %2$d</string>
     <string name="detail_change">换源</string>
     <string name="detail_switch_searching">正在查找其它站源……</string>
