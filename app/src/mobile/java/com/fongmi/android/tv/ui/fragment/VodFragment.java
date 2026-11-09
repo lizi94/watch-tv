@@ -144,6 +144,13 @@ public class VodFragment extends BaseFragment implements ConfigListener, FilterL
     }
 
     private void setAdapter(Result result) {
+        // R138b：与 TypeFragment 同防御 —— observe 重放 null（空值沉淀）时不崩：
+        // 收起转圈、走空态判定（syncEmpty 按「故障/真空」给文案与重试按钮）。
+        if (result == null) {
+            hideProgress();
+            syncEmpty();
+            return;
+        }
         mAdapter.addAll(mResult = result);
         mBinding.pager.getAdapter().notifyDataSetChanged();
         setFabVisible(0);

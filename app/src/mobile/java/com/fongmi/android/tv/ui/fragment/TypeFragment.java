@@ -134,7 +134,11 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
         //   分类页也画出一张「这里什么都没有」。
         mViewModel.clearResultIfEmpty();
         mViewModel.getResult().observe(getViewLifecycleOwner(), this::setAdapter);
-        mViewModel.getAction().observe(getViewLifecycleOwner(), result -> Notify.show(result.getMsg()));
+        mViewModel.getAction().observe(getViewLifecycleOwner(), result -> {
+            // R138b：action LiveData 同样可能沉淀 null（重放时防御），先判空再取 msg。
+            if (result == null) return;
+            Notify.show(result.getMsg());
+        });
     }
 
     private void getHome() {
@@ -162,6 +166,9 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
     }
 
     private void setAdapter(Result result) {
+        // R138b：切主题/重建时序下 observe 重放 null 时不崩——null 视为「还没拿到数据」，
+        // 保持转圈原状（与 CollectFragment 同款判空风格），由后续请求的正常回调接管 UI。
+        if (result == null) return;
         boolean first = mScroller.first();
         int size = result.getList().size();
         mBinding.progressLayout.showContent(first, size);

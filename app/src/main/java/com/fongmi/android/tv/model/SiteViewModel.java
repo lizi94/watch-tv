@@ -93,7 +93,15 @@ public class SiteViewModel extends ViewModel {
     }
 
     private void execute(TaskType type, MutableLiveData<Result> liveData, Callable<Result> callable) {
-        tasks.execute(type, Constant.TIMEOUT_VOD, callable, liveData::postValue, error -> {
+        tasks.execute(type, Constant.TIMEOUT_VOD, callable, result -> {
+            // ⛔ R138b（v6.3.1/v6.3.4 修复用户实测崩溃）：success 分支同样要判空。
+            //   callable 返回 null（spider 静默失败等边角路径）时，原 liveData::postValue
+            //   会把 null 塞进 LiveData —— null 会「沉淀」在 LiveData 里，同进程重建
+            //   （切主题色/字号触发 recreate）后的 Fragment onStart 重放给 observe，
+            //   setAdapter(null) 里 result.getList() 直接 NPE（崩溃栈实锤 TypeFragment）。
+            //   null 与「失败」同语义：转成 Result.error("") 走既有失败/空态链路。
+            liveData.postValue(result == null ? Result.error("") : result);
+        }, error -> {
             // ⛔ 2026-11-05（R111）：失败必须**带原因**，不能 postValue(Result.empty())。
             //   ① empty 与「源侧确实没内容」在 UI 上无法区分 ⇒ 首页会把「没取到」显示成
             //      「这里什么都没有」，把老人劝退（实际再点一次就好了）。
