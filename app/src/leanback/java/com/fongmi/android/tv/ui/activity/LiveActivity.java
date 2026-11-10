@@ -160,6 +160,8 @@ public class LiveActivity extends PlaybackActivity implements GroupAdapter.OnCli
     @Override
     protected void initView(Bundle savedInstanceState) {
         super.initView(savedInstanceState);
+        // R135：播放器容器 / PlayerView 锁黑 + 零内边距（见 BaseActivity#setPlayerSurfaceBlack）
+        setPlayerSurfaceBlack(mBinding.video, mBinding.player);
         mClock = Clock.create(mBinding.widget.clock);
         mKeyDown = CustomKeyDownLive.create(this);
         mHides = new ArrayList<>();

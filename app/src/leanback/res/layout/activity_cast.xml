@@ -1,19 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- ⛔ 2026-11-10 R135：本容器就是 @id/video（全屏根），锁黑 + 零内边距；
+     PlayerView 同样锁黑 + 零内边距。理由见 activity_video.xml 顶部注释。 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/video"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/black"
+    android:padding="0dp"
     android:clickable="true"
     android:focusable="true"
     android:keepScreenOn="true">
 
-    <androidx.media3.ui.PlayerView
+    <com.fongmi.android.tv.ui.custom.AgPlayerView
         android:id="@+id/player"
         style="@style/Player.Vod"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:background="@color/black"
+        android:padding="0dp"
         app:surface_type="none" />
 
     <include

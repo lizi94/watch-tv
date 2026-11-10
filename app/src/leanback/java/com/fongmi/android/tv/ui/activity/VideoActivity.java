@@ -320,6 +320,8 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     @Override
     protected void initView(Bundle savedInstanceState) {
         super.initView(savedInstanceState);
+        // R135：播放器容器 / PlayerView 锁黑 + 零内边距（见 BaseActivity#setPlayerSurfaceBlack）
+        setPlayerSurfaceBlack(mBinding.video, mBinding.player);
         mFrameParams = mBinding.video.getLayoutParams();
         mClock = Clock.create(mBinding.widget.clock);
         mKeyDown = CustomKeyDownVod.create(this);

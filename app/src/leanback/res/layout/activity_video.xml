@@ -16,12 +16,20 @@
          foreground 会被 surface 吃掉的），也不再靠内边距给描边腾地方（那样画面会被裁）。
          现在焦点框由下面的 @id/videoFocusRing 独立承担，向外扩一圈，画面保持满尺寸。
          本容器不再需要 padding / foreground。 -->
+    <!-- ⛔ 2026-11-10 R135 播放器四周不得有任何边框/底色：
+         ① 容器必须显式 background=@color/black —— 视频渲染层是 SurfaceView，它会在窗口上
+            挖洞，洞外由容器自己上色；容器一旦是浅色（历史版本曾是 @color/ag_bg），
+            4:3 黑边位置就会变成一条浅色/深灰的"框"，字号档位放大后更明显。
+         ② padding 必须显式写 0dp —— 背景 drawable 若自带 <padding>（如 shape_chip_dark_normal
+            的 12dp/8dp），会把画面整体内缩一圈，看起来就是"画面外面套了个圆角框"。
+         @id/player 上同样声明黑色 + 零内边距，两层都不给残留背景留机会。 -->
     <FrameLayout
         android:id="@+id/video"
         android:layout_width="@dimen/ag_vod_poster_w"
         android:layout_height="@dimen/ag_vod_poster_h"
         android:layout_margin="@dimen/ag_vod_poster_gap"
         android:background="@color/black"
+        android:padding="0dp"
         android:defaultFocusHighlightEnabled="false"
         android:focusable="true"
         android:focusableInTouchMode="true"
@@ -30,11 +38,17 @@
         android:nextFocusUp="@id/video"
         android:nextFocusDown="@id/content">
 
-        <androidx.media3.ui.PlayerView
+        <!-- 背景锁黑 + 零内边距：见上方 R135 注释，这两条是"画面不被内缩、四周不出框"的根。
+             播放器用 AgPlayerView（PlayerView 子类）而不再是原版：它会在运行期拦截所有
+             setBackground* 调用并强制回到纯黑 + 零内边距 —— 实测有未知代码在 initView 之后
+             又把 selector 背景套回来（带 24/16px padding），只有在这一层收口才挡得住。 -->
+        <com.fongmi.android.tv.ui.custom.AgPlayerView
             android:id="@+id/player"
             style="@style/Player.Vod"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:background="@color/black"
+            android:padding="0dp"
             app:surface_type="none" />
 
         <include
