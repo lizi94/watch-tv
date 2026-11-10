@@ -106,6 +106,8 @@ public class CastActivity extends PlaybackActivity implements CustomKeyDownVod.L
     @Override
     protected void initView(Bundle savedInstanceState) {
         super.initView(savedInstanceState);
+        // R135：播放器容器 / PlayerView 锁黑 + 零内边距（见 BaseActivity#setPlayerSurfaceBlack）
+        setPlayerSurfaceBlack(mBinding.video, mBinding.player);
         bound = bindService(new Intent(this, DLNARendererService.class), mRendererConnection, Context.BIND_AUTO_CREATE);
         mClock = Clock.create(mBinding.widget.clock);
         mKeyDown = CustomKeyDownVod.create(this);

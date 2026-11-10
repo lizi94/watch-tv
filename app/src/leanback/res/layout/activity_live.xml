@@ -6,20 +6,26 @@
     android:layout_height="match_parent"
     android:keepScreenOn="true">
 
+    <!-- ⛔ 2026-11-10 R135：容器锁黑 + 零内边距，PlayerView 同样锁黑 + 零内边距。
+         理由见 activity_video.xml 顶部注释（SurfaceView 挖洞后洞外由容器上色；
+         背景 drawable 自带的 <padding> 会把画面内缩成一圈"圆角框"）。 -->
     <FrameLayout
         android:id="@+id/video"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@color/black"
+        android:padding="0dp"
         android:clickable="true"
         android:defaultFocusHighlightEnabled="false"
         android:focusable="true">
 
-        <androidx.media3.ui.PlayerView
+        <com.fongmi.android.tv.ui.custom.AgPlayerView
             android:id="@+id/player"
             style="@style/Player.Live"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:background="@color/black"
+            android:padding="0dp"
             app:surface_type="none" />
 
         <include

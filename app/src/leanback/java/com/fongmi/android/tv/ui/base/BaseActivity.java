@@ -5,6 +5,7 @@ import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Looper;
 import android.util.DisplayMetrics;
@@ -179,6 +180,43 @@ public abstract class BaseActivity extends AppCompatActivity {
     }
 
     protected void initEvent() {
+    }
+
+    /**
+     * 2026-11-10 R135 播放器画面「纯黑无框」兜底（点播 / 直播 / 投屏三个播放页共用）。
+     *
+     * <p>视频用 SurfaceView 渲染时会在窗口上挖一个洞，洞外一圈仍由 View 自己上色：
+     * 容器或 PlayerView 上只要残留任何背景（浅色底、深色 chip 面、描边、圆角），
+     * 4:3 等非满屏比例下那圈就会露出来，表现为「画面四周多出一个圆角边框」。
+     * 更隐蔽的是背景 drawable 若带 &lt;padding&gt;（例如 shape_chip_dark_normal 的 12dp/8dp），
+     * 系统会把 padding 灌进 View，画面被整体内缩 —— 于是既能看到框，画面又没铺满。</p>
+     *
+     * <p>XML 已显式声明 background=@color/black、padding=0dp；这里再做一次代码侧兜底，
+     * 保证运行期（含全屏切布局参数、换源复用实例）不会被别处改回去。
+     * ⚠ 只清背景/内边距/前景，不动 LayoutParams、不碰焦点环 shape_video_focus_ring。</p>
+     */
+    protected static void setPlayerSurfaceBlack(View container, View player) {
+        for (View view : new View[]{container, player}) {
+            if (view == null) continue;
+            // 必须换成无 intrinsic padding 的纯色 drawable，再显式清零内边距：
+            // 顺序不能反 —— 先设带 padding 的背景会覆盖掉刚设置的 padding。
+            view.setBackgroundColor(Color.BLACK);
+            view.setPadding(0, 0, 0, 0);
+            view.setForeground(null);
+        }
+        // 同层浮层根（widget / progress）必须保持「无背景」：它们和 player 一样是 match_parent，
+        // 一旦被别处塞了背景，就会在画面上方铺满一层底色，只在 SurfaceView 挖洞的位置露出画面。
+        if (container instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) container;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                View child = group.getChildAt(i);
+                int id = child.getId();
+                if (id == R.id.widget || id == R.id.progress) {
+                    child.setBackground(null);
+                    child.setPadding(0, 0, 0, 0);
+                }
+            }
+        }
     }
 
     protected boolean isVisible(View view) {
