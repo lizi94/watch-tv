@@ -85,7 +85,9 @@ import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class HomeActivity extends BaseActivity implements VodPresenter.OnClickListener, FuncPresenter.OnClickListener, HistoryPresenter.OnClickListener, HomeChipPresenter.OnClickListener, HomeFilterDialog.Listener {
 
@@ -528,6 +530,27 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
      */
     private int mResponseToken;
 
+    /**
+     * R141 分类首屏结果缓存（typeId → 第 1 页 Result）：切回看过的分类<b>先画缓存首屏</b>（不画进度行）、
+     * 请求照发，新响应到达后在 {@link #onContentResult} 整屏替换 —— 消除「每次切分类都要白屏等一拍」。
+     * <ul>
+     *   <li>只缓存「分类」页 1 且列表非空；推荐页（homeContent）与翻页不缓存。</li>
+     *   <li>access-order LRU，上限 8 条：电视端分类 chips 一般不超过一屏。</li>
+     *   <li>换源 / 配置事件与字号图片尺寸事件都会走 {@link #getVideo()}，那里统一清空 ——
+     *       防止旧源的 typeId 撞上新源的同名分类（typeId 常见就是 "1"/"2"）。</li>
+     *   <li>存的是 Result 对象引用，仅用于 {@link #addGrid} 读列表，翻页追加不影响它。</li>
+     * </ul>
+     */
+    private final Map<String, Result> mChipCache = new LinkedHashMap<String, Result>(16, 0.75f, true) {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, Result> eldest) {
+            return size() > 8;
+        }
+    };
+
+    /** R141：内容区当前展示的是缓存首屏（true）—— 新响应到达后需整屏替换；清空 / 空态 / 进度行路径一律复位。 */
+    private boolean mCacheShown;
+
     /** chip 行当前绑定的项（首项「推荐」为 String，其后为站源分类 Class）：内容未变化时跳过重绑，
      *  避免 setItems 引起的焦点抖动被「移到即加载」误判成切了分类。 */
     private List<Object> mChipItems;
@@ -768,6 +791,12 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
         mAdapter.remove("progress");
         mScroller.endLoading(result);
         if (result.getList().isEmpty()) {
+            // R141：缓存首屏仍在展示、这次刷新拿回空 —— 保持缓存内容原状，不覆盖空态卡、
+            // 不补进度行、不走重试阶梯（旧内容可视性优先；再刷由点按/刷新事件触发）。
+            if (first && mCacheShown) {
+                mCacheShown = false;
+                return;
+            }
             // 内容区空态：在分类chips后插入一张「空态占位卡」行（复用 EmptyCardPresenter），
             // 保留功能区、分类chips、最近观看等组件 —— 不再隐藏整个 recycler。
             // 占位卡宽度撑满内容区、高度固定（屏幕可视高度的一定比例、不延伸屏底），
@@ -792,6 +821,14 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
         } else {
             removeContentEmpty();
             contentRetryCount = 0;   // R132：拿到内容即清零，下次空态重新计满
+            // R141：缓存首屏让位 —— 新数据到达后整屏替换（removeContent 同时把 mLast 归零，
+            // 避免把缓存首屏的行末余数补进新首屏首行）；常规路径（进度行已移除）此处为无操作。
+            if (mCacheShown) {
+                mCacheShown = false;
+                removeContent();
+            }
+            // R141：分类页 1 且非空 → 记入首屏缓存，供下次切回该分类时秒显
+            if (first && mShownChip instanceof Class type) mChipCache.put(type.getTypeId(), result);
             addVideo(mResult = result);
         }
         Cache.clear().put(result);
@@ -1708,6 +1745,10 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
 
     private void getVideo() {
         mResult = Result.empty();
+        // R141：配置/字号/图片尺寸事件都会走到这里 —— 分类首屏缓存一并作废。
+        // 换源后旧源的 typeId 会撞上新源同名分类，不清就会切回时秒显旧源内容。
+        mChipCache.clear();
+        mCacheShown = false;
         // 推荐内容直接加载：焦点随后落到「推荐」chip 时不再重复请求（去重键与 loadChip 同一套）
         App.removeCallbacks(mChipRunnable);
         mShownChip = getString(R.string.home_recommend);
@@ -2234,8 +2275,23 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
         mResponseToken = ++mContentToken;   // 新请求开始：此后只有本代响应会被采纳
         selectChip(item);
         removeContent();
-        mAdapter.add("progress");
-        mScroller.reset();
+        // R141：切回看过的分类 → 先画缓存首屏（不画进度行），请求照发；新响应到达后
+        // onContentResult 整屏替换。缓存路径下先行禁用分页（endLoading(false)）：
+        // 若新响应迟迟不回，避免用户在旧首屏上滑出第 2 页造成页序错配；响应回来时
+        // endLoading(result) 会按 pageCount 重新解锁。
+        Result cached = null;
+        if (chipChanged && item instanceof Class type) cached = mChipCache.get(type.getTypeId());
+        if (cached != null && !cached.getList().isEmpty()) {
+            mCacheShown = true;
+            addGrid(cached.getList(), Style.rect());
+            mScroller.reset();
+            mScroller.endLoading(false);
+            checkMore();
+        } else {
+            mCacheShown = false;
+            mAdapter.add("progress");
+            mScroller.reset();
+        }
         if (item instanceof String) {
             mViewModel.homeContent();
         } else if (item instanceof Class type) {
