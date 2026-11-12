@@ -109,8 +109,6 @@ public interface VodPlaybackHost {
 
     void renderQualityVisible(boolean visible);
 
-    void renderSources(List<Vod> items);
-
     void renderHistory(History history);
 
     void renderUseParse(boolean useParse);
@@ -124,8 +122,6 @@ public interface VodPlaybackHost {
     void onDetailFallbackScheduled();
 
     void onDetailFallbackCancelled();
-
-    void onSearchStarted(String keyword);
 
     void showDetailMessage(String msg);
 

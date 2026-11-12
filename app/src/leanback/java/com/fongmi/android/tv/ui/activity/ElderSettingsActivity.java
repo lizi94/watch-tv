@@ -150,9 +150,8 @@ public class ElderSettingsActivity extends BaseActivity {
     }
 
     /**
-     * 首页快速搜索开关：关闭后 index 站源（豆瓣类）首页内容点击/长按直接进详情页，
-     * 由自动择源择线把可播放线路找出来；开启则回到原生「跳搜索页跨源搜同名」的行为。
-     * 门控点在首页的点击/长按回调，读实时偏好，改完下次点击即生效。
+     * 首页快速搜索开关：开启后所有站源首页点击海报跳快搜，关闭后所有站源直接进详情页自动择源播放；长按不承载功能。
+     * 门控点在首页的点击回调，读实时偏好，改完下次点击即生效。
      */
     private void setIndexQuickSearch(View view) {
         Setting.putIndexQuickSearch(!Setting.isIndexQuickSearch());

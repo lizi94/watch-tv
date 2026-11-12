@@ -243,23 +243,16 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
         } else if (item.isFolder()) {
             getParent().openFolder(item.getId(), mExtends);
         } else {
-            // index 站源（豆瓣类）只有推荐/分类、没有播放线路：开启「首页快速搜索」时按原生跳搜索页跨源搜同名；
-            // 关闭时直接进详情页，交给自动择源择线把可播放线路找出来。非 index 源不受开关影响，始终进详情页。
-            if (getSite().isIndex() && Setting.isIndexQuickSearch()) SearchActivity.start(requireActivity(), item.getName());
+            // 全站源统一受「首页快速搜索」开关控制：开启时跳搜索页跨源搜同名（快搜）；
+            // 关闭时直接进详情页，交给自动择源择线把可播放线路找出来。
+            if (Setting.isIndexQuickSearch()) SearchActivity.start(requireActivity(), item.getName());
             else VideoActivity.start(requireActivity(), getKey(), item.getId(), item.getName(), item.getPic(), isFolder() ? item.getName() : null);
         }
     }
 
     @Override
     public boolean onLongClick(Vod item) {
-        if (item.isAction() || item.isFolder()) return false;
-        // 长按与单击保持一致：index 源关闭「首页快速搜索」后，长按也直接进详情页自动择源，
-        // 不再跳搜索页（否则老人长按会突然换到搜索页，与单击行为不一致）。
-        if (getSite().isIndex() && !Setting.isIndexQuickSearch()) {
-            VideoActivity.start(requireActivity(), getKey(), item.getId(), item.getName(), item.getPic(), isFolder() ? item.getName() : null);
-            return true;
-        }
-        SearchActivity.start(requireActivity(), item.getName());
-        return true;
+        // 长按不承载功能，防老人误触
+        return false;
     }
 }

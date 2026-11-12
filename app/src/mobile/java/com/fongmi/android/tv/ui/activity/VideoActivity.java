@@ -91,8 +91,6 @@ import com.fongmi.android.tv.ui.dialog.DanmakuDialog;
 import com.fongmi.android.tv.ui.dialog.EditionDialog;
 import com.fongmi.android.tv.ui.dialog.EpisodeGridDialog;
 import com.fongmi.android.tv.ui.dialog.EpisodeListDialog;
-import com.fongmi.android.tv.ui.dialog.InfoDialog;
-import com.fongmi.android.tv.ui.dialog.ParseDialog;
 import com.fongmi.android.tv.ui.dialog.PlayerEngineDialog;
 import com.fongmi.android.tv.ui.dialog.ReceiveDialog;
 import com.fongmi.android.tv.ui.dialog.SpeedSettingDialog;
@@ -115,7 +113,7 @@ import org.greenrobot.eventbus.ThreadMode;
 import java.util.List;
 import java.util.Objects;
 
-public class VideoActivity extends PlaybackActivity implements Clock.Callback, CustomKeyDown.Listener, ControlDialog.Listener, ParseDialog.Listener, VodPlaybackHost, FlagAdapter.OnClickListener, EpisodeAdapter.OnClickListener, QualityAdapter.OnClickListener, CastDialog.Listener, InfoDialog.Listener {
+public class VideoActivity extends PlaybackActivity implements Clock.Callback, CustomKeyDown.Listener, ControlDialog.Listener, VodPlaybackHost, FlagAdapter.OnClickListener, EpisodeAdapter.OnClickListener, QualityAdapter.OnClickListener, CastDialog.Listener {
 
     private ActivityVideoBinding mBinding;
     private VideoViewModel mViewModel;
@@ -347,18 +345,15 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     @Override
     @SuppressLint("ClickableViewAccessibility")
     protected void initEvent() {
-        mBinding.name.setOnClickListener(view -> onName());
         mBinding.more.setOnClickListener(view -> onMore());
         mBinding.actor.setOnClickListener(view -> onActor());
         mBinding.content.setOnClickListener(view -> onContent());
         mBinding.reverse.setOnClickListener(view -> onReverse());
         mBinding.director.setOnClickListener(view -> onDirector());
         mBinding.change.setOnClickListener(view -> onChange());
-        mBinding.name.setOnLongClickListener(view -> onChange());
         mBinding.content.setOnLongClickListener(view -> onCopy());
         mBinding.control.back.setOnClickListener(view -> onBack());
         mBinding.control.cast.setOnClickListener(view -> onCast());
-        mBinding.control.info.setOnClickListener(view -> onInfo());
         mBinding.control.keep.setOnClickListener(view -> onKeep());
         mBinding.control.play.setOnClickListener(view -> checkPlay());
         mBinding.control.next.setOnClickListener(view -> checkNext());
@@ -375,7 +370,6 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mBinding.control.action.speed.setOnClickListener(view -> onSpeed());
         mBinding.control.action.reset.setOnClickListener(view -> onReset());
         mBinding.control.action.replay.setOnClickListener(view -> onReplay());
-        mBinding.control.action.parse.setOnClickListener(view -> onParse());
         mBinding.control.action.player.setOnClickListener(view -> onPlayer());
         mBinding.control.action.decode.setOnClickListener(view -> onDecode());
         mBinding.control.action.ending.setOnClickListener(view -> onEnding());
@@ -730,11 +724,6 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     @Override
-    public void renderSources(List<Vod> items) {
-        // 换源候选列表 UI 已移除（与电视版一致）：自动换源由 VodFallbackPolicy 内部维护候选并自动切换
-    }
-
-    @Override
     public void renderHistory(History history) {
         mHistory = history;
         // 新一次详情页会话：清空底图去重键（与电视端同款），保证二次进入仍会加载底图。
@@ -748,7 +737,6 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     @Override
     public void renderUseParse(boolean useParse) {
         setUseParse(useParse);
-        mBinding.control.action.parse.setVisibility(isUseParse() ? View.VISIBLE : View.GONE);
     }
 
     @Override
@@ -776,11 +764,6 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     @Override
     public void onDetailFallbackCancelled() {
         App.removeCallbacks(mR4);
-    }
-
-    @Override
-    public void onSearchStarted(String keyword) {
-        // 换源候选行已移除；保留空实现以满足宿主接口
     }
 
     @Override
@@ -926,12 +909,6 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mBinding.quality.setVisibility(visible ? View.VISIBLE : View.GONE);
     }
 
-    private void onName() {
-        String name = mBinding.name.getText().toString();
-        Notify.show(getString(R.string.detail_search, name));
-        mVod.search(name);
-    }
-
     private void onMore() {
         EpisodeGridDialog.create().reverse(mHistory.isRevSort()).episodes(mEpisodeAdapter.getItems()).show(this);
     }
@@ -970,10 +947,6 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     private void onCast() {
         CastDialog.create(player()).history(mHistory).show(this);
-    }
-
-    private void onInfo() {
-        InfoDialog.create(player()).show(this);
     }
 
     private void onKeep() {
@@ -1080,11 +1053,6 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     private void onReset() {
         onRefresh();
-    }
-
-    private void onParse() {
-        ParseDialog.create().show(this);
-        hideControl();
     }
 
     private void onReplay() {
@@ -1258,8 +1226,6 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mBinding.control.keep.setVisibility(mHistory == null || isFullscreen() ? View.GONE : View.VISIBLE);
         mBinding.control.action.getRoot().setVisibility(isFullscreen() ? View.VISIBLE : View.GONE);
         mBinding.control.right.lock.setVisibility(isFullscreen() ? View.VISIBLE : View.GONE);
-        mBinding.control.action.parse.setVisibility(isUseParse() ? View.VISIBLE : View.GONE);
-        mBinding.control.info.setVisibility(player().isEmpty() ? View.GONE : View.VISIBLE);
         mBinding.control.cast.setVisibility(player().isEmpty() ? View.GONE : View.VISIBLE);
         mBinding.control.center.setVisibility(isLock() ? View.GONE : View.VISIBLE);
         mBinding.control.bottom.setVisibility(isLock() ? View.GONE : View.VISIBLE);

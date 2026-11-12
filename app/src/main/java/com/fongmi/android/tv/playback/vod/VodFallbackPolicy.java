@@ -124,7 +124,6 @@ class VodFallbackPolicy {
         manualSearch = manual;
         searchConsumed = false;
         state.setSearchKeyword(keyword);
-        host.onSearchStarted(keyword);
         // ⚠ 先撤上一轮残留的结算再排新的：顺序链会连着搜好几次，
         // 定时器叠加会让上一轮的结算在本轮中途到点，凭空多换一次源。
         App.removeCallbacks(searchSettle);
@@ -255,7 +254,6 @@ class VodFallbackPolicy {
             search(host.getVodName(), manualSearch);
             return;
         }
-        host.renderSources(state.getSources());
         host.showSwitchSource(item);
         state.addFailedId(host.getVodId());
         // 换了数据源，线路完全是另一套，已试线路重新计
