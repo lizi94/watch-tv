@@ -21,10 +21,10 @@ android {
         targetSdk libs.versions.targetSdk.get().toInteger()
         // 版本号规则（2026-11-10 用户定案，修订 ★AF）：标准版 = GitHub 最新发布 + 1；
         // 自启版 = 标准版 + 1 —— 两棵树恒定相差 1（旧规矩"差 3"作废）。
-        // 拆位：major = code/100，minor = (code%100)/10，patch = code%10 ⇒ 637 = 6.3.7。
-        // 当前 GitHub 最新 = v6.3.5（自启版）/ v6.3.4（标准版）⇒ 本轮 636 / 637。
-        versionCode 637
-        versionName "6.3.7"
+        // 拆位：major = code/100，minor = (code%100)/10，patch = code%10 ⇒ 639 = 6.3.9。
+        // 当前 GitHub 最新 = v6.3.7（自启版）/ v6.3.6（标准版）⇒ 本轮 638 / 639。
+        versionCode 639
+        versionName "6.3.9"
         javaCompileOptions {
             annotationProcessorOptions {
                 arguments = ["room.schemaLocation": "$projectDir/schemas".toString(), "eventBusIndex": "com.fongmi.android.tv.event.EventIndex"]

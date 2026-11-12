@@ -22,7 +22,6 @@ import com.fongmi.android.tv.ui.dialog.ConfirmDialog;
 import com.fongmi.android.tv.utils.SiteVisibility;
 import com.fongmi.android.tv.utils.ElderLock;
 import com.fongmi.android.tv.utils.ElderMode;
-import com.fongmi.android.tv.utils.LauncherCapability;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.SoundFx;
@@ -62,7 +61,6 @@ public class ElderSettingsActivity extends BaseActivity {
         mBinding.full.setOnClickListener(this::setAutoFullscreen);
         mBinding.resume.setOnClickListener(this::setAutoResume);
         mBinding.bootLive.setOnClickListener(this::setBootLive);
-        mBinding.selfCheck.setOnClickListener(view -> SelfCheckActivity.start(this));
         mBinding.sound.setOnClickListener(this::setKeySound);
         mBinding.indexSearch.setOnClickListener(this::setIndexQuickSearch);
         mBinding.blockThird.setOnClickListener(this::setBlockThird);
@@ -75,9 +73,7 @@ public class ElderSettingsActivity extends BaseActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // 从锁定页 / 体检页返回后同步最新状态；同时强制重算一次「是不是默认桌面」
-        //（用户可能刚在系统页面里改掉了默认桌面）。
-        LauncherCapability.refresh(this);
+        // 从锁定页返回后同步最新的锁定状态
         if (mBinding != null) refresh();
     }
 
@@ -95,33 +91,6 @@ public class ElderSettingsActivity extends BaseActivity {
         mBinding.siteManageText.setText(getString(R.string.site_manage_count_short, SiteVisibility.countEnabled(VodConfig.get().getRawSites()), VodConfig.get().getRawSites().size()));
         mBinding.fontText.setText(getFontName());
         mBinding.sizeText.setText((size = ResUtil.getStringArray(R.array.select_size))[PlayerSetting.getSize()]);
-        refreshSelfCheck();
-    }
-
-    /**
-     * 「启动与桌面体检」行的右侧摘要：已就绪 / 总数。
-     *
-     * <p>为什么给个数字而不是「查看」：子女帮老人装机时一眼就知道还差几项，比点进去才发现要省事。
-     * 分母是动态的 —— 「按主页键回到看电视」这一项在「已是默认桌面」时是空转的，
-     * 不算进分母（{@link LauncherCapability#isSelfHome}）。</p>
-     */
-    private void refreshSelfCheck() {
-        boolean selfHome = LauncherCapability.isSelfHome(this);
-        int total = 0;
-        int done = 0;
-        total++;
-        // 默认桌面形态下系统必然把本应用拉起来，「开机自动打开」这一项恒成立 ⇒ 直接算就绪。
-        // 否则长辈设置右侧会永远差一项，而那一项其实在默认桌面形态下根本关不掉。
-        if (selfHome || Setting.isBootAutostart()) done++;
-        total++;
-        if (LauncherCapability.isBatteryOk(this)) done++;
-        if (!selfHome) {
-            total++;
-            if (Setting.isHomeGuard() && LauncherCapability.isA11yOn(this)) done++;
-        }
-        total++;
-        if (selfHome) done++;
-        mBinding.selfCheckText.setText(getString(R.string.elder_setting_self_check_value, done, total));
     }
 
     /** 当前字号档位的名称（标准 / 大 / 特大 / 超大 / 极大）。 */
@@ -181,9 +150,8 @@ public class ElderSettingsActivity extends BaseActivity {
     }
 
     /**
-     * 首页快速搜索开关：关闭后 index 站源（豆瓣类）首页内容点击/长按直接进详情页，
-     * 由自动择源择线把可播放线路找出来；开启则回到原生「跳搜索页跨源搜同名」的行为。
-     * 门控点在首页的点击/长按回调，读实时偏好，改完下次点击即生效。
+     * 首页快速搜索开关：开启后所有站源首页点击海报跳快搜，关闭后所有站源直接进详情页自动择源播放；长按不承载功能。
+     * 门控点在首页的点击回调，读实时偏好，改完下次点击即生效。
      */
     private void setIndexQuickSearch(View view) {
         Setting.putIndexQuickSearch(!Setting.isIndexQuickSearch());

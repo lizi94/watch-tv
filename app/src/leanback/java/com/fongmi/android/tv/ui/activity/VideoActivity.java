@@ -40,7 +40,6 @@ import com.fongmi.android.tv.bean.Episode;
 import com.fongmi.android.tv.bean.Flag;
 import com.fongmi.android.tv.bean.History;
 import com.fongmi.android.tv.bean.Keep;
-import com.fongmi.android.tv.bean.Parse;
 import com.fongmi.android.tv.bean.Result;
 import com.fongmi.android.tv.bean.Site;
 import com.fongmi.android.tv.bean.Sub;
@@ -74,7 +73,6 @@ import com.fongmi.android.tv.ui.dialog.ChapterDialog;
 import com.fongmi.android.tv.ui.dialog.ContentDialog;
 import com.fongmi.android.tv.ui.dialog.DanmakuDialog;
 import com.fongmi.android.tv.ui.dialog.EditionDialog;
-import com.fongmi.android.tv.ui.dialog.ParseDialog;
 import com.fongmi.android.tv.ui.dialog.PlayerEngineDialog;
 import com.fongmi.android.tv.ui.dialog.SpeedSettingDialog;
 import com.fongmi.android.tv.ui.dialog.TrackDialog;
@@ -102,7 +100,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
-public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, CustomKeyDownVod.Listener, ParseDialog.Listener, ArrayAdapter.OnClickListener, FlagAdapter.OnClickListener, EpisodeAdapter.OnClickListener, QualityAdapter.OnClickListener, Clock.Callback {
+public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, CustomKeyDownVod.Listener, ArrayAdapter.OnClickListener, FlagAdapter.OnClickListener, EpisodeAdapter.OnClickListener, QualityAdapter.OnClickListener, Clock.Callback {
 
     /** R-A′：index 源详情为空时的兜底等待时长（20 秒给自动择源留足余量）。 */
     private static final long EMPTY_DETAIL_FALLBACK_MS = 20000L;
@@ -358,7 +356,6 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         mBinding.control.action.speed.setOnClickListener(view -> onSpeed());
         mBinding.control.action.reset.setOnClickListener(view -> onReset());
         mBinding.control.action.replay.setOnClickListener(view -> onReplay());
-        mBinding.control.action.parse.setOnClickListener(view -> onParse());
         mBinding.control.action.player.setOnClickListener(view -> onPlayer());
         mBinding.control.action.decode.setOnClickListener(view -> onDecode());
         mBinding.control.action.ending.setOnClickListener(view -> onEnding());
@@ -675,12 +672,6 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     }
 
     @Override
-    public void renderSources(List<Vod> items) {
-        // 换源候选列表 UI 已移除（剧名搜索/候选 chip 对老人是噪音）：
-        // 自动换源由 VodFallbackPolicy 内部维护候选并自动切换，不依赖本行的展示。
-    }
-
-    @Override
     public void renderHistory(History history) {
         mHistory = history;
         mBinding.control.action.opening.setText(history.getOpening() <= 0 ? getString(R.string.play_op) : Util.timeMs(history.getOpening()));
@@ -692,7 +683,6 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     @Override
     public void renderUseParse(boolean useParse) {
         setUseParse(useParse);
-        mBinding.control.action.parse.setVisibility(isUseParse() ? View.VISIBLE : View.GONE);
     }
 
     @Override
@@ -748,11 +738,6 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     public void onDetailFallbackCancelled() {
         App.removeCallbacks(mR4);
         App.removeCallbacks(mR5);
-    }
-
-    @Override
-    public void onSearchStarted(String keyword) {
-        // 分词搜索行（part）已移除；保留空实现以满足宿主接口
     }
 
     @Override
@@ -1113,11 +1098,6 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
         onRefresh();
     }
 
-    private void onParse() {
-        ParseDialog.create().show(this);
-        hideControl();
-    }
-
     private void onReplay() {
         mVod.replay();
     }
@@ -1476,11 +1456,6 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
 
     private void setMediaOptionVisible() {
         PlaybackAction.setMediaOptions(player(), mBinding.control.action.edition, mBinding.control.action.chapter);
-    }
-
-    @Override
-    public void onParse(Parse item) {
-        mVod.selectParse(item);
     }
 
     private void onPaused() {

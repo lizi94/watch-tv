@@ -21,15 +21,6 @@
             android:text="@string/detail_episode" />
 
         <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/parse"
-            style="@style/Control"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/parse"
-            android:visibility="gone"
-            tools:visibility="visible" />
-
-        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/player"
             style="@style/Control"
             android:layout_width="wrap_content"
