@@ -61,6 +61,8 @@
     <string name="menu_select_none">取消全選</string>
     <string name="dialog_delete_selected_history">確定要刪除所選的 %1$d 條觀看記錄嗎？</string>
     <string name="dialog_delete_selected_keep">確定要刪除所選的 %1$d 條收藏嗎？</string>
+    <!-- R141：設定頁「清快取」二次確認（與電視端 SettingActivity 同 key 同文案） -->
+    <string name="setting_cache_confirm">確定清空快取嗎？看片和圖片要重新載入</string>
 
     <!-- 長輩鎖：直播源 -->
     <string name="elder_lock_live">直播源</string>

@@ -34,11 +34,9 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.net.HttpHeaders;
 
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 import jahirfiquitiva.libs.textdrawable.TextDrawable;
@@ -54,7 +52,14 @@ public class ImgUtil {
     private static final float ARTWORK_SCALE = 0.5F;
     private static final int MAX_DATA_URI_LENGTH = 8 * 1024 * 1024;
     private static final Pattern IMAGE_MIME = Pattern.compile("image/[a-z0-9.+-]+");
-    private static final Set<String> failed = Collections.synchronizedSet(new HashSet<>());
+    /**
+     * 封面 URL 失败记忆表（url → 失败时间戳）：TTL 内不重复请求失败 URL，
+     * 防止一次网络抖动引发整屏重试风暴；<b>过期后自动放行重试</b> ——
+     * R141 改造：原先是一次失败整个进程生命周期永久跳过，弱网抖动一次海报就永远变文字块。
+     */
+    private static final Map<String, Long> failed = new ConcurrentHashMap<>();
+    /** 失败记忆的过期时间：30 分钟。 */
+    private static final long FAILED_TTL_MS = 30L * 60 * 1000;
     private static final Cache<String, Image> CACHE = CacheBuilder.newBuilder().maximumWeight(MAX_CACHE_SIZE).weigher((String key, Image value) -> value.data().length).build();
 
     /** 台标 logo 的解码上限（2026-10-26 低配卡死治理 P0-3）：配置里塞一张超大 logo 时兜底。 */
@@ -185,7 +190,7 @@ public class ImgUtil {
     public static void load(String text, String url, ImageView view, boolean vod, int targetWidth, int targetHeight) {
         view.setScaleType(vod ? CENTER_CROP : FIT_CENTER);
         if (!vod) view.setVisibility(TextUtils.isEmpty(url) ? View.GONE : View.VISIBLE);
-        if (TextUtils.isEmpty(url) || failed.contains(url)) view.setImageDrawable(getTextDrawable(text, vod));
+        if (TextUtils.isEmpty(url) || isFailed(url)) view.setImageDrawable(getTextDrawable(text, vod));
         else try {
             RequestBuilder<Drawable> builder = Glide.with(view).load(getUrl(url)).listener(getListener(text, url, view, vod));
             if (targetWidth > 0 && targetHeight > 0) builder.override(targetWidth, targetHeight);
@@ -197,16 +202,30 @@ public class ImgUtil {
                 //    长列表能多缓存一倍封面。圆角由 ShapeableImageView 的 shapeAppearanceOverlay
                 //    做遮罩裁切，不依赖 bitmap 的 alpha，所以不受影响。
                 // ② dontAnimate()：列表滚动时省掉淡入动画的每帧重绘，弱 CPU 的电视盒子更跟手。
+                // ③ R141 placeholder()：加载中先显示「首字母+色块」底版。没有它时，复用的卡片
+                //    在图片就绪前一直挂着<b>上一个条目的旧图</b>（快速滚动时的串图闪烁）。
+                //    占位与 error 兜底同款样式，图片就绪后瞬时替换（dontAnimate 下无淡入）。
+                //    ⚠ 仅 vod 门控：vod == false 是频道台标（常见透明 PNG），文字块底版反而突兀。
                 //
-                // ⚠️ 必须用 vod 门控：vod == false 的唯一调用点是 Channel 的频道 logo
-                //    （main/.../bean/Channel.java），台标常见透明 PNG，转 RGB_565 会把透明区压成黑块。
-                builder.format(DecodeFormat.PREFER_RGB_565).dontAnimate().centerCrop().into(view);
+                builder.placeholder(getTextDrawable(text, true)).format(DecodeFormat.PREFER_RGB_565).dontAnimate().centerCrop().into(view);
             } else {
                 builder.fitCenter().into(view);
             }
         } catch (Throwable e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * 封面 URL 是否处于「失败记忆」期：TTL 内返回 true（跳过重复请求）；
+     * 超过 {@link #FAILED_TTL_MS} 则移除记忆并放行重试（弱网抖动可自愈）。
+     */
+    private static boolean isFailed(String url) {
+        Long time = failed.get(url);
+        if (time == null) return false;
+        if (System.currentTimeMillis() - time < FAILED_TTL_MS) return true;
+        failed.remove(url);
+        return false;
     }
 
     public static Object getUrl(String url) {
@@ -275,7 +294,7 @@ public class ImgUtil {
             @Override
             public boolean onLoadFailed(@Nullable GlideException e, Object model, @NonNull Target<Drawable> target, boolean isFirstResource) {
                 view.setImageDrawable(getTextDrawable(text, vod));
-                failed.add(url);
+                failed.put(url, System.currentTimeMillis());
                 return true;
             }
 

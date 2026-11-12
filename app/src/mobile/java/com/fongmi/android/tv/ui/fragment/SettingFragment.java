@@ -28,6 +28,7 @@ import com.fongmi.android.tv.ui.activity.HomeActivity;
 import com.fongmi.android.tv.ui.base.BaseFragment;
 import com.fongmi.android.tv.ui.dialog.ArrayPickDialog;
 import com.fongmi.android.tv.ui.dialog.ConfigDialog;
+import com.fongmi.android.tv.ui.dialog.ConfirmDialog;
 import com.fongmi.android.tv.ui.dialog.HistoryDialog;
 import com.fongmi.android.tv.ui.dialog.RestoreDialog;
 import com.fongmi.android.tv.ui.dialog.ThemeDialog;
@@ -325,6 +326,12 @@ public class SettingFragment extends BaseFragment implements ConfigListener, The
     }
 
     private void onCache(View view) {
+        // R141 对齐电视端 SettingActivity#onCache：清掉的是全部播放/图片/EPG 缓存，
+        // 误触后下次看片要重新缓冲，体感是「变慢了」，与删除历史/收藏同级的不可逆操作，需要二次确认。
+        ConfirmDialog.create().message(getString(R.string.setting_cache_confirm)).callback(this::clearCache).show(requireActivity());
+    }
+
+    private void clearCache() {
         FileUtil.clearCache(new Callback() {
             @Override
             public void success() {

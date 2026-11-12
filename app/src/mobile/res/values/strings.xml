@@ -61,6 +61,8 @@
     <string name="menu_select_none">Deselect all</string>
     <string name="dialog_delete_selected_history">Delete the selected %1$d history items?</string>
     <string name="dialog_delete_selected_keep">Delete the selected %1$d favorite items?</string>
+    <!-- R141：设置页「清缓存」二次确认（与电视端 SettingActivity 同 key 同文案） -->
+    <string name="setting_cache_confirm">Clear cache? Videos and images will need to reload.</string>
 
     <!-- Elder lock: live source -->
     <string name="elder_lock_live">Live source</string>

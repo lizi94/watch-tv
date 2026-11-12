@@ -118,7 +118,23 @@ public class VodFragment extends BaseFragment implements ConfigListener, FilterL
         mBinding.type.setHasFixedSize(true);
         mBinding.type.setItemAnimator(null);
         mBinding.type.setAdapter(mAdapter = new TypeAdapter(this));
+        setPagerAdapter();
+    }
+
+    /**
+     * R141 首页分类 tab 保活：默认 offscreenPageLimit=1 只预加载相邻页，远端 tab 切回时
+     * 页面已被销毁重建、整个 TypeFragment 从头请求 —— 「在分类间来回浏览」每次都白屏重拉。
+     * 保活 6 个（分类不足取全量）：切过的分类页保留在内存，切回秒显不重拉。内存增量可控：
+     * 不可见页的封面位图由 Glide LRU 自动回收，保留的只是 Result 数据与空 holder。
+     */
+    private void setPagerAdapter() {
         mBinding.pager.setAdapter(new PageAdapter(getChildFragmentManager()));
+        updatePagerLimit();
+    }
+
+    /** 分类数量变化后（首页推荐结果到达）同步保活页数；至少 1（ViewPager 硬性下限）。 */
+    private void updatePagerLimit() {
+        mBinding.pager.setOffscreenPageLimit(Math.max(1, Math.min(mAdapter.getItemCount() - 1, 6)));
     }
 
     private void setViewModel() {
@@ -153,6 +169,8 @@ public class VodFragment extends BaseFragment implements ConfigListener, FilterL
         }
         mAdapter.addAll(mResult = result);
         mBinding.pager.getAdapter().notifyDataSetChanged();
+        // R141：分类数量已确定，按上限刷新保活页数（远端 tab 切回不再销毁重建）
+        updatePagerLimit();
         setFabVisible(0);
         hideProgress();
         showContent();
@@ -218,7 +236,7 @@ public class VodFragment extends BaseFragment implements ConfigListener, FilterL
         setFabVisible(0);
         mAdapter.clear();
         mViewModel.homeContent();
-        mBinding.pager.setAdapter(new PageAdapter(getChildFragmentManager()));
+        setPagerAdapter();
     }
 
     // ==================== 首页空态（2026-10-13） ====================

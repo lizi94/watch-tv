@@ -46,6 +46,13 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
     private static final long[] CONTENT_RETRY_STEPS = {5_000L, 10_000L, 20_000L};
     private int contentRetryCount;
 
+    /**
+     * R141 下拉刷新保留旧内容：true 时请求前不清列表，旧内容一直显示到新结果到达，
+     * 由 DiffUtil 静默替换（内容未变零重绘）—— 消除「刷新先闪空再转圈」的视觉断裂。
+     * 仅用户手动下拉置 true；切分类 / 筛选 / 首次进入仍是清空重建（语义变了必须重置）。
+     */
+    private boolean mRefreshKeep;
+
     public static TypeFragment newInstance(String key, String typeId, Style style, HashMap<String, String> extend, boolean folder, int y) {
         Bundle args = new Bundle();
         args.putInt("y", y);
@@ -146,7 +153,21 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
     }
 
     private void getVideo() {
+        getVideo(false);
+    }
+
+    /**
+     * R141 双路径：{@code keepContent=false} 为既有行为（先清列表再请求）；
+     * {@code keepContent=true} 为下拉刷新专用 —— 不预清列表、不转圈，旧内容保留到新结果到达。
+     */
+    private void getVideo(boolean keepContent) {
+        mRefreshKeep = keepContent;
         mScroller.reset();
+        if (keepContent) {
+            if (isHome()) mViewModel.homeContent();
+            else getVideo(getTypeId(), "1");
+            return;
+        }
         mAdapter.clear(() -> {
             if (!mBinding.swipeLayout.isRefreshing()) mBinding.progressLayout.showProgress();
             if (isHome()) {
@@ -169,14 +190,22 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
         // R138b：切主题/重建时序下 observe 重放 null 时不崩——null 视为「还没拿到数据」，
         // 保持转圈原状（与 CollectFragment 同款判空风格），由后续请求的正常回调接管 UI。
         if (result == null) return;
+        boolean keep = mRefreshKeep;
+        mRefreshKeep = false;
         boolean first = mScroller.first();
         int size = result.getList().size();
+        // R141 下拉刷新拿回空结果且旧内容还在：保持 CONTENT 原状，不闪空态（翻页状态照常收口）。
+        if (keep && size == 0 && mAdapter.getItemCount() > 0) {
+            mScroller.endLoading(result);
+            mBinding.swipeLayout.setRefreshing(false);
+            return;
+        }
         mBinding.progressLayout.showContent(first, size);
         mBinding.swipeLayout.setRefreshing(false);
         mScroller.endLoading(result);
         if (size > 0) {
             contentRetryCount = 0;   // R132：拿到内容即清零，下次空态重新计满
-            addVideo(result);
+            addVideo(result, keep);
             return;
         }
         // R132：首页内容级自动重试 —— 配置成功但站点内容请求失败（开机头几秒 DNS/站点服务器
@@ -194,10 +223,18 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
         }
     }
 
-    private void addVideo(Result result) {
+    private void addVideo(Result result, boolean keep) {
         Style style = result.getVod().getStyle(getStyle());
-        if (!style.equals(mAdapter.getStyle())) setStyle(style);
-        mAdapter.addAll(result.getList(), this::checkMore);
+        if (!style.equals(mAdapter.getStyle())) {
+            // 版式变了（列表⇄网格）：setStyle 会换全新空 adapter，直接重建即可
+            setStyle(style);
+            mAdapter.addAll(result.getList(), this::checkMore);
+            return;
+        }
+        // R141：keep=true 时旧内容仍在 adapter 里，用 setItems 走 DiffUtil 整体替换
+        //（内容没变时零重绘）；否则 append 到已清空的 adapter 上。
+        if (keep && mAdapter.getItemCount() > 0) mAdapter.setItems(result.getList(), this::checkMore);
+        else mAdapter.addAll(result.getList(), this::checkMore);
     }
 
     private void checkMore() {
@@ -214,13 +251,15 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
     public void setFilter(String key, Value value) {
         if (value.isSelected()) mExtends.put(key, value.getV());
         else mExtends.remove(key);
-        onRefresh();
+        // R141：筛选条件变了语义重置，走清空重建路径（不走下拉刷新的「保留旧内容」）
+        if (isHome()) getHome();
+        else getVideo();
     }
 
     @Override
     public void onRefresh() {
-        if (isHome()) getHome();
-        else getVideo();
+        // R141：手动下拉 → 保留旧内容请求，新结果到达后 DiffUtil 替换，不闪空不转圈
+        getVideo(true);
     }
 
     @Override
