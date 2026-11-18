@@ -179,12 +179,26 @@ public class Util {
         return text;
     }
 
+    /**
+     * 本次构建是不是「电视端」。
+     *
+     * <p><b>⛔ 必须用前缀匹配，不能精确等于 {@code "leanback"}</b>（R153）：本树自 645 起把
+     * {@code leanback} 拆成 {@code leanbackHome} 与 {@code leanbackGuard} 两个变体
+     * （区别只在 Manifest 是否声明 {@code CATEGORY_HOME}），{@code BuildConfig.FLAVOR} 随之变成
+     * {@code "leanbackHome"} / {@code "leanbackGuard"}。若沿用精确匹配，本方法会<b>恒返回 false</b>
+     * —— 编译、安装、运行全部正常，只是电视端专属逻辑静默失效，属于最难排查的一类回归。</p>
+     *
+     * <p><b>全树唯一判定入口</b>：{@code PlaybackService} / {@code SiteManageAdapter} /
+     * {@code ConfirmDialog} / {@code Notify} 原先各自写了一遍 {@code "leanback".equals(...)}，
+     * 已全部收口到本方法。新增代码请调用本方法，<b>不要再直接读 {@code BuildConfig.FLAVOR}</b>。</p>
+     */
     public static boolean isLeanback() {
-        return "leanback".equals(BuildConfig.FLAVOR);
+        return BuildConfig.FLAVOR != null && BuildConfig.FLAVOR.startsWith("leanback");
     }
 
+    /** 本次构建是不是「手机端」。理由同 {@link #isLeanback()}，同样必须前缀匹配。 */
     public static boolean isMobile() {
-        return "mobile".equals(BuildConfig.FLAVOR);
+        return BuildConfig.FLAVOR != null && BuildConfig.FLAVOR.startsWith("mobile");
     }
 
     public static boolean isFullscreen(Activity activity) {

@@ -11,6 +11,7 @@ import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.databinding.ActivitySelfCheckBinding;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.ui.base.BaseActivity;
+import com.fongmi.android.tv.utils.GuardSelfHeal;
 import com.fongmi.android.tv.utils.LauncherCapability;
 import com.fongmi.android.tv.utils.Notify;
 
@@ -87,13 +88,29 @@ public class SelfCheckActivity extends BaseActivity {
             mBinding.guard.setAlpha(0.6f);
         } else {
             mBinding.guard.setAlpha(1f);
-            boolean guard = Setting.isHomeGuard();
-            boolean a11y = LauncherCapability.isA11yOn(this);
-            if (!guard) mBinding.guardText.setText(R.string.self_check_off);
-            else mBinding.guardText.setText(a11y ? R.string.self_check_ok : R.string.self_check_todo);
+            if (!Setting.isHomeGuard()) {
+                mBinding.guardText.setText(R.string.self_check_off);
+            } else if (LauncherCapability.isA11yOn(this)) {
+                mBinding.guardText.setText(R.string.self_check_ok);
+            } else if (LauncherCapability.isA11yListed(this)) {
+                // R150：设置里写着本服务、但系统没把服务绑上进程（TCL 每次重启后的现场）。
+                // 旧实现在这一态显示「已设置」—— 那个骗人的开关就是这里。
+                mBinding.guardText.setText(R.string.self_check_guard_stalled);
+            } else {
+                mBinding.guardText.setText(R.string.self_check_todo);
+            }
         }
 
-        mBinding.homeText.setText(selfHome ? R.string.self_check_ok : R.string.self_check_todo);
+        // 第 4 行：能不能/有没有设成默认桌面。guard 变体的 Manifest 里没有任何 MAIN+HOME 声明,
+        // 系统「默认桌面」列表里根本不会出现本应用 —— 对这一行只能陈述事实并整行弱化，
+        // 否则点进去是一个找不到自己的列表（比不引导更糟）。
+        if (!LauncherCapability.canBeHome(this)) {
+            mBinding.home.setAlpha(0.6f);
+            mBinding.homeText.setText(R.string.self_check_home_unavailable);
+        } else {
+            mBinding.home.setAlpha(1f);
+            mBinding.homeText.setText(LauncherCapability.isSelfHome(this) ? R.string.self_check_ok : R.string.self_check_todo);
+        }
         mBinding.warn.setVisibility(LauncherCapability.isOnlyHome(this) ? View.VISIBLE : View.GONE);
     }
 
@@ -127,6 +144,15 @@ public class SelfCheckActivity extends BaseActivity {
             Notify.show(R.string.self_check_guard_by_home);
             return;
         }
+        // R150：「开关开着、设置里也写着本服务，但系统没把服务绑上进程」—— 这是 TCL 每次
+        //   重启后的真实状态，也是旧实现里那个「显示已设置却根本不生效」的骗人开关。
+        //   这一态下先尝试自愈（需 WRITE_SECURE_SETTINGS；未授权时静默失败，落到下面的引导）。
+        if (Setting.isHomeGuard() && LauncherCapability.isA11yListed(this) && !LauncherCapability.isA11yOn(this)) {
+            if (GuardSelfHeal.ensure(this, "体检页点击修复")) {
+                Notify.show(R.string.self_check_guard_repairing);
+                return;
+            }
+        }
         boolean next = !Setting.isHomeGuard();
         Setting.putHomeGuard(next);
         refresh();
@@ -138,24 +164,61 @@ public class SelfCheckActivity extends BaseActivity {
 
     /** 第 4 行：去系统里设默认桌面（已设时这里就是「换回电视自带的主页」）。 */
     private void onHome() {
+        // guard 变体没有桌面声明，系统页面里不会出现本应用 —— 直接说明，不做无意义的跳转
+        if (!LauncherCapability.canBeHome(this)) {
+            Notify.show(R.string.self_check_home_unavailable);
+            return;
+        }
         if (!LauncherCapability.openHomeSettings(this)) Notify.show(R.string.self_check_need_manual);
     }
 
     /**
      * 一键检查并修复：按顺序只做**下一件没做的事**。
      *
-     * <p>顺序不是随便排的：设成默认桌面之后，第 3 行（按主页键回到看电视）本来就是空转的，
-     * 所以默认桌面形态下无障碍那一步要一并跳过 —— 引导老人去开一个不会生效的开关，
-     * 比不引导更糟。</p>
+     * <p>顺序不是随便排的：设成默认桌面之后，第 1 行（开机就打开）与第 3 行（按主页键回到看电视）
+     * 本来就是空转的 —— 系统自己会把本应用当桌面拉起来，所以这两步要一并跳过。
+     * 引导老人去开一个不会生效的开关，比不引导更糟。</p>
+     *
+     * <p>R153 起要区分两种形态：{@code leanbackHome} 能当桌面，第一步是去开「默认桌面」；
+     * {@code leanbackGuard} 的 Manifest 里<b>没有</b>桌面声明，那个页面里压根不会出现本应用 ——
+     * 对 guard 版必须跳过第一步，否则「一键修复」会永远卡在一个打不开的死路上，
+     * 后面真正需要的「开机自启 / 守护授权」永远轮不到（旧实现在 guard 版上的真实现象）。</p>
      */
     private void onFix() {
-        if (!LauncherCapability.isSelfHome(this)) {
+        boolean selfHome = LauncherCapability.isSelfHome(this);
+
+        // ① 能当桌面、但还没设成默认桌面 —— 这一步最优先（设完 ②④ 会自动空转）
+        if (!selfHome && LauncherCapability.canBeHome(this)) {
             if (!LauncherCapability.openHomeSettings(this)) Notify.show(R.string.self_check_need_manual);
             return;
         }
+        // ② 电池白名单（两种形态都要）
         if (!LauncherCapability.isBatteryOk(this)) {
             if (!LauncherCapability.requestBattery(this)) Notify.show(R.string.self_check_need_manual);
             return;
+        }
+        // ③ 开机自启：只有「不靠桌面拉起」的形态才需要（已是默认桌面时系统必然拉起，跳过）
+        if (!selfHome && !Setting.isBootAutostart()) {
+            Setting.putBootAutostart(true);
+            refresh();
+            return;
+        }
+        // ④ 守护开关 + 无障碍授权：同上，默认桌面形态下空转
+        if (!selfHome) {
+            if (!Setting.isHomeGuard()) {
+                Setting.putHomeGuard(true);
+                refresh();
+                if (!LauncherCapability.isA11yOn(this)) {
+                    Notify.show(R.string.a11y_guide);
+                    if (!LauncherCapability.openA11ySettings(this)) Notify.show(R.string.self_check_need_manual);
+                }
+                return;
+            }
+            if (!LauncherCapability.isA11yOn(this)) {
+                Notify.show(R.string.a11y_guide);
+                if (!LauncherCapability.openA11ySettings(this)) Notify.show(R.string.self_check_need_manual);
+                return;
+            }
         }
         Notify.show(R.string.self_check_all_ok);
     }

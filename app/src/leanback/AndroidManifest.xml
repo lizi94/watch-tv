@@ -21,6 +21,15 @@
          不加则静默失败（部分 ROM 连提示都没有）。normal 级权限，无需运行时请求。 -->
     <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
 
+    <!-- 守护自愈（R150）：signature|privileged 级，**装完默认拿不到**，必须一次性
+         `adb shell pm grant <pkg> android.permission.WRITE_SECURE_SETTINGS` 授权。
+         用途只有一个：把本无障碍服务从 enabled_accessibility_services 里摘掉再写回，
+         逼系统重新绑定进程 —— 这是「开机时进程没起来导致绑失败、系统之后不再重试」
+         唯一不 root 的补救办法（TCL 每次重启守护都会静默失效，见 GuardSelfHeal）。
+         ⚠ 未授权时全链路静默降级：不崩、不弹窗、体检页照旧只做引导。
+         ⚠ lint 会对它报 ProtectedPermissions（Warning 级），release 的 lintVital 不拦，可忽略。 -->
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
+
     <!-- Android 11+ 默认有包可见性过滤，未在 queries 里声明的包查不到。
          ① MAIN+HOME：桌面守护用。没有它，DesktopResolver 的 queryIntentActivities(MAIN+HOME)
             在 Android 12/13 的电视与盒子上会返回空集 —— 被误判成「本应用就是默认桌面」

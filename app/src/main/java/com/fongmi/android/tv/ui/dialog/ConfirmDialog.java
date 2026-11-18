@@ -5,6 +5,7 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.viewbinding.ViewBinding;
 
 import com.fongmi.android.tv.databinding.DialogConfirmBinding;
+import com.fongmi.android.tv.utils.Util;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 /**
@@ -97,18 +98,15 @@ public class ConfirmDialog extends BaseAlertDialog {
         if (callback != null) callback.run();
     }
 
-    /**
-     * 电视版才需要「收窄窗口 + 默认焦点落取消」：手机是触屏，0.45 屏宽的窄条反而难看，
-     * 也没有遥控器连按的问题。判断方式与 {@link SitePickDialog} 一致（main 层不引用 flavor 类）。
-     */
-    private boolean isLeanback() {
-        return "leanback".equals(com.fongmi.android.tv.BuildConfig.FLAVOR);
-    }
-
     @Override
     public void onStart() {
         super.onStart();
-        if (!isLeanback()) return;
+        // 电视版才需要「收窄窗口 + 默认焦点落取消」：手机是触屏，0.45 屏宽的窄条反而难看，
+        // 也没有遥控器连按的问题。
+        // ⛔ R153：原先这里有一个私有 isLeanback() 直接比对 "leanback".equals(BuildConfig.FLAVOR)，
+        //   拆 flavor 后会恒为 false ⇒ 电视端退化成手机样式。已删除该包装方法，统一走
+        //   Util.isLeanback() 的前缀匹配（全树唯一判定入口）。
+        if (!Util.isLeanback()) return;
         setWidth(0.45f);
         // 适老化：默认焦点落在「取消」。确认类操作多为删除 / 清空等不可逆行为，
         // 老人连按 OK 时不应直接命中危险项，必须主动按右键才能移到「确定」。

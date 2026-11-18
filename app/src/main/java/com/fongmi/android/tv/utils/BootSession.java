@@ -1,6 +1,10 @@
 package com.fongmi.android.tv.utils;
 
+import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.os.SystemClock;
 import android.util.Log;
 
@@ -145,6 +149,16 @@ public final class BootSession {
     private static long selfVisibleAt;
     /** 本应用（任意页面）最后一次退到后台的时刻（墙钟）。R137：由 App 生命周期回调维护。 */
     private static long selfHiddenAt;
+    /**
+     * 本进程自创建以来「界面是否显示过」（R150 摘回，进程级一次性事实）。
+     *
+     * <p><b>为什么需要它</b>：守护/开机链路要区分「开机阶段的主动拉起」与「运行期的守护拉回」，
+     * 仅靠时间窗（elapsedRealtime ≤ 开机 5 分钟）有一个漏洞 —— 窗口内本应用从未打开过时，
+     * 用户在其他应用里按主页键也会被当成开机语境。{@code selfShown} 把「界面出现过」
+     * 这一事实记下来（App 生命周期回调维护，置位后进程内不撤销），
+     * 让时间窗判据在「界面已显示过」时一律让位（见 {@code HomeGuardService#isBootContext}）。</p>
+     */
+    private static boolean selfShown;
 
     private BootSession() {
     }
@@ -204,9 +218,15 @@ public final class BootSession {
         prefs().edit().putLong(KEY_SCREEN_ON, screenOnAt).apply();
     }
 
-    /** 本应用任意页面回到前台：记墙钟时刻（R137，由 App 生命周期回调维护）。 */
+    /** 本应用任意页面回到前台：记墙钟时刻（R137，由 App 生命周期回调维护）；同时置位「界面已显示」。 */
     public static void onSelfVisible() {
+        selfShown = true;
         selfVisibleAt = System.currentTimeMillis();
+    }
+
+    /** 本进程自创建以来「本应用界面是否显示过」（置位后不撤销 —— 见 {@link #selfShown}）。 */
+    public static boolean hasSelfShown() {
+        return selfShown;
     }
 
     /** 本应用任意页面退到后台：记墙钟时刻（R137，由 App 生命周期回调维护）。 */
@@ -277,6 +297,49 @@ public final class BootSession {
         return now - onAt <= WAKE_FRESH_MS;
     }
 
+    /**
+     * R156：home 形态的唤醒会话 —— 与 {@link #isWakeSession()} 逐条相同，<b>只去掉「熄屏那一刻本应用在前台」</b>。
+     *
+     * <p><b>为什么需要它</b>：默认桌面形态（{@code leanbackHome}）在小米等机型上，「关机」走的是快速开机快照，
+     * 唤醒时系统恢复的是<b>关机前的应用栈</b> —— 前台常常不是本应用，{@code screenOffWithSelf} 必然为 false，
+     * 于是 {@link #isWakeSession()} 永远不成立，桌面再也不会被顶回来。</p>
+     *
+     * <p><b>为什么只去掉这一条、而不是「亮屏就拉」</b>：其余三条（存在真实熄屏快照、待机 ≥ {@link #WAKE_GAP_MS}、
+     * 距亮屏 ≤ {@link #WAKE_FRESH_MS}）必须保留 —— 它们保证「这是一次真实的待机→唤醒」，
+     * 不会把「刚开机」「切应用」「亮屏状态下进程被杀重启」误当成唤醒。</p>
+     */
+    public static boolean isLaunchWakeSession() {
+        if (screenOffAt <= 0) return false;
+        long now = System.currentTimeMillis();
+        long onAt = screenOnAt > screenOffAt ? screenOnAt : now;
+        if (onAt - screenOffAt < WAKE_GAP_MS) return false;
+        return now - onAt <= WAKE_FRESH_MS;
+    }
+
+    /**
+     * R156：本应用此刻是不是系统的默认桌面（只解析 MAIN + HOME，不依赖 leanback 源集的 LauncherInfo）。
+     *
+     * <p><b>为什么要自己解析</b>：本类在 {@code main} 源集，而 {@code LauncherInfo/LauncherCapability}
+     * 在 {@code leanback} 源集 —— main 编译期引用不到 flavor 类（★BK-g 同型坑）。
+     * 用 PackageManager 解析 {@code ACTION_MAIN + CATEGORY_HOME} 是纯 main 能力。</p>
+     *
+     * <p><b>为什么它能当 flavor 判据用</b>：{@code leanbackGuard} 的 manifest 没有 HOME category，
+     * 不可能是默认桌面 ⇒ 本方法对 guard <b>恒返回 false</b>，同一份 Java 里天然按形态分叉，
+     * 不需要 {@code BuildConfig.FLAVOR}。</p>
+     */
+    public static boolean isSelfDefaultHome(Context context) {
+        if (context == null) return false;
+        try {
+            Intent home = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME);
+            ResolveInfo info = context.getPackageManager()
+                    .resolveActivity(home, PackageManager.MATCH_DEFAULT_ONLY);
+            return info != null && info.activityInfo != null
+                    && context.getPackageName().equals(info.activityInfo.packageName);
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
     /** 唤醒会话只认一次：用掉即清零，否则每次 {@code onResume} 都会重判。 */
     public static void consumeWake() {
         screenOffAt = 0L;
@@ -288,5 +351,81 @@ public final class BootSession {
         // R134：持久化快照一起清 —— 否则同一亮屏期内进程被杀又被拉起（崩溃重启等），
         // 恢复出来的旧快照会把普通启动误判成唤醒。
         prefs().edit().remove(KEY_SCREEN_OFF).remove(KEY_SCREEN_ON).remove(KEY_WITH_HOME).apply();
+    }
+
+    // ── 「开机拉起」标记（R150 摘回）：BootReceiver 收到开机类广播这一独立事实 ──
+
+    /** 「开机拉起」标记：打标时的墙钟时刻（持久化）。 */
+    private static final String KEY_BOOT_INTENT_WALL = "boot_session_boot_intent_wall";
+    /** 「开机拉起」标记：打标时的 elapsedRealtime（持久化，仅随墙钟一起记录备查）。 */
+    private static final String KEY_BOOT_INTENT_ELAPSED = "boot_session_boot_intent_elapsed";
+    /** 开机拉起标记的有效期：10 分钟 —— 覆盖「广播送达了但拉起链路把定性判错」的所有慢机型窗口。 */
+    private static final long BOOT_INTENT_FRESH_MS = 10 * 60 * 1000L;
+
+    /**
+     * BootReceiver 收到任何「开机类系统广播」（LOCKED_BOOT_COMPLETED / USER_UNLOCKED /
+     * BOOT_COMPLETED / QUICKBOOT_POWERON）时打标 —— 记录「系统确实认为这是开机」这一事实。
+     *
+     * <p><b>为什么需要第四判据</b>：首页 classifyLaunch 现有的三条开机会话判据（开机 5 分钟窗 /
+     * 熄屏唤醒快照 / 快速开机标记）各自都有覆盖不到的机型 —— 广播迟到、待机不发 SCREEN_OFF、
+     * 快照被 ROM 清掉…… 而 BootReceiver <b>确实收到了广播</b>本身就是一条独立、可信的证据。
+     * 实测 TCL 开机 08:37:42 → 进程 08:43:01 才起（<b>5 分 19 秒</b>），单单超了 {@link #BOOT_PHASE_MS}
+     * 窗口 19 秒就让「开机直达」整条链路不触发，正是这条判据要兜的场景。</p>
+     *
+     * <p>墙钟 + elapsedRealtime 双时间戳<b>持久化</b>：快恢复机型收完广播进程即被杀，
+     * 新建进程仍能读到这条证据（与 R134 熄屏快照同样的跨进程存活思路）。
+     * 有效期 10 分钟、首页<b>读取即消费</b>（{@link #hasBootIntent()}）：
+     * 防止残留标记把开机后前几分钟内的普通「按主页键回桌面」误判成开机会话（抢屏进续播）。</p>
+     */
+    public static void markBootIntent() {
+        try {
+            prefs().edit()
+                    .putLong(KEY_BOOT_INTENT_WALL, System.currentTimeMillis())
+                    .putLong(KEY_BOOT_INTENT_ELAPSED, SystemClock.elapsedRealtime())
+                    .apply();
+        } catch (Throwable t) {
+            Log.w(TAG, "markBootIntent failed", t);
+            return;
+        }
+        Log.i(TAG, "boot intent marked");
+    }
+
+    /**
+     * 「系统确实广播过开机」的标记是否仍有效 —— <b>读取即消费</b>。
+     *
+     * <p>判据只有一条：墙钟距打标 ≤ {@link #BOOT_INTENT_FRESH_MS}（真重启后墙钟必然前跳，
+     * 旧标记天然过期，无需再比 elapsedRealtime；后者仅随写随存备查）。读不到或已过期
+     * 一律 false 并顺手清掉残留。</p>
+     */
+    public static boolean hasBootIntent() {
+        try {
+            SharedPreferences p = prefs();
+            long wall = p.getLong(KEY_BOOT_INTENT_WALL, 0L);
+            if (wall <= 0L) return false;
+            boolean fresh = System.currentTimeMillis() - wall <= BOOT_INTENT_FRESH_MS;
+            p.edit().remove(KEY_BOOT_INTENT_WALL).remove(KEY_BOOT_INTENT_ELAPSED).apply();
+            Log.i(TAG, "boot intent consumed: " + fresh);
+            return fresh;
+        } catch (Throwable t) {
+            Log.w(TAG, "hasBootIntent failed", t);
+            return false;
+        }
+    }
+
+    /**
+     * 「系统确实广播过开机」的<b>只读窥探</b>（守护链路区分开机语境用）。
+     *
+     * <p>与 {@link #hasBootIntent()}（读取即消费）刻意不同：窥探<b>不清残留</b> ——
+     * 「消费」语义只属于首页 classifyLaunch，守护若提前消费会把首页要用的证据偷走。
+     * 判据与 {@link #hasBootIntent()} 相同：墙钟距打标 ≤ {@link #BOOT_INTENT_FRESH_MS}
+     * （真重启后墙钟必然前跳，旧标记天然过期）。读不到或已过期一律 false。</p>
+     */
+    public static boolean peekBootIntent() {
+        try {
+            long wall = prefs().getLong(KEY_BOOT_INTENT_WALL, 0L);
+            return wall > 0L && System.currentTimeMillis() - wall <= BOOT_INTENT_FRESH_MS;
+        } catch (Throwable t) {
+            return false;
+        }
     }
 }

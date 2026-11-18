@@ -20,7 +20,6 @@ import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 
 import com.fongmi.android.tv.App;
-import com.fongmi.android.tv.BuildConfig;
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.databinding.ViewProgressBinding;
 import com.fongmi.android.tv.setting.Setting;
@@ -172,7 +171,9 @@ public class Notify {
         // 手机版（R138）：与电视端同一套自绘浮层（深色半透明圆角 + 白字居中）。
         // 之前走系统 Toast，样式随手机深浅色模式翻转、字号偏小且不可控，与电视端观感割裂。
         // 手机端无「字号档位」缩放，sp 字号由布局直接换算，无需 leanback 的手动缩放退路。
-        if (BuildConfig.FLAVOR.equals("leanback")) {
+        // ⛔ R153：原为 {@code BuildConfig.FLAVOR.equals("leanback")}，拆 flavor 后会恒为 false
+        //   ⇒ 电视端提示退化成手机样式。统一走 Util.isLeanback() 的前缀匹配（同包，无需 import）。
+        if (Util.isLeanback()) {
             Context context = App.activity() != null ? App.activity() : App.get();
             View view = LayoutInflater.from(context).inflate(R.layout.view_toast, null);
             TextView tv = view.findViewById(R.id.text);

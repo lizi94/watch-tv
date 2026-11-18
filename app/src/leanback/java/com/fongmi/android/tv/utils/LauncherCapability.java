@@ -37,6 +37,11 @@ public final class LauncherCapability {
         return LauncherInfo.isSelfHome(context);
     }
 
+    /** 本包是否声明了桌面（guard 版为 false —— 它在系统的「默认桌面」列表里不出现）。 */
+    public static boolean canBeHome(Context context) {
+        return LauncherInfo.canBeHome(context);
+    }
+
     /** 本机除自己以外的 HOME 候选包名（安全阀判据的数据源）。 */
     public static Set<String> getOthers(Context context) {
         return LauncherInfo.getOthers(context);
@@ -74,14 +79,29 @@ public final class LauncherCapability {
     }
 
     /**
-     * 无障碍服务是否<b>真的</b>已启用（不是「开关打开了」，而是系统里那个开关也开了）。
+     * 无障碍服务是否<b>真的</b>在工作（R150 起为双判据）。
      *
-     * <p>{@link HomeGuardService} 没有对外暴露连接状态，而「服务连没连上」在进程重启、
-     * 用户中途关开关时会与偏好里的布尔值不一致 —— 所以直接读系统的启用列表，
-     * 这一项是唯一事实源。读不到（部分 ROM 抛异常）时按「未启用」处理：宁可多引导一次，
-     * 也不能显示「已开启」却根本不生效（那才是真正的骗人开关）。</p>
+     * <p><b>为什么单看设置值不够</b>：{@code ENABLED_ACCESSIBILITY_SERVICES} 里写着本服务，
+     * 只说明「用户曾经打开过那个开关」。2026-11-15 在 TCL 上实测到的现场是：
+     * 设置值完全正确、{@code dumpsys accessibility} 也列出了本服务，但
+     * {@code dumpsys activity services} 里 {@code app=null} —— ServiceRecord 在、
+     * 进程从未被绑定，守护一次都没开火，而旧实现照样显示「已设置」。这就是那个骗人的开关。</p>
+     *
+     * <p>所以现在是「设置里有」<b>且</b>「本进程真的收到过 {@code onServiceConnected}」
+     * （{@link GuardState#isConnected()}）。后者为 false 时体检页会显示
+     * 「已启用但未运行」并引导一键修复（见 {@code SelfCheckActivity}）。</p>
      */
     public static boolean isA11yOn(Context context) {
+        return isA11yListed(context) && GuardState.isConnected();
+    }
+
+    /**
+     * 无障碍服务是否<b>已写进系统启用列表</b>（不代表真的绑上了进程）。
+     *
+     * <p>体检页用它区分两种不同的「没在工作」：列表里没有 = 用户就没开过（该引导去开）；
+     * 列表里有但 {@link #isA11yOn} 为 false = 开了但系统没绑上（该点「修复」强制重绑）。</p>
+     */
+    public static boolean isA11yListed(Context context) {
         try {
             String enabled = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
             if (TextUtils.isEmpty(enabled)) return false;

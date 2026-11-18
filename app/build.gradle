@@ -21,10 +21,13 @@ android {
         targetSdk libs.versions.targetSdk.get().toInteger()
         // 版本号规则（2026-11-10 用户定案，修订 ★AF）：标准版 = GitHub 最新发布 + 1；
         // 自启版 = 标准版 + 1 —— 两棵树恒定相差 1（旧规矩"差 3"作废）。
-        // 拆位：major = code/100，minor = (code%100)/10，patch = code%10 ⇒ 643 = 6.4.3。
-        // 当前 GitHub 最新 = v6.4.1（自启版）/ v6.4.0（标准版）⇒ 本轮 642 / 643。
-        versionCode 643
-        versionName "6.4.3"
+        // 拆位：major = code/100，minor = (code%100)/10，patch = code%10 ⇒ 647 = 6.4.7。
+        // 当前 GitHub 最新 = v6.4.3（自启版）⇒ 本轮出「自启/拉回/唤醒三场景修复」：646 / 647。
+        // ⚠ 基线取 cd72cc1（643 链上「restore autostart-specific interactions」提交），
+        //   它天然位于门控提交 5f54c44 的上游 ⇒ 8 项自启版交互齐全且不含门控，零代码删除。
+        //   勿再取 da41876：那是同一 versionCode=643 的链首，交互尚未恢复（R145 事故）。
+        versionCode 647
+        versionName "6.4.7"
         javaCompileOptions {
             annotationProcessorOptions {
                 arguments = ["room.schemaLocation": "$projectDir/schemas".toString(), "eventBusIndex": "com.fongmi.android.tv.event.EventIndex"]
@@ -34,12 +37,37 @@ android {
 
     flavorDimensions = ["device"]
 
+    // R152 / R153：自启树只出两个**电视**变体，且都必须基于同一份 leanback 源码。
+    // ── leanbackHome  = 声明 CATEGORY_HOME（可被体检页设为默认桌面，拉回即直达）
+    // ── leanbackGuard = 不声明 HOME（TCL / 雷鸟等固件在**安装校验阶段**按 Manifest 文本
+    //    拒绝任何声明 HOME 的包；activity-alias + enabled=false 也拦不住，因为文本里仍有该声明）。
+    // 两者 Java 与 res 物理上就是同一批文件（见下方 sourceSets），不存在"改了一个忘另一个"。
+    // ⛔ 已删除 mobile：归档表里 mobile 固定写 dist/mobile-standard，标准树也要写同一个目录，
+    //    留着会让自启版手机包把标准版手机包覆盖掉（R145 事故原样重演）。
     productFlavors {
-        leanback {
+        leanbackHome {
             dimension "device"
         }
-        mobile {
+        leanbackGuard {
             dimension "device"
+            // 同 applicationId + 同 versionCode 的两个形态，靠后缀在「设置-应用信息」里可辨。
+            // ⚠ 只用 versionCode 判新旧，后缀不参与升级比较。
+            versionNameSuffix "-guard"
+        }
+    }
+
+    // 默认源集按 flavor 名找 `src/leanbackHome/`、`src/leanbackGuard/` —— 这两个目录不存在，
+    // 而真正的源码在 `src/leanback/`。必须显式重定向，否则两个变体都会编译出空壳。
+    sourceSets {
+        leanbackHome {
+            java.srcDirs = ['src/leanback/java']
+            res.srcDirs = ['src/leanback/res']
+            manifest.srcFile 'src/leanback/AndroidManifest.xml'
+        }
+        leanbackGuard {
+            java.srcDirs = ['src/leanback/java']
+            res.srcDirs = ['src/leanback/res']
+            manifest.srcFile 'src/leanback-guard/AndroidManifest.xml'
         }
     }
 
@@ -89,6 +117,109 @@ android {
 
 AbiApkPackaging.configure(project, SingleArtifact.APK.INSTANCE)
 
+// ───────────────────────────────────────────────────────────────────────────────
+// ③④ 防漂移校验（R152 / R153）
+//
+// 两份 Manifest 必须「除 MAIN + HOME + DEFAULT 这一个 intent-filter 外逐行完全一致」。
+// 只要有人改了其中一份就**构建失败**，不会等装到电视上才发现两个形态行为不同。
+//
+// 为什么不用正则：HOME 块的真实文本是 6 行（`<action MAIN />` 与 `<category HOME />`
+// 之间有一个空行）。正则对空行/缩进极敏感，改一次缩进就静默失效；这里改成
+// 「按 <intent-filter>…</intent-filter> 区段识别 + 忽略段内空行」，并且**要求恰好命中 1 段**，
+// 数量不对也直接失败（防止有人给别的组件也加了桌面声明）。
+// ───────────────────────────────────────────────────────────────────────────────
+tasks.register('verifyManifestPair') {
+    group = 'verification'
+    description = '校验 leanback 与 leanback-guard 两份 Manifest 仅差 CATEGORY_HOME 声明块'
+
+    def homeFile = file('src/leanback/AndroidManifest.xml')
+    def guardFile = file('src/leanback-guard/AndroidManifest.xml')
+    inputs.files(homeFile, guardFile)
+
+    doLast {
+        if (!guardFile.isFile()) {
+            throw new GradleException("缺少 ${guardFile} —— leanbackGuard 变体无 Manifest，拒绝构建")
+        }
+        def home = homeFile.readLines('UTF-8')*.trim()
+        def guard = guardFile.readLines('UTF-8')*.trim()
+
+        def block = [
+                '<intent-filter>',
+                '<action android:name="android.intent.action.MAIN" />',
+                '<category android:name="android.intent.category.HOME" />',
+                '<category android:name="android.intent.category.DEFAULT" />',
+                '</intent-filter>',
+        ]
+
+        // 从 home 里摘掉那一段，得到 guard 应有的样子
+        def stripped = []
+        int removed = 0
+        int i = 0
+        while (i < home.size()) {
+            if (home[i] == '<intent-filter>') {
+                int end = i
+                while (end < home.size() && home[end] != '</intent-filter>') end++
+                if (end < home.size() && home.subList(i, end + 1).findAll { it } == block) {
+                    removed++
+                    i = end + 1
+                    continue
+                }
+            }
+            stripped << home[i]
+            i++
+        }
+
+        if (removed != 1) {
+            throw new GradleException(
+                    "src/leanback/AndroidManifest.xml 里应恰好有 1 个「MAIN + HOME + DEFAULT」intent-filter，" +
+                            "实际找到 ${removed} 个。先确认桌面声明数量再构建 —— 多一个少一个都会让 guard 版判据失真。")
+        }
+        // ⚠ 不能只看「全文有没有 category.HOME」—— <queries> 里**必须**保留一条
+        //   MAIN + HOME 的 <intent>（桌面解析的包可见性，删了守护就找不到桌面）。
+        //   真正的判据是：guard 的**任何 <intent-filter> 段内**都不得出现 HOME。
+        def guardHomeFilters = []
+        int gi = 0
+        while (gi < guard.size()) {
+            if (guard[gi] == '<intent-filter>') {
+                int end = gi
+                while (end < guard.size() && guard[end] != '</intent-filter>') end++
+                if (end < guard.size() && guard.subList(gi, end + 1).any { it.contains('category.HOME') }) {
+                    guardHomeFilters << (gi + 1)
+                }
+                gi = end + 1
+            } else {
+                gi++
+            }
+        }
+        if (guardHomeFilters) {
+            throw new GradleException(
+                    "src/leanback-guard/AndroidManifest.xml 的 intent-filter 里仍出现 category.HOME" +
+                            "（起始行 ${guardHomeFilters.join(', ')}）。\n" +
+                            "guard 版一旦在 Manifest 文本里出现桌面声明，TCL / 雷鸟会在**安装校验阶段**直接拒装，" +
+                            "activity-alias + enabled=false 也绕不过去。")
+        }
+        if (stripped != guard) {
+            def lines = []
+            int n = Math.max(stripped.size(), guard.size())
+            for (int k = 0; k < n; k++) {
+                def a = k < stripped.size() ? stripped[k] : '<文件已结束>'
+                def b = k < guard.size() ? guard[k] : '<文件已结束>'
+                if (a != b) lines << "  第 ${k + 1} 行\n     home（去掉 HOME 块后）: ${a}\n     guard                : ${b}"
+                if (lines.size() >= 10) {
+                    lines << '  …（差异超过 5 处，已省略）'
+                    break
+                }
+            }
+            throw new GradleException(
+                    "两份 Manifest 除 HOME 块外不一致（行号按「去掉 HOME 块后的 home」计）：\n" +
+                            lines.join('\n') + "\n请把 src/leanback/AndroidManifest.xml 的改动同步到 guard 版（或反向同步）。")
+        }
+        logger.lifecycle('✅ Manifest 对照通过：guard ≡ home − HOME 块（唯一差异）')
+    }
+}
+
+tasks.matching { it.name == 'preBuild' }.configureEach { dependsOn 'verifyManifestPair' }
+
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.aar"])
     implementation project(':catvod')
@@ -120,15 +251,19 @@ dependencies {
     implementation libs.permissionx
     implementation libs.simple.xml
     implementation libs.textdrawable
-    leanbackImplementation libs.leanback
+    // 两个变体都是 TV，直接全量生效（原 `leanbackImplementation` 已随 flavor 改名失效）。
+    implementation libs.leanback
     // ⛔ 不要加回 AndroidAutoSize（libs.androidautosize）。本项目的密度由 BaseActivity#hackResources
     //    统一接管：density = 屏宽px/1920 × 字号档位 × 大屏补偿。AutoSize 的 InitProvider 会在
     //    InitProvider.onCreate 以及每次 Activity 的 onActivityCreated/Started/Resumed 里，把
     //    同一份 DisplayMetrics.density 改写成「屏宽px/1920」（不含档位、不含大屏补偿），
     //    两个写入者交替覆盖 → Java 侧 dp→px 的结果随时序漂移（首屏功能行/分类 chips 行间距异常，
     //    重建一次才恢复）。已于 2026-10-12 移除；全仓无任何 me.jessyan 代码引用。
-    mobileImplementation libs.biometric
-    mobileImplementation libs.zxing.android.embedded
+    // ⛔ 已随 mobile flavor 删除：`mobileImplementation libs.biometric`（仅 mobile/Biometric.java 用）
+    //    与 `mobileImplementation libs.zxing.android.embedded`（仅 mobile/ScanActivity.java 用）。
+    // ⚠ 但 **不要顺手删掉 catvod 里的 `api libs.zxing.core`** —— leanback 的 utils/QRCode.java
+    //    （推送页/配置弹窗二维码）用的是 core 里的 BarcodeFormat/EncodeHintType/MultiFormatWriter/BitMatrix，
+    //    这些类在本模块能解析**完全靠 catvod 的 api 传递**，本模块自己从未声明过 zxing-core。
     annotationProcessor libs.room.compiler
     annotationProcessor libs.eventbus.annotation.processor
     annotationProcessor libs.glide.compiler

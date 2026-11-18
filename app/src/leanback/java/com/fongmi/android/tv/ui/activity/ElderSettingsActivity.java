@@ -22,6 +22,7 @@ import com.fongmi.android.tv.ui.dialog.ConfirmDialog;
 import com.fongmi.android.tv.utils.SiteVisibility;
 import com.fongmi.android.tv.utils.ElderLock;
 import com.fongmi.android.tv.utils.ElderMode;
+import com.fongmi.android.tv.utils.LauncherCapability;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.SoundFx;
@@ -61,6 +62,7 @@ public class ElderSettingsActivity extends BaseActivity {
         mBinding.full.setOnClickListener(this::setAutoFullscreen);
         mBinding.resume.setOnClickListener(this::setAutoResume);
         mBinding.bootLive.setOnClickListener(this::setBootLive);
+        mBinding.selfCheck.setOnClickListener(view -> SelfCheckActivity.start(this));
         mBinding.sound.setOnClickListener(this::setKeySound);
         mBinding.indexSearch.setOnClickListener(this::setIndexQuickSearch);
         mBinding.blockThird.setOnClickListener(this::setBlockThird);
@@ -73,7 +75,9 @@ public class ElderSettingsActivity extends BaseActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // 从锁定页返回后同步最新的锁定状态
+        // 从锁定页 / 体检页返回后同步最新状态；同时强制重算一次「是不是默认桌面」
+        //（用户可能刚在系统页面里改掉了默认桌面）。
+        LauncherCapability.refresh(this);
         if (mBinding != null) refresh();
     }
 
@@ -91,6 +95,42 @@ public class ElderSettingsActivity extends BaseActivity {
         mBinding.siteManageText.setText(getString(R.string.site_manage_count_short, SiteVisibility.countEnabled(VodConfig.get().getRawSites()), VodConfig.get().getRawSites().size()));
         mBinding.fontText.setText(getFontName());
         mBinding.sizeText.setText((size = ResUtil.getStringArray(R.array.select_size))[PlayerSetting.getSize()]);
+        refreshSelfCheck();
+    }
+
+    /**
+     * 「启动与桌面体检」行的右侧摘要：已就绪 / 总数。
+     *
+     * <p>为什么给个数字而不是「查看」：子女帮老人装机时一眼就知道还差几项，比点进去才发现要省事。
+     * 分母是动态的，两个维度：</p>
+     * <ul>
+     *   <li>「按主页键回到看电视」在「已是默认桌面」时是空转的，不算进分母
+     *       （{@link LauncherCapability#isSelfHome}）；</li>
+     *   <li>「把看电视设为默认桌面」在<b>本包根本没声明桌面</b>时（自启树的 guard 变体）是死路，
+     *       同样不算进分母（{@link LauncherCapability#canBeHome}）—— 否则 guard 版右侧
+     *       会永久显示「差一项」，而那一项永远不可能完成。</li>
+     * </ul>
+     */
+    private void refreshSelfCheck() {
+        boolean selfHome = LauncherCapability.isSelfHome(this);
+        boolean canHome = LauncherCapability.canBeHome(this);
+        int total = 0;
+        int done = 0;
+        total++;
+        // 默认桌面形态下系统必然把本应用拉起来，「开机自动打开」这一项恒成立 ⇒ 直接算就绪。
+        // 否则长辈设置右侧会永远差一项，而那一项其实在默认桌面形态下根本关不掉。
+        if (selfHome || Setting.isBootAutostart()) done++;
+        total++;
+        if (LauncherCapability.isBatteryOk(this)) done++;
+        if (!selfHome) {
+            total++;
+            if (Setting.isHomeGuard() && LauncherCapability.isA11yOn(this)) done++;
+        }
+        if (canHome) {
+            total++;
+            if (selfHome) done++;
+        }
+        mBinding.selfCheckText.setText(getString(R.string.elder_setting_self_check_value, done, total));
     }
 
     /** 当前字号档位的名称（标准 / 大 / 特大 / 超大 / 极大）。 */

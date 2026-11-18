@@ -219,7 +219,17 @@ public class App extends Application implements Application.ActivityLifecycleCal
 
     private void pullOnWake() {
         try {
-            if (!BootSession.isWakeSession()) return;
+            boolean wake = BootSession.isWakeSession();
+            // R156：home 形态（本应用已是默认桌面）放宽「熄屏那一刻本应用在前台」这一条。
+            //   小米等机型的快速开机恢复的是**关机前的应用栈**，唤醒时前台常常不是本应用
+            //   ⇒ isWakeSession() 里 screenOffWithSelf 必然为 false ⇒ 桌面再也不会被顶回来。
+            //   桌面本来就该在亮屏后被顶回来，所以这一条对「默认桌面」形态没有意义。
+            //   ⚠ guard 形态 isSelfDefaultHome() 恒 false（manifest 无 HOME category）
+            //     ⇒ 同一个方法里天然分叉，guard 行为完全不变，不需要 BuildConfig.FLAVOR。
+            //   ⚠ isLaunchWakeSession() 仍要求「真实熄屏快照 + 待机≥10s + 距亮屏≤60s」，
+            //     不是「亮屏就拉」。
+            if (!wake && BootSession.isSelfDefaultHome(this)) wake = BootSession.isLaunchWakeSession();
+            if (!wake) return;
             if (activity != null) return; // 本应用已在前台，系统会自行恢复原页面
             boolean userExited = true;
             boolean autostart = true;

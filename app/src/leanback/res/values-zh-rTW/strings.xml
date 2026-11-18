@@ -179,8 +179,11 @@
     <string name="self_check_battery">讓電視別把看電視關掉</string>
     <string name="self_check_guard">按主頁鍵回到看電視</string>
     <string name="self_check_guard_by_home">電視桌面已經管了，不用再開</string>
+    <string name="self_check_guard_stalled">已開啟但沒在執行</string>
+    <string name="self_check_guard_repairing">正在重新連線…請稍等幾秒</string>
     <string name="self_check_boot_by_home">已經是電視預設桌面了</string>
     <string name="self_check_home">把看電視設為預設桌面（部分電視不支援）</string>
+    <string name="self_check_home_unavailable">本版本未宣告桌面，不能設為預設桌面</string>
     <string name="self_check_fix">一鍵檢查並修復</string>
     <string name="self_check_ok">已設定</string>
     <string name="self_check_todo">需要設定</string>

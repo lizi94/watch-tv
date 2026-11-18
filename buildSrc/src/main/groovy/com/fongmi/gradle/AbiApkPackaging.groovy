@@ -12,13 +12,26 @@ class AbiApkPackaging {
         configureAbis(android)
         components.onVariants(components.selector().withBuildType('release')) { variant ->
             def device = configureOutputFileNames(variant)
+            def prefix = kebab(device)
             configureFinalizer(project, android, components, variant, apkArtifact)
-            configureReleaseExport(project, variant, device)
+            configureReleaseExport(project, variant, device, prefix)
         }
     }
 
     static String otherAbi(String abi) {
         return ABI_PAIRS[abi]
+    }
+
+    /**
+     * camelCase flavor 名 → kebab-case 前缀：{@code leanbackHome → leanback-home}。
+     *
+     * <p>只用于<b>文件名前缀</b>与<b>归档目录名兜底</b>；{@code build/outputs/apk/} 下的中间目录
+     * 必须继续用 flavor 原名（AGP 自己按 flavor 原文建目录，改了会找不到产物）。
+     * 标准树的两个 flavor（{@code mobile} / {@code leanback}）不含大写字母，转换结果与原值相同，
+     * 所以这次收敛对标准树**零行为变化**。</p>
+     */
+    static String kebab(String name) {
+        return name.replaceAll(/([a-z0-9])([A-Z])/, '$1-$2').toLowerCase(Locale.ROOT)
     }
 
     private static void configureAbis(def android) {
@@ -33,9 +46,10 @@ class AbiApkPackaging {
     private static String configureOutputFileNames(def variant) {
         def flavors = variant.productFlavors.collectEntries { [(it.first): it.second] }
         def device = flavors['device'] ?: 'device'
+        def prefix = kebab(device)
         variant.outputs.each { output ->
             def abi = output.filters.find { it.filterType.name() == 'ABI' }?.identifier?.replace('-', '_') ?: 'universal'
-            output.outputFileName.set("${device}-${abi}.apk")
+            output.outputFileName.set("${prefix}-${abi}.apk")
         }
         return device
     }
@@ -61,19 +75,40 @@ class AbiApkPackaging {
         }
     }
 
-    private static void configureReleaseExport(Project project, def variant, String device) {
+    /**
+     * flavor 前缀（kebab）→ 归档子目录名（R152 / R153）。
+     *
+     * <p><b>为什么必须一 flavor 一目录</b>：本文件在 repo 与 repo-autostart 里各有一份，两边的
+     * {@code rootProject.file('../dist')} 解析到的是同一个 {@code FongMi-TV/dist} ——
+     * 谁后构建谁覆盖谁（2026-10-29 实测：分支出包把主线 dist 换成了含功能版；
+     * 2026-11-15 又一次：自启版把主线 644 覆盖成 645）。
+     * 现在两棵树的 {@code gradle.properties} 都写同一个 {@code fongmi.distDir=../dist}，
+     * 靠这里的映射表按 flavor 分子目录，四个变体各归各位，**结构性杜绝互相覆盖**。</p>
+     *
+     * <p>只列「目录名 ≠ flavor 名」的条目；其余<b>兜底用 kebab 后的 flavor 名当目录名</b>
+     * （{@code leanbackHome → leanback-home}、{@code leanbackGuard → leanback-guard} 正好就是要的名字）。
+     * 兜底比穷举安全：将来新增 {@code leanbackXxx} 时即使忘了加表，也只会落到 {@code leanback-xxx}，
+     * 不会退回同一个 dist 根目录。</p>
+     */
+    private static final Map<String, String> DIST_FOLDERS = [
+            'mobile'  : 'mobile-standard',
+            'leanback': 'leanback-standard',
+    ].asImmutable()
+
+    /**
+     * @param device flavor 原名 —— 用于定位 {@code build/outputs/apk/<flavor>/release}
+     * @param prefix kebab 前缀 —— 用于匹配产物文件名与决定归档子目录
+     */
+    private static void configureReleaseExport(Project project, def variant, String device, String prefix) {
         def taskName = "assemble${variant.name.capitalize()}"
         def apkDirectory = project.layout.buildDirectory.dir("outputs/apk/${device}/release").get().asFile
-        // ⛔ 出包目录必须可配置：本文件在 repo 与 repo-autostart 里各有一份，而两边的
-        //    rootProject.file('../dist') 解析到的是同一个 FongMi-TV/dist —— 谁后构建谁覆盖谁
-        //    （2026-10-29 实测：分支出包把主线 dist 换成了含功能版）。改由各仓 gradle.properties
-        //    的 fongmi.distDir 决定（主线 ../dist、分支 ../dist-autostart），未配置时才回退旧默认值。
-        def distDir = project.rootProject.findProperty('fongmi.distDir') ?: '../dist'
-        def target = project.rootProject.file(distDir.toString())
+        def baseDir = project.rootProject.findProperty('fongmi.distDir') ?: '../dist'
+        def folder = DIST_FOLDERS[prefix] ?: prefix
+        def target = project.rootProject.file("${baseDir}/${folder}")
         project.tasks.matching { it.name == taskName }.configureEach {
             doLast {
                 project.copy {
-                    from project.fileTree(dir: apkDirectory, include: "${device}-*.apk")
+                    from project.fileTree(dir: apkDirectory, include: "${prefix}-*.apk")
                     into target
                     eachFile { it.path = it.name }
                     includeEmptyDirs = false

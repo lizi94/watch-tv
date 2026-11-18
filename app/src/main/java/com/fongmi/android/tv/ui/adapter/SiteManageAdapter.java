@@ -11,6 +11,7 @@ import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.bean.Site;
 import com.fongmi.android.tv.databinding.AdapterSiteManageBinding;
 import com.fongmi.android.tv.utils.SiteVisibility;
+import com.fongmi.android.tv.utils.Util;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,7 +40,7 @@ public class SiteManageAdapter extends RecyclerView.Adapter<SiteManageAdapter.Vi
     }
 
     /** 电视版：背景/焦点框全部由布局里的 Ag.ListItem 提供，代码不碰。 */
-    private static final boolean LEANBACK = "leanback".equals(com.fongmi.android.tv.BuildConfig.FLAVOR);
+    private static final boolean LEANBACK = Util.isLeanback();
 
     private final List<Site> items = new ArrayList<>();
     /** 选择模式下标「使用中」的站源 key（当前锁定/生效的源）；空 = 不标。 */

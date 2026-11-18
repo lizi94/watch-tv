@@ -17,6 +17,7 @@ import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.api.config.LiveConfig;
 import com.fongmi.android.tv.utils.BootLauncher;
 import com.fongmi.android.tv.utils.BootSession;
+import com.fongmi.android.tv.utils.GuardSelfHeal;
 
 /**
  * 开机拉起界面（2026-10-29 新增，2026-10-30 / R103 收敛为「四入口之一」）。
@@ -58,9 +59,15 @@ public class BootReceiver extends BroadcastReceiver {
      *
      * <p>思路参考 aerial-tv（https://github.com/pengchujin/aerial-tv）的桌面守护：
      * 它用常驻无障碍服务持续抢占；这里刻意<b>不引入常驻服务</b>（本机内存只有 982MB），
-     * 只做开机后 30 秒内的一次性定时补偿，代价小得多。</p>
+     * 只用有限次数的定时补偿，代价小得多。</p>
+     *
+     * <p><b>R150 拉长到约 7 分半（累进 3+8+15+30+60+120+240 ≈ 476 秒）</b>：原表只到 30 秒，
+     * 而 TCL 实测「开机 08:37:42 → 本进程 08:43:01 才被创建」= <b>5 分 19 秒</b> ——
+     * 30 秒的重试窗口全程落在进程还没起来的那段时间里，等于一次都没重试（补偿形同虚设）。
+     * 拉长后仍由 {@code setting.isBootAutostart()} 与 {@code BootLauncher} 的 1 秒硬闸门约束，
+     * 不会在开机后很久突然抢屏：{@code forBoot} 内部的「界面已在前台就跳过」是最后一道闸。</p>
      */
-    private static final long[] RETRY_DELAYS = {3_000L, 8_000L, 15_000L, 30_000L};
+    private static final long[] RETRY_DELAYS = {3_000L, 8_000L, 15_000L, 30_000L, 60_000L, 120_000L, 240_000L};
     /** PendingIntent 的 requestCode 基址，用 step 偏移区分，避免几次重试互相覆盖。 */
     private static final int REQ_BASE = 0x0B07;
 
@@ -73,6 +80,21 @@ public class BootReceiver extends BroadcastReceiver {
         boolean userUnlocked = ACTION_USER_UNLOCKED.equals(action);
         boolean preheat = App.ACTION_PREHEAT.equals(action);
         if (!retry && !lockedBoot && !userUnlocked && !preheat && !isBootAction(action)) return;
+        // R150：「系统确实认为这是开机」的独立证据 —— 四个开机类 action 先打标，
+        //   首页 classifyLaunch 把它作为开机会话的**第四判据**（读取即消费、10 分钟内有效，见 BootSession）。
+        //   兜的是「广播确实送达、但原有三条判据（5 分钟窗 / 熄屏快照 / 快速开机）在个别机型上全部落空」
+        //   的缺口：TCL 实测开机到进程起来要 5 分 19 秒，单超那 5 分钟窗 19 秒就让直达整条链失效。
+        //   USER_UNLOCKED 只在开机时间窗内才算（窗外是切用户 / 重装，不是开机）。
+        //   ⚠ 必须放在各分支早退之前 —— lockedBoot / userUnlocked 分支都会提前 return。
+        if (lockedBoot || isBootAction(action)
+                || (userUnlocked && SystemClock.elapsedRealtime() <= UNLOCK_WINDOW_MS)) {
+            BootSession.markBootIntent();
+            // R150：开机是「守护最可能静默失效」的时刻 —— 无障碍绑定依赖进程存在，开机早期
+            //   进程还没起来时绑失败，系统之后不再重试（TCL 实测：设置值全对、app=null）。
+            //   这里试一次自愈：仅当「设置里有本服务、但 GuardState 说没绑上」时才强制重绑；
+            //   未授权 WRITE_SECURE_SETTINGS / 已绑上 / 用户没开过 —— 三种情况都是零动作。
+            GuardSelfHeal.ensure(context, "开机广播 " + action);
+        }
         // ★2026-10-30（R100）实测：TCL 把 BOOT_COMPLETED 拖到开机约 79~81 秒才处理完，
         //   「桌面 11.5 秒就绪、本进程 28.6 秒才被无障碍绑定创建、界面 41 秒才显示」。
         //   所以补一条更早的路径：LOCKED_BOOT_COMPLETED（directBootAware，开机十几秒就发）
@@ -91,8 +113,10 @@ public class BootReceiver extends BroadcastReceiver {
             return;
         }
         if (preheat) {
-            // 进程已被系统绑定媒体库服务拉起，趁这次机会把界面顶上（窗口比解锁窄，见 BootLauncher 注释）
-            if (SystemClock.elapsedRealtime() > BootLauncher.BOOT_WINDOW_MS) return;
+            // 进程已被系统绑定媒体库服务拉起，趁这次机会把界面顶上。
+            // R156：判据从「elapsedRealtime ≤ 120 秒」换成「有开机证据」（见 BootLauncher#hasBootEvidence）。
+            //   同 RevivalListener：TCL 进程 5 分 19 秒才起，任何 120 秒窗口都必然落空。
+            if (!BootLauncher.hasBootEvidence()) return;
             BootLauncher.forBoot(context, "媒体库绑定");
             return;
         }

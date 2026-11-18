@@ -38,6 +38,7 @@ import com.fongmi.android.tv.player.media.ArtworkBitmapLoader;
 import com.fongmi.android.tv.player.media.PlaySpec;
 import com.fongmi.android.tv.server.Server;
 import com.fongmi.android.tv.utils.Task;
+import com.fongmi.android.tv.utils.Util;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -125,13 +126,16 @@ public class PlaybackService extends MediaLibraryService implements MediaLibrary
      * 由电视端的 {@code BootReceiver} 继续走统一的开机拉起流程（含时间窗与开关判断）。</p>
      *
      * <p><b>为什么手机端不发</b>：{@code BootReceiver} 只存在于 leanback 源集，手机端没有接收者。
-     * 用 {@code BuildConfig.FLAVOR} 在编译期就排除掉，避免每次播放都发一条没人收的广播。</p>
+     * 用 {@link Util#isLeanback()} 在编译期就排除掉，避免每次播放都发一条没人收的广播。
+     * ⛔ R153：原先这里写的是 {@code "leanback".equals(BuildConfig.FLAVOR)}，拆 flavor 后
+     * （{@code leanbackHome}/{@code leanbackGuard}）会恒为 false ⇒ 预热广播静默失效 ⇒ 少一条拉起链路。
+     * 已统一收口到 {@code Util.isLeanback()} 的前缀匹配。</p>
      *
      * <p><b>为什么加 try/catch</b>：本方法在 {@code onCreate} 里调用，任何异常都会导致整个播放服务
      * 起不来（用户点播放直接失败）。广播只是「锦上添花」的副产物，绝不能让它反噬主流程。</p>
      */
     private void notifyBootPreheat() {
-        if (!"leanback".equals(BuildConfig.FLAVOR)) return;
+        if (!Util.isLeanback()) return;
         try {
             sendBroadcast(new Intent(App.ACTION_PREHEAT).setPackage(getPackageName()));
             Log.i(TAG, "已发出开机预热广播（媒体库服务被绑定）");

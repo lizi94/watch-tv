@@ -33,8 +33,12 @@ import com.fongmi.android.tv.ui.activity.HomeActivity;
  *
  * <p>⛔ 但 R124 起，本类会打<b>一个</b>标记：{@code forBoot} 打 {@code EXTRA_BOOT_LAUNCH}
  * （这是「系统替老人打开」）、{@code forGuard} 打 {@code EXTRA_GUARD_PULL}
- * （这是「用户按了主页键，守护把他拉回来」）。这两个标记都不是「带着别的事来」，
- * 但后者必须让首页知道「用户只想回首页」⇒ 不该触发续播。</p>
+ * （这是「用户按了主页键，守护把他拉回来」）。</p>
+ *
+ * <p><b>R153 改义</b>：{@code EXTRA_GUARD_PULL} 原先用于「守护拉回不触发续播」，现在反过来 ——
+ * 两条链路都算「普通启动」，都会触发开机直达（点播续播 / 直播直达）。
+ * 既然守护已经把老人抢回前台，就顺手把上次那部剧续上；停在首页让他再找一遍，
+ * 正是「拉回」这个设计要消灭的步骤。两个标记的区别现在只剩「这次算不算开机会话」。</p>
  */
 public final class BootLauncher {
 
@@ -58,6 +62,35 @@ public final class BootLauncher {
     private static long lastLaunchAt;
 
     private BootLauncher() {
+    }
+
+    /**
+     * R156：本次进程是否**有证据**说明「它是被开机这件事拉起来的」。
+     *
+     * <p><b>为什么需要它</b>：原来两条豁免通道（通知监听被系统绑定、媒体库被系统绑定）用的是
+     * {@link #BOOT_WINDOW_MS}（120 秒）这个 <b>elapsedRealtime 时间窗</b>。而 TCL 实测
+     * 「开机 08:37:42 → 本进程 08:43:01 才被创建」= <b>5 分 19 秒</b>（见 {@code BootReceiver} 注释），
+     * 于是那两处判断<b>永远</b>命中 return —— 这两条本来最有希望的通道在 TCL 上从未生效过。</p>
+     *
+     * <p><b>为什么改成「证据」而不是「把窗口放宽」</b>：任何以 elapsedRealtime 起算的窗口，
+     * 放宽多少都只是把「什么时候开始误抢屏」往后推；而证据判据不会 —— 运行期重连（切换通知使用权、
+     * 服务被系统清理后重连、用户点播放导致媒体库被绑定）三条证据全都没有，天然保持「只保活、不抢屏」。</p>
+     *
+     * <p>三条证据（任一成立即可）：
+     * ① {@link BootSession#inBootPhase()} —— 本次进程是在开机头 5 分钟内启动的；
+     * ② {@link BootSession#peekBootIntent()} —— 开机类广播确实送达过（墙钟 10 分钟内有效，
+     *    只读窥探、不消费，不会把首页要用的证据偷走）；
+     * ③ {@link BootSession#isQuickBootWake()} —— 快速开机/待机唤醒标记。</p>
+     */
+    public static boolean hasBootEvidence() {
+        try {
+            return BootSession.inBootPhase()
+                    || BootSession.peekBootIntent()
+                    || BootSession.isQuickBootWake();
+        } catch (Throwable t) {
+            // 解锁前凭据加密存储不可读等异常：按「无证据」处理，宁可不抢屏
+            return false;
+        }
     }
 
     /**
@@ -103,8 +136,9 @@ public final class BootLauncher {
         try {
             Intent i = new Intent(context, HomeActivity.class);
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            // R124：告诉首页这次是「谁拉起的」—— 系统/自启拉起 vs 守护拉回。
-            //   前者是「开机」语义（可续播），后者是「用户按主页键回来」（不可续播）。
+            // R124：告诉首页这次是「谁拉起的」。
+            //   R153：两者都算「普通启动」（都会续播），区别只在「算不算开机会话」——
+            //   只有 forBoot 会置 mBootSession / 拿开机门控宽限，forGuard 不拿宽限但可直接续播。
             i.putExtra(boot ? HomeActivity.EXTRA_BOOT_LAUNCH : HomeActivity.EXTRA_GUARD_PULL, true);
             context.startActivity(i);
             Log.i(TAG, "已拉起界面（" + reason + "）");

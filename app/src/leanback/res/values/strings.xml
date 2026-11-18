@@ -180,8 +180,11 @@
     <string name="self_check_battery">Keep the TV from closing it</string>
     <string name="self_check_guard">Home button brings it back</string>
     <string name="self_check_guard_by_home">Handled by the TV launcher, no need to turn on</string>
+    <string name="self_check_guard_stalled">Turned on but not running</string>
+    <string name="self_check_guard_repairing">Reconnecting… please wait a few seconds</string>
     <string name="self_check_boot_by_home">Already the default launcher</string>
     <string name="self_check_home">Make it the default launcher (not all TVs)</string>
+    <string name="self_check_home_unavailable">This version doesn\'t declare a launcher, so it can\'t be set as the default</string>
     <string name="self_check_fix">Check and fix</string>
     <string name="self_check_ok">Done</string>
     <string name="self_check_todo">Not set</string>

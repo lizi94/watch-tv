@@ -31,6 +31,8 @@ public final class LauncherInfo {
     private static final long TTL_MS = 3_000L;
 
     private static volatile boolean selfHome;
+    /** 本包在 Manifest 里是否声明了 MAIN + HOME（R153：区分 leanbackHome / leanbackGuard 的唯一判据）。 */
+    private static volatile boolean selfCanBeHome;
     private static volatile Set<String> others = Collections.emptySet();
     private static volatile long at;
 
@@ -42,6 +44,7 @@ public final class LauncherInfo {
         if (context == null) return;
         Context app = context.getApplicationContext();
         boolean home = false;
+        boolean canBeHome = false;
         Set<String> set = new LinkedHashSet<>();
         try {
             PackageManager pm = app.getPackageManager();
@@ -52,7 +55,15 @@ public final class LauncherInfo {
                 for (ResolveInfo info : all) {
                     if (info == null || info.activityInfo == null) continue;
                     String pkg = info.activityInfo.packageName;
-                    if (pkg == null || pkg.isEmpty() || pkg.equals(self)) continue;
+                    if (pkg == null || pkg.isEmpty()) continue;
+                    if (pkg.equals(self)) {
+                        // 自己出现在 MAIN+HOME 的查询结果里 ⇒ 本包确实声明了桌面。
+                        // 这是**唯一**能在运行时可靠区分 home 版与 guard 版的判据：
+                        // BuildConfig.FLAVOR 在 R8 之后读不出用途，而「当前是不是默认桌面」
+                        // 回答的是另一个问题（guard 版永远不可能是默认桌面）。
+                        canBeHome = true;
+                        continue;
+                    }
                     set.add(pkg);
                 }
             }
@@ -64,8 +75,11 @@ public final class LauncherInfo {
         } catch (Throwable ignored) {
             // 查询失败：一律按「不是默认桌面」处理 —— 这样返回键保留原有退出语义，
             // 最坏情况只是「明明是桌面却能退出」，绝不会变成「退不出去」。
+            // canBeHome 同样保守留 false（= 不引导用户去设默认桌面）：少引导一次只是麻烦，
+            // 把 guard 版用户送进一个根本找不到自己的系统页面才是真的困惑。
         }
         selfHome = home;
+        selfCanBeHome = canBeHome;
         others = Collections.unmodifiableSet(set);
         at = SystemClock.elapsedRealtime();
         // R123 取证用（真机 adb logcat -s LauncherInfo）：只在「自己是默认桌面、却一个别的桌面都没查到」
@@ -83,6 +97,26 @@ public final class LauncherInfo {
     public static boolean isSelfHome(Context context) {
         if (SystemClock.elapsedRealtime() - at > TTL_MS) refresh(context);
         return selfHome;
+    }
+
+    /**
+     * 本包在 Manifest 里是否声明了桌面（= 用户能不能把它设为默认桌面）。
+     *
+     * <p><b>为什么需要它</b>（R153）：自启树拆成两个变体后，{@code leanbackGuard} 的 Manifest 里
+     * <b>没有任何 activity 声明 MAIN + HOME</b> —— 它在系统「默认桌面」选择列表里根本不会出现。
+     * 体检页第 4 行「把看电视设为默认桌面」对这种包是死路：点进去只会看到一个没有自己的列表。
+     * {@code leanbackHome} 则相反，它是靠这一行把自己变成桌面的。</p>
+     *
+     * <p>判据 = 「自己是否出现在 {@code queryIntentActivities(MAIN + HOME)} 的结果里」，
+     * 复用 {@link #refresh} 里<b>同一次查询</b>，零额外开销。这也是运行时的真实答案：
+     * 比在代码里按 flavor 名判断可靠（R8 之后 flavor 名只剩常量折叠的份）。</p>
+     *
+     * <p>⚠ 查询抛异常时保守返回 false —— 少引导一次只是麻烦，把 guard 版用户送进一个
+     * 找不到自己的系统页面才是真的困惑。</p>
+     */
+    public static boolean canBeHome(Context context) {
+        if (at == 0 || SystemClock.elapsedRealtime() - at > TTL_MS) refresh(context);
+        return selfCanBeHome;
     }
 
     /** 本机除自己以外的 HOME 候选包名（安全阀判据的数据源）。 */

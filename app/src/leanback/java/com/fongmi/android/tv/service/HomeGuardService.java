@@ -12,6 +12,7 @@ import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.utils.BootLauncher;
 import com.fongmi.android.tv.utils.BootSession;
 import com.fongmi.android.tv.utils.DesktopResolver;
+import com.fongmi.android.tv.utils.GuardState;
 
 /**
  * 桌面守护：按主页键回到电视桌面时，自动把「看电视」切回前台（2026-10-29 新增）。
@@ -39,9 +40,18 @@ import com.fongmi.android.tv.utils.DesktopResolver;
  * <p><b>2026-11-08（R137）抢屏修复 + 唤醒直达</b>：修复「打开其他应用被抢屏拉回」——
  * 兜底模式下桌面候选集合混入误声明 HOME 的 IPTV/市场类应用，用户点开就被当成
  * 「回到桌面」拉回。新增<b>窗口来源判定</b>（见 {@link #lastWindowPkg}）：只有
- * 「本应用/其他应用 → 桌面」的切换才算按主页键；同包驻留事件、桌面 → 应用 的切换一律放行。
- * 另外待机唤醒会话期间拉回升级为 {@code BootLauncher.forBoot}（允许开机直达），
- * 平时仍为 {@code forGuard}（不触发续播）。</p>
+ * 「本应用/其他应用 → 桌面」的切换才算按主页键；同包驻留事件、桌面 → 应用 的切换一律放行。</p>
+ *
+ * <p><b>R150 / R153 两次改义，现在拉回的定性见 {@link #isBootContext()}</b>：</p>
+ * <ul>
+ *   <li>R150：开机语境（待机唤醒 / 快速开机 / 开机窗内未用过 / 广播送达过）升级为
+ *       {@code forBoot}（受「开机自启动」开关门控）。修的是「真冷启动 + 固件扣启动」
+ *       机型上 forGuard 抢在 BOOT_COMPLETED 之前拉起、随后 forBoot 又被「界面已在」短路
+ *       ⇒ 开机直达从未触发。</li>
+ *   <li>R153：<b>平时</b>的 forGuard 拉回也直达 —— {@code EXTRA_GUARD_PULL} 不再被首页
+ *       {@code isPlainLaunch} 排除（用户拍板「拉回即直达点播或直播」）。
+ *       与 forBoot 的区别只剩「算不算开机会话 / 吃不吃开机门控宽限」。</li>
+ * </ul>
  */
 public class HomeGuardService extends AccessibilityService {
 
@@ -135,6 +145,54 @@ public class HomeGuardService extends AccessibilityService {
     }
 
     /**
+     * 「此刻是不是开机语境」（R150 摘回，修「真冷启动固件扣启动机型直达从未触发」）。
+     *
+     * <p><b>为什么不能只看 {@link BootSession#isWakeSession()}</b>：它要求「熄屏时本应用在前台 +
+     * 待机满 10 秒 + 已亮屏且新鲜」四判据，真冷启动（开机动画后第一次上电）必然全落空 ——
+     * 于是真冷启动时「连接拉起 / 桌面拉回」被定性成 forGuard 抢先，之后到达的 BOOT_COMPLETED
+     * forBoot 又被「界面已在」短路，开机直达从未触发。</p>
+     *
+     * <p>判据按可信度从高到低：</p>
+     * <ol>
+     *   <li>待机唤醒会话 / 快速开机标记 —— 现有语义，直接算开机语境；</li>
+     *   <li>本应用界面已显示过（{@link BootSession#hasSelfShown()}）或当前就在前台 ——
+     *       <b>一票否决</b>：界面出现过说明进程已经被用过，此刻的拉回属于运行期守护语义，
+     *       不能吃开机直达；</li>
+     *   <li>开机 5 分钟窗内（进程活着且从未打开过本应用），或 BootReceiver 确实广播过开机
+     *       （{@link BootSession#peekBootIntent()}，只读窥探不清标记）—— 窗口内的拉起/拉回
+     *       大概率是「固件扣启动 + a11y 最早绑定」的开机链路，升级 forBoot。</li>
+     * </ol>
+     *
+     * <p>⚠ 第 3 条的取舍：开机窗内、本应用从未打开过时，用户从其他应用按主页键也会被
+     * 当成开机语境（受「开机自启动」开关门控）—— 已定性为可接受。第 2 条的
+     * hasSelfShown 一票否决保证「用过的进程」永不误判。</p>
+     */
+    private static boolean isBootContext() {
+        if (BootSession.isWakeSession() || BootSession.isQuickBootWake()) return true;
+        if (App.activity() != null || BootSession.hasSelfShown()) return false;
+        return SystemClock.elapsedRealtime() <= BootSession.BOOT_PHASE_MS || BootSession.peekBootIntent();
+    }
+
+    /**
+     * R156：只认「真开机」的窄判据 —— 专供「用户主动退出」那道门放行。
+     *
+     * <p><b>为什么不能复用 {@link #isBootContext()}</b>：那个判据把
+     * {@code isWakeSession()} / {@code isQuickBootWake()} 也算开机语境，而这里要回答的是
+     * 「要不要推翻用户主动退出的意愿」—— 老人按过退出后只是待机，醒来必须继续尊重他的退出；
+     * 只有「电视真的重启过」才该重新开始。混用会造出「退出 → 关电视 → 一开电视又被弹进去」这个新 bug。</p>
+     *
+     * <p>两条证据：① 本次进程在开机头 5 分钟内启动（{@code inBootPhase()}）；
+     * ② 开机类广播确实送达过（{@code peekBootIntent()}，墙钟 10 分钟内有效，只读不消费）。</p>
+     */
+    private static boolean isRealBootContext() {
+        try {
+            return BootSession.inBootPhase() || BootSession.peekBootIntent();
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    /**
      * 「服务一连上就主动拉起一次」。
      *
      * <p><b>为什么需要</b>（2026-10-30 实测）：开机时本服务被系统绑定、进程被创建是开机后 28.6 秒
@@ -151,14 +209,22 @@ public class HomeGuardService extends AccessibilityService {
         public void run() {
             try {
                 if (!Setting.isHomeGuard()) return;
-                if (Setting.isUserExited()) return;
+                // R156：解开「主动退出 → 重启 → 永不被拉回」的死锁。
+                //   死锁成因：user_exited 持久化在偏好里，而它的两个清零点（BootLauncher.start 与
+                //   HomeActivity.initView）都在「已经拉起来之后」；本行却在拉起来之前就把路堵死。
+                //   于是老人只要按过一次「退出连按」，重启后守护永久哑火、且永远清不掉这个标记。
+                //   ⚠ 只对「真开机」放行（isRealBootContext：进程在开机头 5 分钟内启动 / 开机广播标记），
+                //   待机唤醒不放行 —— 否则会变成「退出 → 关电视 → 一开电视又被弹进去」。
+                if (Setting.isUserExited() && !isRealBootContext()) return;
                 // 放行期内（用户连按两次主页键想去用桌面）不抢
                 if (SystemClock.elapsedRealtime() < graceUntil) return;
                 if (App.activity() != null) return;
                 markSelfPull();
-                // 唤醒会话期间的拉起属于「开机直达」语义（R137）：允许进直播/续播，
-                // 平时按主页键拉回仍走 forGuard（打 EXTRA_GUARD_PULL，不触发续播）。
-                if (BootSession.isWakeSession()) BootLauncher.forBoot(HomeGuardService.this, "无障碍连接·待机唤醒");
+                // R150：开机语境（真冷启动 + 固件扣启动）下的拉起属于「开机直达」语义，
+                // 升级为 forBoot（允许直达，受「开机自启动」开关门控）。
+                // R153：开机语境之外的平时拉回也直达（EXTRA_GUARD_PULL 不再阻断续播），
+                //   区别只在「吃不吃开机门控宽限 / 算不算开机会话」。
+                if (isBootContext()) BootLauncher.forBoot(HomeGuardService.this, "无障碍连接·开机语境");
                 else BootLauncher.forGuard(HomeGuardService.this, "无障碍连接");
             } catch (Throwable t) {
                 Log.w(TAG, "连接后主动拉起失败", t);
@@ -169,6 +235,12 @@ public class HomeGuardService extends AccessibilityService {
     @Override
     protected void onServiceConnected() {
         super.onServiceConnected();
+        // R150：这是**唯一**能证明「系统真的把服务绑上了进程」的时刻 —— 体检页与自愈链都以它为准。
+        GuardState.onConnected();
+        // R154 / BUG-001：把「用户确实开通过守护」这件事持久化下来。
+        // 这是 GuardSelfHeal 区分「用户主动关闭」与「系统把服务整条摘掉」的唯一依据 ——
+        // 没有它，force-stop / 固件「一键清理」之后自愈会误判成「用户从没开过」而永久放弃。
+        GuardState.markEverOn();
         // 每次连接（含每次开机）重算一次桌面包名：用户可能刚装了第三方桌面，也可能刚做过固件升级
         DesktopResolver.refresh(this);
         Log.i(TAG, "桌面守护已连接");
@@ -179,6 +251,9 @@ public class HomeGuardService extends AccessibilityService {
 
     @Override
     public void onDestroy() {
+        // R150：服务被解绑（用户关开关 / 系统回收 / 服务重启）—— 状态归零，
+        // 下一次 ensure() 才会认为「设置里有但没绑上」并强制重绑。
+        GuardState.onDisconnected();
         handler.removeCallbacks(pullBackOnConnect);
         super.onDestroy();
     }
@@ -234,10 +309,11 @@ public class HomeGuardService extends AccessibilityService {
             Log.i(TAG, "10 秒内第二次回到桌面，放行 " + (GRACE_MS / 1000) + " 秒");
             return;
         }
-        // ③ 第一次：老人误按了主页键，切回来。唤醒会话期间升级为 forBoot（允许直达），
-        //    平时仍是 forGuard（EXTRA_GUARD_PULL，首页不触发续播）。
+        // ③ 第一次：老人误按了主页键，切回来。开机语境（真冷启动 + 固件扣启动下桌面事件
+        //    先于本应用界面出现）升级为 forBoot（允许直达）；
+        //    R153：平时走 forGuard 也直达（EXTRA_GUARD_PULL 不再阻断续播）。
         markSelfPull();
-        if (BootSession.isWakeSession()) BootLauncher.forBoot(this, "回桌面·待机唤醒");
+        if (isBootContext()) BootLauncher.forBoot(this, "回桌面·开机语境");
         else BootLauncher.forGuard(this, "回桌面");
     }
 
