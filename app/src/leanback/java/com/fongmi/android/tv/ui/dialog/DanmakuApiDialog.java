@@ -49,7 +49,7 @@ public class DanmakuApiDialog extends BaseAlertDialog {
         String text;
         binding.text.setText(text = DanmakuSetting.getEffectiveApiUrl());
         binding.text.setSelection(TextUtils.isEmpty(text) ? 0 : text.length());
-        binding.code.setImageBitmap(QRCode.getBitmap(Server.get().getAddress(4), 200, 0));
+        binding.code.setImageBitmap(QRCode.getBitmap(requireContext(), Server.get().getAddress(4), 200, 0));
         binding.info.setText(ResUtil.getString(R.string.push_info, Server.get().getAddress()).replace("\uff0c", "\n"));
         // R128：首焦点给输入框（主操作），理由同 ConfigDialog。
         binding.text.requestFocus();

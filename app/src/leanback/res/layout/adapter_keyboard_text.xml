@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- R157：下面的 ag_key_size(80dp) 只是「第一帧的占位值」——KeyboardAdapter#onBindViewHolder
+     每次都会用 CustomKeyboard 算出的 px 覆盖 lp.width/lp.height，改这个令牌对键盘没有任何效果。
+     键边长由屏幕宽高求解（见 CustomKeyboard#applyKeySize），档位通过 textSize(@dimen/ag_text_body) 体现。 -->
 <com.google.android.material.textview.MaterialTextView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/text"

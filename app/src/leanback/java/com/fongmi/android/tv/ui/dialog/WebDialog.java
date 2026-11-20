@@ -35,8 +35,11 @@ public class WebDialog {
 
     private void initDialog() {
         WindowManager.LayoutParams params = dialog.getWindow().getAttributes();
-        params.height = (int) (ResUtil.getScreenHeight() * 0.8f);
-        params.width = (int) (ResUtil.getScreenWidth() * 0.8f);
+        // R157：原来用无参 getScreenHeight()/getScreenWidth() —— 走 App.get()，内部靠 isLand(App)
+        //   判横竖屏；App 的 orientation 不跟随 Activity 的 sensorLandscape，一旦判成竖屏就返回短边，
+        //   弹窗只剩 0.8×1080=864 宽（应 1536）。改用弹窗自己的 Context（= Activity 侧）。
+        params.height = (int) (ResUtil.getScreenHeight(dialog.getContext()) * 0.8f);
+        params.width = (int) (ResUtil.getScreenWidth(dialog.getContext()) * 0.8f);
         dialog.getWindow().setAttributes(params);
         dialog.show();
     }

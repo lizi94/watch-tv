@@ -97,7 +97,7 @@ public class ConfigDialog extends BaseAlertDialog {
         binding.text.setText(url = getUrl());
         binding.text.setSelection(TextUtils.isEmpty(url) ? 0 : url.length());
         binding.positive.setText(edit ? R.string.dialog_edit : R.string.dialog_positive);
-        binding.code.setImageBitmap(QRCode.getBitmap(Server.get().getAddress(4), 200, 0));
+        binding.code.setImageBitmap(QRCode.getBitmap(requireContext(), Server.get().getAddress(4), 200, 0));
         binding.info.setText(ResUtil.getString(R.string.push_info, Server.get().getAddress()).replace("\uff0c", "\n"));
         // R128：首焦点给 URL 输入框（主操作）。原先落在 info（可聚焦的提示文字）上，
         //   而 info 没有焦点态背景 ⇒ 用户看不到焦点在哪，还要多按一次「下」才能输入。

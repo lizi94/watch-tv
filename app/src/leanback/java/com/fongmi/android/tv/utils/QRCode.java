@@ -1,10 +1,12 @@
 package com.fongmi.android.tv.utils;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 
+import com.fongmi.android.tv.Product;
 import com.fongmi.android.tv.R;
 
 import com.google.zxing.BarcodeFormat;
@@ -23,9 +25,20 @@ public class QRCode {
     //   （原来是 Color.rgb(0x22,0x25,0x2A)，值与 ag_text 一模一样，只是没走令牌）。
     //   不放在 static final 里：类加载时机早于 App 初始化时会取不到资源。
 
-    public static Bitmap getBitmap(String content, int size, int margin) {
+    /**
+     * R157：用 <b>Activity 侧</b> density 换算尺寸，供界面直接调用。
+     *
+     * <p>原实现走无参 {@code ResUtil.dp2px}（Application 侧，不随字号档位缩放），位图恒为固定 px，
+     * 而宿主 ImageView 是 250dp / 180dp —— 档位 4 时被放大到 2 倍插值，二维码发虚、老人扫不出来。</p>
+     */
+    public static Bitmap getBitmap(Context context, String content, int sizeDp, int margin) {
+        return renderBitmap(content, Product.gap(context, sizeDp), margin);
+    }
+
+    /** @param sizePx 位图边长（<b>像素</b>，不再二次换算）。 */
+    private static Bitmap renderBitmap(String content, int sizePx, int margin) {
         try {
-            BitMatrix matrix = encode(content, size, margin);
+            BitMatrix matrix = encode(content, sizePx, margin);
             int quietZone = detectQuietZone(matrix);
             int finderSize = detectFinderPx(matrix, quietZone);
             return render(matrix, ResUtil.getColor(R.color.ag_text), quietZone, finderSize);
@@ -34,11 +47,11 @@ public class QRCode {
         }
     }
 
-    private static BitMatrix encode(String content, int size, int margin) throws Exception {
+    private static BitMatrix encode(String content, int sizePx, int margin) throws Exception {
         Map<EncodeHintType, Object> hints = new EnumMap<>(EncodeHintType.class);
         hints.put(EncodeHintType.CHARACTER_SET, "UTF-8");
         hints.put(EncodeHintType.MARGIN, margin);
-        return new MultiFormatWriter().encode(content, BarcodeFormat.QR_CODE, ResUtil.dp2px(size), ResUtil.dp2px(size), hints);
+        return new MultiFormatWriter().encode(content, BarcodeFormat.QR_CODE, sizePx, sizePx, hints);
     }
 
     private static int detectQuietZone(BitMatrix matrix) {

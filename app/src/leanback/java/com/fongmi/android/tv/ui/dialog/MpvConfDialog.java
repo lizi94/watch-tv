@@ -39,7 +39,7 @@ public class MpvConfDialog extends BaseAlertDialog {
     @Override
     protected void initView() {
         setText(MpvConfigFile.read());
-        binding.code.setImageBitmap(QRCode.getBitmap(Server.get().getAddress(4), 200, 0));
+        binding.code.setImageBitmap(QRCode.getBitmap(requireContext(), Server.get().getAddress(4), 200, 0));
     }
 
     @Override

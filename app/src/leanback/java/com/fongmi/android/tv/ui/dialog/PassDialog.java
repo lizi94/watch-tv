@@ -13,9 +13,9 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.viewbinding.ViewBinding;
 
+import com.fongmi.android.tv.Product;
 import com.fongmi.android.tv.databinding.DialogPassBinding;
 import com.fongmi.android.tv.impl.PassListener;
-import com.fongmi.android.tv.utils.ResUtil;
 
 public class PassDialog extends BaseBottomSheetDialog {
 
@@ -55,6 +55,8 @@ public class PassDialog extends BaseBottomSheetDialog {
     @Override
     public void onResume() {
         super.onResume();
-        getDialog().getWindow().setLayout(ResUtil.dp2px(250), -1);
+        // R157：原来走 ResUtil.dp2px(250)（Application 侧，不随档位缩放），档位 4 时内部
+        //   ag_text_body 已 48px，弹窗还钉在 250px 宽，口令框被挤成一条。改 Product.gap 走 Activity 侧。
+        getDialog().getWindow().setLayout(Product.gap(requireContext(), 250), -1);
     }
 }

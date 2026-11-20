@@ -7,35 +7,45 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.databinding.ActivitySearchBinding;
-import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.ui.adapter.KeyboardAdapter;
 
 public class CustomKeyboard implements KeyboardAdapter.OnClickListener {
 
-    /** 与布局 `app:spanCount="7"` 保持一致。 */
-    private static final int SPAN_COUNT = 7;
+    /** 与布局 `app:spanCount="8"` 保持一致。R157：7 → 8。 */
+    private static final int SPAN_COUNT = 8;
     /**
-     * 单键边长的「字号档位曲线」（dp，对应档位 0..4）。
+     * 求解键边长时统一按「两种键盘里最多的行数」计算，与当前键盘的实际行数无关。
      *
-     * <p>density 已含「字号倍率 × 大屏补偿」，所以曲线的 dp 值随档位递减，
-     * 让键的<b>物理像素边长</b>稳定在约 110~125px：既比原来的固定 80dp（96px）大，
-     * 又保证 7 行在最大档位下仍能完整显示 —— 原来固定 80dp 时键盘块 48+6×80
-     * 在档位 2 起就会顶出屏幕，末行被裁掉。</p>
-     *
-     * <p>档位 → dp × 倍率 ≈ 物理边长：档0 104×1.2≈125px、档1 88×1.4≈123px、
-     * 档2 78×1.6≈125px、档3 68×1.8≈122px、档4 60×2.0≈120px（空间不足时统一按比例再缩）。
-     * 键上的字母仍是 sp，照样随档位线性放大，「字更大」的诉求不受影响。</p>
+     * <p>R157 之前行数直接取自 {@code adapter.getItemCount()}：英文 7 图标 + 36 = 43 项要 7 行、
+     * 注音 7 图标 + 47 = 54 项要 8 行 —— 点一次中/英，行数 7↔8，键边长跟着掉 13%
+     * （实测 1080p/28″：125px ↔ 109px），这就是「切换键盘时键盘布局样式变了」的真因。
+     * 改成常量后两种键盘共用同一组分母，切换时键边长逐像素不变。</p>
      */
-    private static final int[] KEY_CURVE_DP = {104, 88, 78, 68, 60};
-    /** 单键最小边长（dp）兜底，正常不会生效。 */
-    private static final int MIN_KEY_DP = 56;
+    private static final int NOMINAL_ROWS = 7;
+    /**
+     * 单键边长上限（dp），只作超宽屏天花；正常 1080p/4K 都由宽度或高度夹取决定。
+     *
+     * <p>R157 删掉了原来的 {@code KEY_CURVE_DP = {104, 88, 78, 68, 60}} 递减曲线 —— 那条曲线是
+     * <b>死逻辑</b>：它恒大于 {@code byHeight}，{@code Math.min} 永远取后者的值，也就是说
+     * 「字号档位」从未真正参与过键的尺寸计算；真正决定大小的是行数与页面留白，
+     * 而这两者都随档位反向变化，于是档位越高键越小（1080p 实测 125 → 112）。</p>
+     *
+     * <p>现口径：<b>键边长由屏幕宽高决定，档位通过键内的字体现</b>
+     * （{@code ag_text_body} 仍是 sp，照样随档位线性放大：1080p 上 29px → 48px，+66%）。</p>
+     */
+    private static final int MAX_KEY_DP = 104;
     /** 键间横/纵向间距与键边长的比例（= 原 8dp / 104dp）：间距与键同比，整块键盘缩放时比例恒定。 */
     private static final float SPACING_RATIO = 8f / 104f;
     /** 图标键里图标边长与键边长的比例（= 原 40dp / 104dp）：图标也必须与键同比，否则键变小时图标会撑满整键。 */
     private static final float GLYPH_RATIO = 40f / 104f;
-    /** 屏幕高度里不属于键盘的部分：页上下 padding(24dp×2) + 顶部一行(@id/keyword 固定 56dp) + 键盘上边距(16dp)。
-     *  顶部一行原由 56dp 的麦克风图标撑起，语音功能移除后改由 @id/keyword 自己声明 56dp，行高与预留值保持不变。 */
-    private static final int RESERVE_DP = 24 * 2 + 56 + 16;
+    /** 屏幕高度里不属于键盘的部分：页上下 padding(16dp×2) + 顶部一行(@id/keyword 固定 56dp) + 键盘上边距(8dp)。
+     *  <p>R157：24dp/16dp → 16dp/8dp。这组留白本身也随档位线性放大（px(96) 在档位 0/4 是 115px/192px），
+     *  留白多占一分、键盘就少一分 —— 收紧后 1080p 上键盘可用高度不再随档位缩水，键边长得以恒定。
+     *  顶部一行原由 56dp 的麦克风图标撑起，语音功能移除后改由 @id/keyword 自己声明 56dp。</p>
+     *  ⚠ 必须与 activity_search.xml 的 padding / layout_marginTop 同步（静态断言 A4 校验）。 */
+    private static final int RESERVE_DP = 16 * 2 + 56 + 8;
+    /** 页面左右 padding（dp）——算「半屏宽」上限时先扣掉，免得键盘比左列真实可用宽度还宽。 */
+    private static final int PAGE_PADDING_DP = 16;
     /** 键盘左侧列最宽占屏宽的比例，给右侧热词/历史留位置。 */
     private static final float COLUMN_WIDTH_RATIO = 0.5f;
 
@@ -90,9 +100,7 @@ public class CustomKeyboard implements KeyboardAdapter.OnClickListener {
         return Math.round(dp * density());
     }
 
-    private int tier() {
-        return Math.max(0, Math.min(KEY_CURVE_DP.length - 1, Setting.getFontSize()));
-    }
+    // R157：原 tier()（读 Setting.getFontSize() 去查递减曲线）已删除 —— 键边长不再依赖档位。
 
     /** 布局未完成时的估算：可用高度 ≈ 屏高 − 页上下 padding − 顶部一行 − 键盘上边距。 */
     private int availFromScreen() {
@@ -120,11 +128,16 @@ public class CustomKeyboard implements KeyboardAdapter.OnClickListener {
      */
     private void applyKeySize(int avail) {
         if (adapter == null || adapter.getItemCount() == 0 || avail <= 0) return;
+        // 真实行数：只用于下面的防溢出兜底，不参与尺寸求解（否则切换键盘就会改尺寸）
         int rows = (adapter.getItemCount() + SPAN_COUNT - 1) / SPAN_COUNT;
-        // 整块高 = rows*k + (rows-1)*k*ratio = k*(rows + (rows-1)*ratio)
-        float byHeight = avail / (rows + (rows - 1) * SPACING_RATIO);
-        float byWidth = screenWidth() * COLUMN_WIDTH_RATIO / (SPAN_COUNT + (SPAN_COUNT - 1) * SPACING_RATIO);
-        int want = Math.max(px(KEY_CURVE_DP[tier()]), px(MIN_KEY_DP));
+        // 求解用「名义行数」与「真实行数」的较大者：常态恒为 NOMINAL_ROWS(7)；将来若出现行数更多的
+        // 键盘，就按真实行数求解 —— 既不随切换抖动，也永不溢出。
+        int nominal = Math.max(NOMINAL_ROWS, rows);
+        // 整块高 = nominal*k + (nominal-1)*k*ratio = k*(nominal + (nominal-1)*ratio)
+        float byHeight = avail / (nominal + (nominal - 1) * SPACING_RATIO);
+        // 半屏宽要先扣掉页面左右 padding，否则 8 列会比左列真实可用宽度还宽、挤掉右侧热词
+        float byWidth = (screenWidth() - px(PAGE_PADDING_DP * 2)) * COLUMN_WIDTH_RATIO / (SPAN_COUNT + (SPAN_COUNT - 1) * SPACING_RATIO);
+        int want = px(MAX_KEY_DP);
         int key = (int) Math.min(want, Math.min(byHeight, byWidth));
         if (key <= 0) return;
         int spacing = Math.max(2, Math.round(key * SPACING_RATIO));

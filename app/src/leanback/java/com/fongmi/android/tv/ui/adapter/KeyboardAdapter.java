@@ -85,8 +85,11 @@ public class KeyboardAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         Setting.putZhuyin(!Setting.isZhuyin());
         mItems.removeAll(Setting.isZhuyin() ? enList : twList);
         mItems.addAll(icons.size(), Setting.isZhuyin() ? twList : enList);
-        notifyItemRangeRemoved(icons.size(), Setting.isZhuyin() ? enList.size() : twList.size());
-        notifyItemRangeInserted(icons.size(), Setting.isZhuyin() ? twList.size() : enList.size());
+        // R157：原来连发 notifyItemRangeRemoved + notifyItemRangeInserted，而两次通知之间 mItems
+        //   已经同时完成「删 36/47」和「加 47/36」—— 移除区间与适配器当时的实际项数对不上，
+        //   部分 ROM 会 IndexOutOfBounds，也必然让 GridLayoutManager 重新定位（焦点/滚动位置跳）。
+        //   键盘只有 40 多项、且 setItemAnimator(null) 已关，直接整体刷新最稳，没有动画损失。
+        notifyDataSetChanged();
     }
 
     @Override

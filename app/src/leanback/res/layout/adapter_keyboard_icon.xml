@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- R157：ag_key_size 仅为第一帧占位，运行时会被 applyKeySize 覆盖（同 adapter_keyboard_text.xml）。 -->
 <androidx.appcompat.widget.AppCompatImageView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/icon"
