@@ -1,8 +1,10 @@
 package com.fongmi.android.tv.ui.custom;
 
+import android.graphics.Rect;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.fongmi.android.tv.R;
@@ -37,10 +39,25 @@ public class CustomKeyboard implements KeyboardAdapter.OnClickListener {
      * （{@code ag_text_body} 仍是 sp，照样随档位线性放大：1080p 上 29px → 48px，+66%）。</p>
      */
     private static final int MAX_KEY_DP = 104;
-    /** 键间横/纵向间距与键高的比例（= 原 8dp / 104dp）：间距与键同比，整块键盘缩放时比例恒定。 */
-    private static final float SPACING_RATIO = 8f / 104f;
-    /** 图标键里图标边长与键高的比例（= 原 40dp / 104dp）：图标按键高定，始终保持正方形（键是宽矩形）。 */
-    private static final float GLYPH_RATIO = 40f / 104f;
+    /**
+     * 键间距与键高的比例（R159 由一条拆成横/纵两条）。
+     *
+     * <p>R158 只有一条 {@code SPACING_RATIO = 8/104} 同时作用于横纵。但键是约 1.6:1 的宽矩形，
+     * 同一条比例下「横缝 / 键宽 ≈ 4.9%」远小于「纵缝 / 键高 = 8.0%」—— 观感是横向挤、纵向松。
+     * 拆开后纵缝 10/104、横缝 14/104，两条各自对「键边长」的占比回到同一量级。</p>
+     *
+     * <p>纵向那条同时是键高求解的分母（{@code avail = nom*keyH + (nom-1)*spacingV}）：
+     * 横向比例不参与键高求解，所以 <b>R157 立下的「切换键盘键尺寸零抖动」不被破坏</b>。</p>
+     */
+    private static final float SPACING_V_RATIO = 10f / 104f;
+    private static final float SPACING_H_RATIO = 14f / 104f;
+    /**
+     * 图标键里图标边长与键高的比例（键是宽矩形，图标按键高定、始终保持正方形）。
+     *
+     * <p>R157/R158 取 40/104（图标 = 键高的 38%），图标在宽矩形键里显得又小又空、
+     * 与字母键的视觉重量对不上；R159 提到 52/104（1080p 上 38 → 49px）。</p>
+     */
+    private static final float GLYPH_RATIO = 52f / 104f;
     /** 键宽 / 键高 的上限（1.9）与下限（0.9）——键宽由左列宽度反解，理论上可以任意扁，这里兜住极端情况
      *  （极小屏 + 极大字号把左列压窄时，键不会变成横条；超宽左列时键不会窄到字都放不下）。 */
     private static final float MAX_ASPECT = 1.9f;
@@ -55,7 +72,7 @@ public class CustomKeyboard implements KeyboardAdapter.OnClickListener {
     private final ActivitySearchBinding binding;
     private final Callback callback;
     private KeyboardAdapter adapter;
-    private SpaceItemDecoration decoration;
+    private KeyboardSpaceDecoration decoration;
 
     public static void init(Callback callback, ActivitySearchBinding binding) {
         new CustomKeyboard(callback, binding).initView();
@@ -69,7 +86,7 @@ public class CustomKeyboard implements KeyboardAdapter.OnClickListener {
     private void initView() {
         binding.keyboard.setItemAnimator(null);
         binding.keyboard.setHasFixedSize(false);
-        binding.keyboard.addItemDecoration(decoration = new SpaceItemDecoration(SPAN_COUNT, 0));
+        binding.keyboard.addItemDecoration(decoration = new KeyboardSpaceDecoration(SPAN_COUNT));
         binding.keyboard.setAdapter(adapter = new KeyboardAdapter(this));
         // 首帧先用屏幕高度估算，避免第一帧按布局默认尺寸闪一下；布局跑完再用真实高度精确校正
         applyKeySize(availFromScreen());
@@ -125,12 +142,14 @@ public class CustomKeyboard implements KeyboardAdapter.OnClickListener {
     }
 
     /**
-     * 一次算清键盘的三项尺寸：单键宽、单键高、键间距、键内图标边长。
+     * 一次算清键盘的三项尺寸：单键宽、单键高、横/纵键间距、键内图标边长。
      *
-     * <p><b>键宽与键高解耦（R158）</b>：键高由屏幕高度定（行数是硬约束，列越少行越多、键越高越小）；
-     * 键宽由左列宽度反解（55:45 布局里左列 1019px，6 列键宽 165px）。两者各自受 {@code MAX_ASPECT} /
-     * {@code MIN_ASPECT} 夹取，防极端屏出现「横条键」或「竖条键」。间距、图标都与<b>键高</b>同比，
-     * 图标保持正方形（键是宽矩形时图标不随宽被拉扁）。</p>
+     * <p><b>键宽与键高解耦（R158）</b>：键高由屏幕高度定（行数是硬约束，列越少行越多、键越矮）；
+     * 键宽由左列宽度反解（55:45 布局里左列 1019px）。两者各自受 {@code MAX_ASPECT} /
+     * {@code MIN_ASPECT} 夹取，防极端屏出现「横条键」或「竖条键」。图标按键高定、保持正方形。</p>
+     *
+     * <p><b>横/纵间距分别求解（R159）</b>：纵缝决定键高（高度是硬约束），横缝只参与键宽反解。
+     * 两者都"随键高同比"，因此档位 / 屏幕变化时整块键盘的间距比例恒定。</p>
      */
     private void applyKeySize(int avail) {
         if (adapter == null || adapter.getItemCount() == 0 || avail <= 0) return;
@@ -139,29 +158,30 @@ public class CustomKeyboard implements KeyboardAdapter.OnClickListener {
         // 求解用「名义行数」与「真实行数」的较大者：常态恒为 NOMINAL_ROWS(9)；将来若出现行数更多的
         // 键盘，就按真实行数求解 —— 既不随切换抖动，也永不溢出。
         int nom = Math.max(NOMINAL_ROWS, rows);
-        // 整块高 = nom*keyH + (nom-1)*spacing ⇒ keyH = avail / (nom + (nom-1)*ratio)
-        int keyH = Math.min(px(MAX_KEY_DP), Math.round(avail / (nom + (nom - 1) * SPACING_RATIO)));
-        int spacing = Math.max(2, Math.round(keyH * SPACING_RATIO));
+        // 整块高 = nom*keyH + (nom-1)*spacingV ⇒ keyH = avail / (nom + (nom-1)*SPACING_V_RATIO)
+        int keyH = Math.min(px(MAX_KEY_DP), Math.round(avail / (nom + (nom - 1) * SPACING_V_RATIO)));
+        int spacingV = Math.max(2, Math.round(keyH * SPACING_V_RATIO));
         // 间距取整后整块高可能超出 1px，逐像素回退保证「一定放得下」。
         // ⛔ R158 缺陷 A：这里必须用名义行数 nom，不是真实行数 rows —— 用 rows 会导致中/英各自
         //   按自己的行数回退、切换时键高又差 1px（R157 修掉的正是这个病）。
-        while (keyH > 1 && nom * keyH + (nom - 1) * spacing > avail) {
+        while (keyH > 1 && nom * keyH + (nom - 1) * spacingV > avail) {
             keyH--;
-            spacing = Math.max(2, Math.round(keyH * SPACING_RATIO));
+            spacingV = Math.max(2, Math.round(keyH * SPACING_V_RATIO));
         }
-        // 键宽由左列反解：每行真实占宽 = SPAN*keyW + spacing*(SPAN-1)（装饰器横向总间距 = spacing*(SPAN-1)，
-        // 见 SpaceItemDecoration#getItemOffsets 首列 left=0 / 末列 right=0 / 中间列均摊）。
-        // ⚠ 用向下取整而非四舍五入：保证 SPAN*keyW + spacing*(SPAN-1) 恒 ≤ colW，最右一列键绝不溢出左列。
+        // 键宽由左列反解：每行真实占宽 = SPAN*keyW + spacingH*(SPAN-1)（键盘自带装饰器的横向总间距
+        // = spacingH*(SPAN-1)，首列 left=0 / 末列 right=0 / 中间列均摊，见 KeyboardSpaceDecoration）。
+        // ⚠ 用向下取整而非四舍五入：保证 SPAN*keyW + spacingH*(SPAN-1) 恒 ≤ colW，最右一列键绝不溢出左列。
+        int spacingH = Math.max(2, Math.round(keyH * SPACING_H_RATIO));
         int colW = columnWidth();
         int keyW = colW > 0
-                ? (colW - spacing * (SPAN_COUNT - 1)) / SPAN_COUNT
+                ? (colW - spacingH * (SPAN_COUNT - 1)) / SPAN_COUNT
                 : keyH;
         // 宽高比夹取：防横条键（> MAX_ASPECT）或竖条键（< MIN_ASPECT）
         keyW = Math.min(keyW, Math.round(keyH * MAX_ASPECT));
         keyW = Math.max(keyW, Math.round(keyH * MIN_ASPECT));
         if (keyH <= 0 || keyW <= 0) return;
         int glyph = Math.max(1, Math.round(keyH * GLYPH_RATIO));
-        boolean changed = decoration.setSpacingPx(spacing);
+        boolean changed = decoration.setSpacing(spacingH, spacingV);
         changed |= adapter.setKeySize(keyW, keyH, glyph);
         if (changed) binding.keyboard.invalidateItemDecorations();
     }
@@ -208,6 +228,53 @@ public class CustomKeyboard implements KeyboardAdapter.OnClickListener {
         if (resId != R.drawable.ic_keyboard_back) return false;
         binding.keyword.setText("");
         return true;
+    }
+
+    /**
+     * 键盘专用网格间距（R159 / D7-A）。
+     *
+     * <p><b>为什么不复用 {@code SpaceItemDecoration}</b>：那个类在 {@code app/src/main/}，
+     * 被历史 / 追剧 / 章节 / 弹幕 / 字幕等约 20 处（含手机端）共用，而且只有一个 {@code spacing}
+     * 同时作用于横纵。键盘需要「横 ≠ 纵」两条间距，改它必然牵动手机端 —— 因此键盘自带一份，
+     * 作用域收敛在本类内部。</p>
+     *
+     * <p>横向每条缝 = {@code spacingH}（首列 left=0 / 末列 right=0 / 中间列按列序均摊），与
+     * {@link #applyKeySize} 的键宽反解公式 {@code keyW = (colW - spacingH*(span-1)) / span} 严格配套；
+     * 纵向从第 2 行起每行上边距 = {@code spacingV}（首行 top=0）。两者都由 setSpacing 一次性下发。</p>
+     */
+    private static final class KeyboardSpaceDecoration extends RecyclerView.ItemDecoration {
+
+        private final int spanCount;
+        private int spacingH;
+        private int spacingV;
+
+        KeyboardSpaceDecoration(int spanCount) {
+            this.spanCount = spanCount;
+        }
+
+        /** 下发横/纵间距（px）。@return true 表示确实变了，调用方需要 invalidateItemDecorations() */
+        boolean setSpacing(int hPx, int vPx) {
+            int h = Math.max(0, hPx);
+            int v = Math.max(0, vPx);
+            if (h == spacingH && v == spacingV) return false;
+            spacingH = h;
+            spacingV = v;
+            return true;
+        }
+
+        @Override
+        public void getItemOffsets(@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
+            int position = parent.getChildAdapterPosition(view);
+            if (position < 0 || spanCount <= 0) {
+                outRect.set(0, 0, 0, 0);
+                return;
+            }
+            int column = position % spanCount;
+            outRect.left = column * spacingH / spanCount;
+            outRect.right = spacingH - (column + 1) * spacingH / spanCount;
+            outRect.top = position >= spanCount ? spacingV : 0;
+            outRect.bottom = 0;
+        }
     }
 
     public interface Callback {

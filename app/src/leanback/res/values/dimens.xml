@@ -52,6 +52,12 @@
     <dimen name="ag_stroke_hairline">1dp</dimen>
     <dimen name="ag_stroke_normal">2dp</dimen>
     <dimen name="ag_stroke_focus">5dp</dimen>
+    <!-- 键盘键框宽度（R159）：常态与聚焦**必须同宽**，否则两态的主体色块不等宽 ——
+         聚焦键的填充会被自己的描边「吃掉一圈」（旧版常 2dp / 焦 5dp：1080p 档0 每边差 3.6px、
+         档4 差 6.0px），观感上聚焦键跟旁边不是一档。
+         这里写成 ag_stroke_focus 的**别名**：键盘焦点环仍是全站 5dp 规格，常态只是
+         「同样宽度、换成灰色」（ag_btn_stroke）。日后改 ag_stroke_focus，键盘自动跟随。 -->
+    <dimen name="ag_kb_stroke">@dimen/ag_stroke_focus</dimen>
 
     <!-- ==== 字号（6 级语义 + 1 级展示数字，下限 20sp） ==== -->
     <dimen name="ag_text_title">32sp</dimen>

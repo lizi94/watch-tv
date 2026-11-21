@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- R159：与 shape_keyboard_normal 同宽（@dimen/ag_kb_stroke = ag_stroke_focus = 5dp），
+     两态只有颜色不同 —— 这是「焦点态与主体对齐」的前提。
+     圆角与常态一致（ag_radius_s = 8dp）。 -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
 
@@ -7,7 +10,7 @@
     <corners android:radius="@dimen/ag_radius_s" />
 
     <stroke
-        android:width="@dimen/ag_stroke_focus"
+        android:width="@dimen/ag_kb_stroke"
         android:color="@color/ag_primary" />
 
 </shape>
