@@ -8,11 +8,13 @@ import android.util.Log;
 import android.view.accessibility.AccessibilityEvent;
 
 import com.fongmi.android.tv.App;
+import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.utils.BootLauncher;
 import com.fongmi.android.tv.utils.BootSession;
 import com.fongmi.android.tv.utils.DesktopResolver;
 import com.fongmi.android.tv.utils.GuardState;
+import com.fongmi.android.tv.utils.Notify;
 
 /**
  * 桌面守护：按主页键回到电视桌面时，自动把「看电视」切回前台（2026-10-29 新增）。
@@ -307,6 +309,9 @@ public class HomeGuardService extends AccessibilityService {
             desktopHits = 0;
             graceUntil = now + GRACE_MS;
             Log.i(TAG, "10 秒内第二次回到桌面，放行 " + (GRACE_MS / 1000) + " 秒");
+            // R158 D3：放行时给一句提示 —— 原先零反馈，老人会以为「守护坏了 / 按了没反应」。
+            //   用 Notify（自绘浮层、随字号档位缩放），不用系统 Toast（★R：只有两档时长、禁不起连续 show）。
+            Notify.show(R.string.guard_grace_released);
             return;
         }
         // ③ 第一次：老人误按了主页键，切回来。开机语境（真冷启动 + 固件扣启动下桌面事件

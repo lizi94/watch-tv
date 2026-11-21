@@ -175,20 +175,14 @@ public class SearchActivity extends BaseActivity implements WordAdapter.OnClickL
     }
 
     @Override
-    public void showDialog() {
-        // ⛔ 2026-10-17：本页**不提供搜索源切换入口**（与首页一致）。
-        // 换源入口全站唯一 = 「设置 → 长辈设置 → 一键锁定」（ElderLockActivity）。
-    }
-
-    @Override
     public void onRemote() {
         PushActivity.start(this, 1);
     }
 
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
-        // ⛔ 2026-10-17：原先这里还有 `if (KeyUtil.isMenuKey(event)) showDialog();`——已移除
-        //（showDialog 是空实现，留着只会让人误以为「菜单键能换源」，与首页保持同一口径）。
+        // ⛔ 2026-10-17：原先这里还有 `if (KeyUtil.isMenuKey(event)) showDialog();`——已移除，
+        // 因为搜索页不提供「换源」入口（换源全站唯一 = 设置 → 长辈设置 → 一键锁定）。
         if (KeyUtil.isActionDown(event) && findFocus(event)) return true;
         return super.dispatchKeyEvent(event);
     }

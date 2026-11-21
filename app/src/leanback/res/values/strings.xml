@@ -196,4 +196,6 @@
     <string name="home_apps">Apps</string>
     <string name="elder_setting_self_check_entry">Startup &amp; home check</string>
     <string name="elder_setting_self_check_value">%1$d / %2$d ready</string>
+    <string name="guard_grace_released">Released for 3 minutes. Press Home to come back.</string>
+
 </resources>

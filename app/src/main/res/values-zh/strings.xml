@@ -100,13 +100,13 @@
     <string name="audio_effect_classical">古典</string>
     <string name="audio_effect_custom">自定义</string>
     <string name="audio_effect_stability">音量稳定</string>
-    <string name="audio_effect_stability_summary">缩小影片内的大小声差距</string>
+    <string name="audio_effect_stability_summary">缩小音量差距</string>
     <string name="audio_effect_boost">音量增益</string>
     <string name="audio_effect_dialogue">语音增强</string>
     <string name="audio_effect_balance">声道平衡</string>
     <string name="audio_effect_headroom">前级衰减</string>
     <string name="audio_effect_loudness">响度平衡</string>
-    <string name="audio_effect_loudness_summary">平衡不同影片的平均音量</string>
+    <string name="audio_effect_loudness_summary">平衡各片音量</string>
     <string name="audio_effect_center_gain">中置声道增益</string>
     <string name="audio_channel_mode">声道模式</string>
     <string name="audio_channel_auto">自动</string>
@@ -215,7 +215,7 @@
     <string name="danmaku_color_default">原色</string>
     <string name="danmaku_color_colorful">彩色</string>
     <string name="danmaku_color_gradient">渐变</string>
-    <string name="danmaku_color_override_hint">弹幕原始颜色将被忽略</string>
+    <string name="danmaku_color_override_hint">忽略弹幕原始颜色</string>
     <string name="danmaku_auto">自动</string>
     <string name="danmaku_duration">滚动时间</string>
     <string name="danmaku_fixed_duration">固定显示时间</string>
@@ -308,7 +308,7 @@
     <string name="danmaku_spider_first">爬虫优先</string>
 
     <!-- Search -->
-    <string name="search_keyword">关键字…</string>
+    <string name="search_keyword">输入关键字</string>
     <string name="search_record">历史</string>
     <string name="search_suggest">建议</string>
     <string name="search_hot">热搜</string>
@@ -319,32 +319,32 @@
     <string name="dialog_negative">取消</string>
     <string name="dialog_select_edition">选择标题</string>
     <string name="dialog_select_chapter">选择章节</string>
-    <string name="dialog_config_hint">请输入配置…</string>
-    <string name="dialog_config_name">请输入名称…</string>
+    <string name="dialog_config_hint">输入配置地址</string>
+    <string name="dialog_config_name">输入名称</string>
 
     <!-- Error -->
-    <string name="error_config_get">配置取得失败</string>
-    <string name="error_play_next">已经是最后一集了！</string>
-    <string name="error_play_prev">已经是第一集了！</string>
+    <string name="error_config_get">配置获取失败</string>
+    <string name="error_play_next">已是最后一集</string>
+    <string name="error_play_prev">已是第一集</string>
     <string name="error_play_parse">播放地址解析失败</string>
     <string name="error_play_drm">此设备不支持所需的 DRM scheme</string>
     <string name="error_play_url">播放地址加载失败</string>
     <string name="error_play_timeout">连接超时</string>
-    <string name="error_decode_unsupported">这台设备放不了这个视频，试试换一集或换个源</string>
+    <string name="error_decode_unsupported">本机无法播放该视频，请换集或换源</string>
     <string name="error_audio_effect_unsupported">当前播放方式不支持音质设置</string>
-    <string name="error_audio_effect_passthrough">音频直通音轨不支持音质设置</string>
+    <string name="error_audio_effect_passthrough">音频直通不支持音质设置</string>
     <string name="error_audio_effect_apply">音质设置应用失败</string>
     <string name="error_video_effect_unsupported">当前播放方式不支持画质设置</string>
     <string name="error_video_effect_decode">画质设置需要视频硬解</string>
     <string name="error_video_effect_drm">DRM 视频不支持画质设置</string>
-    <string name="error_video_effect_tunnel">隧道模式下不支持画质设置</string>
+    <string name="error_video_effect_tunnel">隧道模式不支持画质设置</string>
     <string name="error_video_effect_dolby_vision_passthrough">杜比视界直通不支持画质设置</string>
     <string name="error_play_tvbus">错误代码：<xliff:g name="name">%s</xliff:g></string>
     <string name="error_detail">暂无播放数据</string>
-    <string name="error_empty">这里什麽都没有 👀</string>
+    <string name="error_empty">这里什么都没有</string>
 
     <!-- Crash -->
-    <string name="crash_info">发生意外错误\n抱歉给您带来不便</string>
+    <string name="crash_info">出现异常\n请重启应用</string>
     <string name="crash_restart">重新启动</string>
     <string name="crash_details">错误信息</string>
     <string name="crash_details_title">错误信息</string>
@@ -405,5 +405,5 @@
 <string name="setting_vod_source">点播源</string>
     <string name="setting_live_source">直播源</string>
     <string name="setting_wall_source">壁纸源</string>
-    <string name="boot_live_unready">直播还没准备好，没能自动进入</string>
+    <string name="boot_live_unready">直播未就绪，未能自动进入</string>
 </resources>

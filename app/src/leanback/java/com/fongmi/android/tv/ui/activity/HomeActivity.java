@@ -12,6 +12,7 @@ import android.view.ViewTreeObserver;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.fragment.app.DialogFragment;
 import androidx.leanback.widget.ArrayObjectAdapter;
 import androidx.leanback.widget.FocusHighlight;
 import androidx.leanback.widget.HorizontalGridView;
@@ -622,6 +623,9 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
         // ⛔ R123：热启动也要重新定性 —— 同一个实例可能先被图标拉起（COLD_*），
         //   之后又被「主页键」投递（WARM_HOME）⇒ 不更新就会拿上一次的场景去判续播。
         if (!repeatHome) classifyLaunch(intent, true, false);
+        // R158：按主页键回到首页（默认桌面单实例复用）时，把视图状态复位到「刚进来」。
+        //   只认 WARM_HOME 且非系统重复投递：前者才是「用户按了主页键」，后者是开机直达，不能打断。
+        if (mLaunchKind == LaunchKind.WARM_HOME && !repeatHome) resetHomeViewState();
         // 2026-10-30（R103）：用户主动回来了 ⇒ 恢复守护接管，清掉「连按主页键」的放行期。
         // 这段安全的前提：放行期内守护自己不会拉起本页面，所以能走到这里的 onNewIntent
         // 只可能来自图标 / 遥控器快捷键 / 用户主动点击。
@@ -1837,6 +1841,29 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
         mBinding.recycler.scrollToPosition(0);
     }
 
+    /**
+     * 用户按主页键回到首页时，把首页视图状态复位到「刚进来」的样子（R158 D3）。
+     *
+     * <p><b>为什么需要它</b>：{@code leanbackHome}（默认桌面）下按主页键走 {@code singleTask} →
+     * {@link #onNewIntent}，它只做启动定性（已正确判成 WARM_HOME、禁续播），却<b>不复位任何视图状态</b>。
+     * 于是老人翻到第 20 行、开着筛选弹窗或删除模式时按主页键，画面纹丝不动 —— 这就是「主页键像坏了」的根因。</p>
+     *
+     * <p>复位四件事（全部复用现成方法，不新增门控判据）：① 关筛选弹窗；② 退出历史删除模式；
+     * ③ 列表回顶并把焦点送到分类 chips 行；④ 清空退出连按计数（避免「按主页键回桌面」又被算作一次返回）。</p>
+     *
+     * <p>⛔ 边界：开机阶段（{@code repeatHome}）不调用（由 {@code onNewIntent} 门控），
+     * 否则会打断开机直达的落焦；也不碰 {@code progressLayout}（不调 {@link #showContent()}），
+     * 避免绕过 12 秒门控宽限。</p>
+     */
+    private void resetHomeViewState() {
+        if (isFinishing() || isDestroyed() || mBinding == null) return;
+        if (getSupportFragmentManager().findFragmentByTag(HomeFilterDialog.TAG) instanceof DialogFragment dialog) dialog.dismiss();
+        if (mPresenter.isDelete()) setHistoryDelete(false);
+        mBinding.recycler.scrollToPosition(0);
+        if (mChipRow != null) focusChipRow();
+        resetBackTaps();
+    }
+
     private void getVideo() {
         mResult = Result.empty();
         // R141：配置/字号/图片尺寸事件都会走到这里 —— 分类首屏缓存一并作废。
@@ -2799,12 +2826,56 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
             setHistoryDelete(false);
             return;
         }
-        // ④ 焦点不在第一行：顺手回顶部（保留导航能力），本次按键仍计入退出连按
-        if (mBinding.recycler.getSelectedPosition() != 0) mBinding.recycler.scrollToPosition(0);
+        // ④ 焦点在分类 chips 行：回内容区（第一个封面行），并清空退出连按计数 —— 这是「从分类行退出」，
+        //    不是「退出应用」，不该被算作一次返回。R158 D3 断点 B-1：原先这里只看
+        //    recycler.getSelectedPosition()，但焦点停在 chip 行时该值不变，既不回内容区、又白吃一次计数。
+        View chipRow = mChipRow == null ? null : findAttachedRow(mChipRow);
+        if (chipRow != null && isDescendantOf(getCurrentFocus(), chipRow)) {
+            resetBackTaps();
+            focusContentRow();
+            return;
+        }
+        // ⑤ 焦点不在第一行：滚到顶并落焦首行（保留导航能力），本次按键仍计入退出连按
+        if (mBinding.recycler.getSelectedPosition() != 0) scrollToTopAndFocus();
 
-        // ⑤ 只在「本轮第一次」提示一次：系统 Toast 撑不住连续 show（会被队列节流甚至丢弃），
+        // ⑥ 只在「本轮第一次」提示一次：系统 Toast 撑不住连续 show（会被队列节流甚至丢弃），
         //    分级提示既看不见又白耗一次 inflate，所以三次里只提示这一下。
         if (taps == 1) Notify.center(R.string.elder_exit_count);
+    }
+
+    /**
+     * 把焦点送到内容区第一个可聚焦项（分类 chips 行正下方的第一行内容）。R158 D3 断点 B-1 的落点。
+     *
+     * <p>chips 行是「功能行(0) + 分类行(1)」结构，内容区从 chips 行之后的第一个 ListRow 开始；
+     * 直接 {@code scrollToPosition} + 下一帧 {@link #firstFocusableIn} 落焦，复用与 {@link #focusChipRow()}
+     * 同一套「行没绑上就滚过去再落焦」的处理。</p>
+     */
+    private void focusContentRow() {
+        int chipIndex = mAdapter.indexOf(mChipRow);
+        if (chipIndex < 0) return;
+        int contentIndex = chipIndex + 1;
+        if (contentIndex >= mAdapter.size()) return;
+        Object item = mAdapter.get(contentIndex);
+        View row = findAttachedRow(item);
+        if (row == null) {
+            mBinding.recycler.scrollToPosition(contentIndex);
+            mBinding.recycler.post(() -> {
+                View target = firstFocusableIn(findAttachedRow(item));
+                if (target != null) target.requestFocus();
+            });
+            return;
+        }
+        View target = firstFocusableIn(row);
+        if (target != null) target.requestFocus();
+    }
+
+    /** 滚回列表顶部并把焦点落到第 0 行（功能区）第一个可聚焦项。R158 D3 断点 B-2 的落点。 */
+    private void scrollToTopAndFocus() {
+        mBinding.recycler.scrollToPosition(0);
+        if (!focusFuncRow()) {
+            // 功能区没有可落焦项（极端空态）：退而求其次落分类行，再不行落回收站里任一可聚焦视图
+            if (!focusChipRow() && getCurrentFocus() == null) mBinding.recycler.requestFocus();
+        }
     }
 
     @Override

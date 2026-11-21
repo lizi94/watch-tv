@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 首页分类 chip 背景选择器：选中 / 聚焦 = 主色实底 -->
+<!-- 首页分类 chip 背景选择器：选中 / 聚焦 = 主色实底。
+     R158 D4：与 selector_filter_value（筛选值胶囊）同构 —— 都是「焦点/选中共用主色实底」两形态，
+     改一处必须两边同步。 -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:state_selected="true" android:drawable="@drawable/shape_home_chip_focus" />
     <item android:state_focused="true" android:drawable="@drawable/shape_home_chip_focus" />

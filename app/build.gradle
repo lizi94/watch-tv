@@ -26,8 +26,9 @@ android {
         // ⚠ 基线取 cd72cc1（643 链上「restore autostart-specific interactions」提交），
         //   它天然位于门控提交 5f54c44 的上游 ⇒ 8 项自启版交互齐全且不含门控，零代码删除。
         //   勿再取 da41876：那是同一 versionCode=643 的链首，交互尚未恢复（R145 事故）。
-        versionCode 649
-        versionName "6.4.9"
+        // R158：随标准版升 6.5.0，自启版升 6.5.1（两树恒差 1）。
+        versionCode 651
+        versionName "6.5.1"
         javaCompileOptions {
             annotationProcessorOptions {
                 arguments = ["room.schemaLocation": "$projectDir/schemas".toString(), "eventBusIndex": "com.fongmi.android.tv.event.EventIndex"]

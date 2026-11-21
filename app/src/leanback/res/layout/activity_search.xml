@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- R157：spanCount 必须与 CustomKeyboard.SPAN_COUNT 一致（当前 8）；上方 padding 与键盘的
+<!-- R158：spanCount 必须与 CustomKeyboard.SPAN_COUNT 一致（当前 6）；上方 padding 与键盘的
      layout_marginTop 必须与 CustomKeyboard.RESERVE_DP 数学一致（16×2 + 56 + 8 = 96dp），改一处必须同步另一处。
-     span 7→8 的原因：7 列时英文 43 项要 7 行、注音 54 项要 8 行，点一次中/英键边长就掉 13%。 -->
+     左右两列按权重 55:45 分配（左大右小），键宽由 CustomKeyboard 按左列真实宽度反解撑满（见 §1.5）。 -->
 <androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -13,9 +13,10 @@
     android:padding="@dimen/ag_space_4">
 
     <androidx.appcompat.widget.LinearLayoutCompat
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="match_parent"
         android:layout_marginEnd="@dimen/ag_space_6"
+        android:layout_weight="55"
         android:orientation="vertical">
 
         <androidx.appcompat.widget.LinearLayoutCompat
@@ -47,23 +48,24 @@
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/keyboard"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:clipChildren="false"
             android:clipToPadding="false"
             android:layout_marginTop="@dimen/ag_space_2"
             android:overScrollMode="never"
             app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
-            app:spanCount="8"
-            tools:itemCount="54"
+            app:spanCount="6"
+            tools:itemCount="53"
             tools:listitem="@layout/adapter_keyboard_text" />
 
     </androidx.appcompat.widget.LinearLayoutCompat>
 
     <androidx.core.widget.NestedScrollView
         android:id="@+id/scroll"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="match_parent"
+        android:layout_weight="45"
         android:fillViewport="true"
         android:overScrollMode="never">
 
