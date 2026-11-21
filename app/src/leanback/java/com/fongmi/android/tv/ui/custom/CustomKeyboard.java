@@ -68,6 +68,21 @@ public class CustomKeyboard implements KeyboardAdapter.OnClickListener {
      *  顶部一行原由 56dp 的麦克风图标撑起，语音功能移除后改由 @id/keyword 自己声明 56dp。</p>
      *  ⚠ 必须与 activity_search.xml 的 padding / layout_marginTop 同步（静态断言 A4 校验）。 */
     private static final int RESERVE_DP = 16 * 2 + 56 + 8;
+    /**
+     * 左列的横向构成（R160 / F1）：页 padding、左列 marginEnd、左列权重。
+     *
+     * <p>键宽由左列宽度反解（R158）。但 {@link #columnWidth()} 读的是布局后的测量值，
+     * 在 {@code initView()}（= {@code onCreate}，<b>布局还没跑</b>）时恒为 0 ——
+     * R160 之前它直接退化成 {@code keyW = keyH}，首帧渲染成正方形小键、整块没撑满左列，
+     * 要等用户动一次键盘、触发下一次布局才变成最终宽键。</p>
+     *
+     * <p>左列的宽与权重在 {@code activity_search.xml} 里是写死的常量（页 padding 16dp、
+     * 左列 marginEnd 24dp、权重 55%），于是可以用屏幕宽直接推算，<b>首帧即可拿到正确键宽</b>。
+     * ⚠ 三项必须与布局同步（静态断言 A5 校验）；改了布局不改这里，等价于改键宽。</p>
+     */
+    private static final int PAGE_PADDING_DP = 16;
+    private static final int COLUMN_GAP_DP = 24;
+    private static final int LEFT_WEIGHT = 55;
 
     private final ActivitySearchBinding binding;
     private final Callback callback;
@@ -91,9 +106,12 @@ public class CustomKeyboard implements KeyboardAdapter.OnClickListener {
         // 首帧先用屏幕高度估算，避免第一帧按布局默认尺寸闪一下；布局跑完再用真实高度精确校正
         applyKeySize(availFromScreen());
         binding.keyboard.post(() -> applyKeySize(availFromLayout()));
-        // 输出模式变化（1080p↔4K）不会重建本页，尺寸变了要重算一次曲线
+        // 输出模式变化（1080p↔4K）不会重建本页，尺寸变了要重算一次曲线。
+        // ⛔ R160 / F2：必须在**布局之外**重算。该回调本身发生在 RecyclerView 的 layout 过程中，
+        //   原实现在里面同步调 applyKeySize() —— 那时改的正是"正在被布局的那一行"，
+        //   尺寸变更被延后到下一次布局才生效（首开后要等用户动一次键盘才变，就是这条）。
         binding.keyboard.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
-            if (b - t != ob - ot || r - l != or - ol) applyKeySize(availFromLayout());
+            if (b - t != ob - ot || r - l != or - ol) binding.keyboard.post(() -> applyKeySize(availFromLayout()));
         });
     }
 
@@ -134,11 +152,32 @@ public class CustomKeyboard implements KeyboardAdapter.OnClickListener {
         return avail;
     }
 
-    /** 左列真实可用宽度（px）：键盘所在列宽 − 其左右 padding。键宽由此反解、撑满整列（R158 55:45 布局）。 */
+    /**
+     * 左列真实可用宽度（px）：键盘所在列宽 − 其左右 padding。键宽由此反解、撑满整列（R158 55:45 布局）。
+     *
+     * <p>布局尚未跑（{@code onCreate} 期）时返回 0 —— 调用方必须用 {@link #columnWidthFromScreen()} 兜底
+     * （见 {@link #applyKeySize}），<b>不要</b>退化成「键宽 = 键高」。</p>
+     */
     private int columnWidth() {
         if (!(binding.keyboard.getParent() instanceof View)) return 0;
         View column = (View) binding.keyboard.getParent();
         return column.getWidth() - column.getPaddingLeft() - column.getPaddingRight();
+    }
+
+    /**
+     * 左列宽度（px）的**屏幕推算值**（R160 / F1）。
+     *
+     * <p>布局未完成、{@link #columnWidth()} 拿不到测量值时用。三项构成都写在
+     * {@code activity_search.xml} 里（页 padding、左列 marginEnd、左列权重），
+     * 所以直接由屏宽推出，<b>首帧就能算出最终键宽</b>，不必等布局跑完。
+     * 与 {@link #availFromScreen()} 同理：只依赖屏幕与 density，不碰任何 View 测量值。</p>
+     */
+    private int columnWidthFromScreen() {
+        int w = binding.keyboard.getResources().getDisplayMetrics().widthPixels;
+        int inner = w - 2 * px(PAGE_PADDING_DP) - px(COLUMN_GAP_DP);
+        // ⛔ 向下取整，不四舍五入：LinearLayout 按权重分配时首位子视图拿余数，
+        //   推算值必须与真实测量值同口径 —— 差 1px 会让首帧与终值跳一格。
+        return Math.max(0, (int) (inner * LEFT_WEIGHT / 100f));
     }
 
     /**
@@ -150,6 +189,9 @@ public class CustomKeyboard implements KeyboardAdapter.OnClickListener {
      *
      * <p><b>横/纵间距分别求解（R159）</b>：纵缝决定键高（高度是硬约束），横缝只参与键宽反解。
      * 两者都"随键高同比"，因此档位 / 屏幕变化时整块键盘的间距比例恒定。</p>
+     *
+     * <p><b>首帧即可算对（R160）</b>：键宽所需的左列宽度，在布局尚未测量时由屏宽推算
+     * （{@link #columnWidthFromScreen()}），因此首帧就是最终尺寸，不依赖任何后续布局。</p>
      */
     private void applyKeySize(int avail) {
         if (adapter == null || adapter.getItemCount() == 0 || avail <= 0) return;
@@ -172,10 +214,12 @@ public class CustomKeyboard implements KeyboardAdapter.OnClickListener {
         // = spacingH*(SPAN-1)，首列 left=0 / 末列 right=0 / 中间列均摊，见 KeyboardSpaceDecoration）。
         // ⚠ 用向下取整而非四舍五入：保证 SPAN*keyW + spacingH*(SPAN-1) 恒 ≤ colW，最右一列键绝不溢出左列。
         int spacingH = Math.max(2, Math.round(keyH * SPACING_H_RATIO));
+        // 左列宽度：优先用布局测量值；布局未完成（首次调用、输出模式切换前）时用屏幕推算值。
+        // ⛔ R160 / F1：兜底必须是 columnWidthFromScreen()，**不能**退化成 keyH ——
+        //   那就是首帧渲染成"正方形小键、没撑满左列"的根因。
         int colW = columnWidth();
-        int keyW = colW > 0
-                ? (colW - spacingH * (SPAN_COUNT - 1)) / SPAN_COUNT
-                : keyH;
+        if (colW <= 0) colW = columnWidthFromScreen();
+        int keyW = (colW - spacingH * (SPAN_COUNT - 1)) / SPAN_COUNT;
         // 宽高比夹取：防横条键（> MAX_ASPECT）或竖条键（< MIN_ASPECT）
         keyW = Math.min(keyW, Math.round(keyH * MAX_ASPECT));
         keyW = Math.max(keyW, Math.round(keyH * MIN_ASPECT));
@@ -183,7 +227,12 @@ public class CustomKeyboard implements KeyboardAdapter.OnClickListener {
         int glyph = Math.max(1, Math.round(keyH * GLYPH_RATIO));
         boolean changed = decoration.setSpacing(spacingH, spacingV);
         changed |= adapter.setKeySize(keyW, keyH, glyph);
-        if (changed) binding.keyboard.invalidateItemDecorations();
+        if (changed) {
+            // ⛔ R160 / F3：装饰器变更只影响偏移；但键宽高变更会让 wrap_content 的键盘块高度变化，
+            //   必须显式请求一次重排，否则更新可能只在下一次布局才生效。
+            binding.keyboard.invalidateItemDecorations();
+            binding.keyboard.requestLayout();
+        }
     }
 
     @Override
