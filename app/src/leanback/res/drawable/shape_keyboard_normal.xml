@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- R159：描边宽度必须与 shape_keyboard_focused **完全相同**（同走 @dimen/ag_kb_stroke）。
+     两态同宽是实现「聚焦键与常态键主体色块重合」的充要条件 —— 只要两态宽度不等，
+     聚焦键的填充就会被自己的描边吃掉一圈。
+     <stroke> 向图形内部绘制、不参与测量，所以加宽不会影响网格间距与键尺寸。 -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
 
@@ -7,7 +11,7 @@
     <corners android:radius="@dimen/ag_radius_s" />
 
     <stroke
-        android:width="@dimen/ag_stroke_normal"
+        android:width="@dimen/ag_kb_stroke"
         android:color="@color/ag_btn_stroke" />
 
 </shape>
