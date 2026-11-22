@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 下载源列表项（电视版）：行结构照抄 adapter_doh.xml（Ag.ListItem + 行尾值），
+     只是行尾从「使用中」换成延迟数值。
+     选中反馈走根布局 setSelected + selector_item 的 state_selected（= shape_item_activated
+     淡蓝底 + 2dp 主色描边），与全站列表选中态一致，不额外加勾选图标或圆点。
+     ⚠ 行尾文字色在 MirrorAdapter 里按延迟档位 setTextColor，这里的 ag_text_hint 只是兜底默认值。 -->
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    style="@style/Ag.ListItem"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="@dimen/ag_space_2"
+    android:orientation="horizontal">
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/name"
+        style="@style/Ag.Text.Body"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:ellipsize="middle"
+        android:singleLine="true"
+        tools:text="gh.dpik.top" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/delay"
+        style="@style/Ag.Text.Body"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/ag_space_4"
+        android:singleLine="true"
+        android:textColor="@color/ag_text_hint"
+        tools:text="128 ms" />
+
+</androidx.appcompat.widget.LinearLayoutCompat>

@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.TextView;
 
 import androidx.viewbinding.ViewBinding;
 
@@ -32,7 +33,12 @@ import com.fongmi.android.tv.utils.ElderLock;
 import com.fongmi.android.tv.utils.FileUtil;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.PermissionUtil;
-import com.fongmi.android.tv.utils.Util;
+import com.fongmi.android.tv.ui.dialog.UpdateDialog;
+import com.fongmi.android.tv.ui.dialog.UpdateProgressDialog;
+import com.fongmi.android.tv.update.UpdateCenter;
+import com.fongmi.android.tv.update.UpdateInfo;
+import com.fongmi.android.tv.update.UpdateState;
+import com.fongmi.android.tv.utils.ResUtil;
 import com.github.catvod.bean.Doh;
 import com.github.catvod.net.OkHttp;
 
@@ -45,6 +51,13 @@ import java.util.List;
 public class SettingActivity extends BaseActivity implements ConfigListener, LiveListener, DohDialog.Listener {
 
     private ActivitySettingBinding mBinding;
+
+    /** 本次是「配置变更 / 进程恢复」重建而非首次进入：重建时不自动弹更新窗。 */
+    private boolean restored;
+    /** 上一次已经为哪个状态弹过窗，防止进度高频通知把弹窗连弹多次。 */
+    private int lastDialogPhase = UpdateState.PHASE_IDLE;
+    /** 监听器持有成字段：onStop 里要用同一个实例反注册。 */
+    private final UpdateState.Listener updateListener = this::updateVersionRow;
 
     public static void start(Activity activity) {
         activity.startActivity(new Intent(activity, SettingActivity.class));
@@ -67,8 +80,24 @@ public class SettingActivity extends BaseActivity implements ConfigListener, Liv
 
     @Override
     protected void initView(Bundle savedInstanceState) {
+        restored = savedInstanceState != null;
         mBinding.elderSettings.requestFocus();
         refreshView();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        // 下载跑在前台服务里，页面回来时可能已经换了状态（下载完 / 失败），
+        // 因此在 onStart 重新订阅并立刻同步一次。
+        UpdateState.addListener(updateListener);
+        updateVersionRow();
+    }
+
+    @Override
+    protected void onStop() {
+        UpdateState.removeListener(updateListener);
+        super.onStop();
     }
 
     @Override
@@ -118,7 +147,8 @@ public class SettingActivity extends BaseActivity implements ConfigListener, Liv
     private void refreshView() {
         refreshConfigText();
         mBinding.wallUrl.setText(WallConfig.getDesc());
-        mBinding.versionText.setText(BuildConfig.VERSION_NAME);
+        // 版本行不再是「只显示版本号」：它承载检查/下载的六种状态（见 updateVersionRow）
+        updateVersionRow();
         setElderSettingsText();
         setCacheText();
         setOtherText();
@@ -283,13 +313,91 @@ public class SettingActivity extends BaseActivity implements ConfigListener, Liv
     }
 
     /**
-     * 版本项：版本检查更新已移除，点击打开作者主页。
-     * 电视上多数没有浏览器 —— {@code Util.openUrl} 内部会捕获 ActivityNotFoundException
-     * 并提示 {@code R.string.open_url_fail}，所以不会出现「点了毫无反应」。
+     * 版本行（R161）：**在线更新的唯一入口，同时是它的状态显示位**。
+     *
+     * <p>刻意不新增一行「检查更新」：设置页已经有 20 多行，再加一行对老人是负担；
+     * 而「版本」这行本来就在、本来就能点。点击语义按状态路由：</p>
+     * <ul>
+     *   <li>下载中 / 已下载 → 打开进度弹窗（回到后台任务，不重新下载）；</li>
+     *   <li>其余任何状态 → 触发检查更新。</li>
+     * </ul>
+     *
+     * <p>状态文字走 {@code versionText} 一个 TextView，只有文案与颜色变化，
+     * 没有新增控件、没有新增 style。</p>
      */
     private void onVersion(View view) {
-        // 版本检查更新已移除：点击直达作者官网
-        Util.openUrl(this, "https://logyu.cc/");
+        if (UpdateState.isDownloading() || UpdateState.isDownloaded()) {
+            UpdateProgressDialog.create().show(this);
+            return;
+        }
+        UpdateCenter.check();
+    }
+
+    /**
+     * 把 UpdateState 映射成版本行右侧那一段文字。
+     *
+     * <p>六种状态的颜色全部取现有 ag_* 令牌：正常/可更新/下载中/已下载 = 主色、
+     * 检查中 = 提示灰、检查失败 = 警告橙。没有为状态新建 color selector。</p>
+     */
+    private void updateVersionRow() {
+        if (mBinding == null) return;
+        TextView text = mBinding.versionText;
+        int phase = UpdateState.getPhase();
+        switch (phase) {
+            case UpdateState.PHASE_CHECKING:
+                text.setText(R.string.update_checking);
+                text.setTextColor(ResUtil.getColor(R.color.ag_text_hint));
+                break;
+            case UpdateState.PHASE_LATEST:
+                text.setText(R.string.update_latest_short);
+                text.setTextColor(ResUtil.getColor(R.color.ag_primary));
+                break;
+            case UpdateState.PHASE_AVAILABLE:
+                text.setText(getString(R.string.update_available_short, versionOf()));
+                text.setTextColor(ResUtil.getColor(R.color.ag_primary));
+                break;
+            case UpdateState.PHASE_DOWNLOADING:
+                text.setText(getString(R.string.update_downloading_short, UpdateState.getProgress()));
+                text.setTextColor(ResUtil.getColor(R.color.ag_primary));
+                break;
+            case UpdateState.PHASE_DOWNLOADED:
+                text.setText(R.string.update_install_now);
+                text.setTextColor(ResUtil.getColor(R.color.ag_primary));
+                break;
+            case UpdateState.PHASE_FAILED:
+                text.setText(R.string.update_failed_short);
+                text.setTextColor(ResUtil.getColor(R.color.ag_warn_text));
+                break;
+            default:
+                text.setText(BuildConfig.VERSION_NAME);
+                text.setTextColor(ResUtil.getColor(R.color.ag_primary));
+                break;
+        }
+        maybeShowUpdateDialog(phase);
+    }
+
+    private String versionOf() {
+        UpdateInfo info = UpdateState.getInfo();
+        return info == null ? "" : info.getVersion();
+    }
+
+    /**
+     * 检查返回「有新版本」时自动弹窗 —— 用户点这一行就是为了这件事，不该让他再点一次。
+     *
+     * <p>两道闸门：① 同一状态只弹一次（进度刷新会高频通知，否则会连弹）；
+     * ② 因配置变更重建（savedInstanceState != null）时不弹，避免转个身回来
+     * 弹窗自己又跳出来。</p>
+     */
+    private void maybeShowUpdateDialog(int phase) {
+        if (restored || phase == lastDialogPhase) return;
+        lastDialogPhase = phase;
+        if (isFinishing() || isDestroyed()) return;
+        if (phase == UpdateState.PHASE_AVAILABLE) {
+            UpdateDialog.create().show(this);
+        } else if (phase == UpdateState.PHASE_FAILED && !UpdateState.getError().isEmpty()) {
+            // 失败原因（无网 / 全部源不可用 / 找不到本变体的包）直接告诉用户，别只留一句「检查失败」
+            Notify.show(UpdateState.getError());
+        }
     }
 
     private void setWallDefault(View view) {

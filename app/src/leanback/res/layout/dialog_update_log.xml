@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 更新日志弹窗（电视版）。
+     根容器必须是 DialogPanel：它会在测量阶段给滚动区限高，保证底部「关闭」按钮
+     不被长日志挤成 0 高（dialog_content.xml 没有按钮，所以那边不需要，
+     但这里一旦加了按钮就必须用 DialogPanel）。
+     ⚠ 滚动区必须带 @id/dialog_scroll —— DialogPanel 靠它定位要限高的子项。 -->
+<com.fongmi.android.tv.ui.custom.DialogPanel xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="@dimen/ag_space_7">
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/title"
+        style="@style/Ag.Text.Headline"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/update_log_title" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/subtitle"
+        style="@style/Ag.Text.Caption"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/ag_space_2"
+        tools:text="6.5.2 · 2026-11-22" />
+
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/dialog_scroll"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/ag_space_5"
+        android:overScrollMode="never"
+        android:scrollbars="vertical">
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/text"
+            style="@style/Ag.Text.Label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:lineSpacingExtra="@dimen/ag_space_2"
+            tools:text="· 新增：在线更新" />
+
+    </androidx.core.widget.NestedScrollView>
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/close"
+        style="@style/Ag.Button.Secondary"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/ag_button_h"
+        android:layout_marginTop="@dimen/ag_space_7"
+        android:singleLine="true"
+        android:text="@string/update_close" />
+
+</com.fongmi.android.tv.ui.custom.DialogPanel>
