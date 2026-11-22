@@ -6,6 +6,13 @@
 # Gson
 -keep class com.google.gson.** { *; }
 
+# 在线更新（R161）：GitHub Release 的 JSON 由 Gson 反射解析，字段名全在 @SerializedName 上。
+# ⛔ 这两个类放在 com.fongmi.android.tv.update，**不在上面 bean.** 的 keep 范围内**；
+#    Gson 自带的 consumer 规则（META-INF/proguard/gson.pro）只保 @Expose / @JsonAdapter / @Since，
+#    **不保 @SerializedName**。缺这两条时 R8 会删掉/改名这些字段，表现为线上「检查更新恒失败」。
+-keep class com.fongmi.android.tv.update.UpdateInfo { *; }
+-keep class com.fongmi.android.tv.update.UpdateInfo$Asset { *; }
+
 # SimpleXML
 -keep interface org.simpleframework.xml.core.Label { public *; }
 -keep class * implements org.simpleframework.xml.core.Label { public *; }
