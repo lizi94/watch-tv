@@ -3,6 +3,7 @@ package com.fongmi.android.tv.ui.fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -35,7 +36,13 @@ import com.fongmi.android.tv.ui.dialog.ThemeDialog;
 import com.fongmi.android.tv.utils.FileUtil;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.PermissionUtil;
-import com.fongmi.android.tv.utils.Util;
+import com.fongmi.android.tv.ui.dialog.UpdateDialog;
+import com.fongmi.android.tv.ui.dialog.UpdateProgressDialog;
+import com.fongmi.android.tv.update.UpdateCenter;
+import com.fongmi.android.tv.update.UpdateInfo;
+import com.fongmi.android.tv.update.UpdateState;
+import com.fongmi.android.tv.utils.ResUtil;
+import com.google.android.material.color.MaterialColors;
 import com.github.catvod.bean.Doh;
 import com.github.catvod.net.OkHttp;
 
@@ -59,6 +66,13 @@ import java.util.List;
 public class SettingFragment extends BaseFragment implements ConfigListener, ThemeDialog.Listener {
 
     private FragmentSettingBinding mBinding;
+
+    /** 用户本次主动点了「检查更新」：只有这种情况下结果回来才自动弹窗。 */
+    private boolean awaitingResult;
+    /** XML 里声明的版本号默认色（首次读到时缓存），用于「无状态」时恢复原样。 */
+    private int versionDefaultColor;
+    /** 监听器持有成字段，便于在 onPause 用同一个实例反注册。 */
+    private final UpdateState.Listener updateListener = this::updateVersionRow;
 
     public static SettingFragment newInstance() {
         return new SettingFragment();
@@ -97,7 +111,8 @@ public class SettingFragment extends BaseFragment implements ConfigListener, The
         mBinding.vodUrl.setText(ElderLock.isLocked() ? getString(R.string.elder_site_locked_hint) : VodConfig.getDesc());
         mBinding.liveUrl.setText((ElderLock.isLiveLocked() || ElderLock.isLocked()) ? getString(R.string.elder_live_locked_hint) : LiveConfig.getDisplayDesc());
         mBinding.wallUrl.setText(WallConfig.getDesc());
-        mBinding.versionText.setText(BuildConfig.VERSION_NAME);
+        // 版本行不再是「只显示版本号」：它承载检查/下载的六种状态（见 updateVersionRow）
+        updateVersionRow();
         setOtherText();
         setCacheText();
     }
@@ -288,8 +303,90 @@ public class SettingFragment extends BaseFragment implements ConfigListener, The
     }
 
     private void onVersion(View view) {
-        // 版本检查更新已移除：点击直达作者官网
-        Util.openUrl(requireActivity(), "https://logyu.cc/");
+        // 下载中 / 已下载：这次点击是「回到进度」，不要重新发一次检查请求
+        if (UpdateState.isDownloading() || UpdateState.isDownloaded()) {
+            UpdateProgressDialog.create().show(getParentFragmentManager(), null);
+            return;
+        }
+        // 用户主动点了才置位：只有「本次点出来的结果」才自动弹窗，
+        // 页面重建（切深浅色 / 旋转 / 从后台回来）时不会莫名弹一个更新窗
+        awaitingResult = true;
+        UpdateCenter.check();
+    }
+
+    /**
+     * 版本行（R161）：在线更新的唯一入口 + 状态显示位，不新增设置行。
+     *
+     * <p>六种状态的颜色沿用现有资源：正常 / 可更新 / 下载中 / 已下载 = 主色、
+     * 检查中 = white_60、检查失败 = colorError（手机版没有橙/红文字色令牌，
+     * 这里直接用主题的 error 语义色，不新建颜色）。</p>
+     */
+    private void updateVersionRow() {
+        if (mBinding == null) return;
+        TextView text = mBinding.versionText;
+        // 首次调用时把 XML 里声明的文字色记下来：无状态时原样恢复，
+        // 避免「只想改点击行为」却顺手把版本号的颜色也改了。
+        if (versionDefaultColor == 0) versionDefaultColor = text.getCurrentTextColor();
+        int phase = UpdateState.getPhase();
+        switch (phase) {
+            case UpdateState.PHASE_CHECKING:
+                text.setText(R.string.update_checking);
+                text.setTextColor(ResUtil.getColor(R.color.white_60));
+                break;
+            case UpdateState.PHASE_LATEST:
+                text.setText(R.string.update_latest_short);
+                text.setTextColor(primaryColor());
+                break;
+            case UpdateState.PHASE_AVAILABLE:
+                UpdateInfo available = UpdateState.getInfo();
+                text.setText(getString(R.string.update_available_short, available == null ? "" : available.getVersion()));
+                text.setTextColor(primaryColor());
+                break;
+            case UpdateState.PHASE_DOWNLOADING:
+                text.setText(getString(R.string.update_downloading_short, UpdateState.getProgress()));
+                text.setTextColor(primaryColor());
+                break;
+            case UpdateState.PHASE_DOWNLOADED:
+                text.setText(R.string.update_install_now);
+                text.setTextColor(primaryColor());
+                break;
+            case UpdateState.PHASE_FAILED:
+                text.setText(R.string.update_failed_short);
+                text.setTextColor(errorColor());
+                break;
+            default:
+                text.setText(BuildConfig.VERSION_NAME);
+                text.setTextColor(versionDefaultColor);
+                break;
+        }
+        handleCheckResult(phase);
+    }
+
+    /**
+     * 检查结束的收尾：有新版本 → 弹窗；失败 → 用正文说明原因；已是最新 → 什么都不弹
+     * （行尾已经写着「已是最新」，再弹一次纯打扰）。
+     */
+    private void handleCheckResult(int phase) {
+        if (!awaitingResult) return;
+        if (phase == UpdateState.PHASE_CHECKING) return;
+        awaitingResult = false;
+        if (!isAdded()) return;
+        if (phase == UpdateState.PHASE_AVAILABLE) {
+            UpdateDialog.create().show(getParentFragmentManager(), null);
+        } else if (phase == UpdateState.PHASE_FAILED && !UpdateState.getError().isEmpty()) {
+            Notify.show(UpdateState.getError());
+        }
+    }
+
+    /** 主色：手机版是动态取色主题，只能运行时从主题属性取，不能写死色值。 */
+    private int primaryColor() {
+        return MaterialColors.getColor(mBinding.getRoot(), androidx.appcompat.R.attr.colorPrimary);
+    }
+
+    private int errorColor() {
+        // ⛔ 不能用 com.google.android.material.R.attr.colorError：material 1.14.0 的 R.txt 里没有该 attr
+        //    （编译报「找不到符号」）。colorError 由 appcompat 声明，与上面的 colorPrimary 同源。
+        return MaterialColors.getColor(mBinding.getRoot(), androidx.appcompat.R.attr.colorError);
     }
 
     private void setWallDefault(View view) {
@@ -396,8 +493,17 @@ public class SettingFragment extends BaseFragment implements ConfigListener, The
     @Override
     public void onResume() {
         super.onResume();
+        // 下载跑在前台服务里，回来时状态可能已经变了（下载完 / 失败），重新订阅并同步一次
+        UpdateState.addListener(updateListener);
+        updateVersionRow();
         // 从长辈设置页返回后同步入口处的锁定状态
         if (mBinding != null) setElderSettingsText();
+    }
+
+    @Override
+    public void onPause() {
+        UpdateState.removeListener(updateListener);
+        super.onPause();
     }
 
     @Override

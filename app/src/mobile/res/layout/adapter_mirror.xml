@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 下载源列表项（手机版）：与 adapter_array_pick.xml 同构 ——
+     shape_site_pick_row（10dp 圆角淡白行 + 按下主色高亮）+ 12/8dp 内边距 + 48dp 最小高度。
+     选中反馈复用 @color/site_state_color：name 绑 selected 后，选中项为纯白、其余 60% 白
+     （这就是手机版列表「当前项」的既有表达方式，不额外加勾选图标）。
+     延迟只做「正常 / 超时」两档明暗，不引入手机版没有的橙/红文字色令牌。 -->
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="8dp"
+    android:background="@drawable/shape_site_pick_row"
+    android:gravity="center_vertical"
+    android:minHeight="48dp"
+    android:orientation="horizontal"
+    android:paddingStart="12dp"
+    android:paddingTop="8dp"
+    android:paddingEnd="12dp"
+    android:paddingBottom="8dp">
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/name"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:ellipsize="middle"
+        android:singleLine="true"
+        android:textColor="@color/site_state_color"
+        android:textSize="16sp"
+        tools:text="gh.dpik.top" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/delay"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:singleLine="true"
+        android:textColor="@color/white_60"
+        android:textSize="14sp"
+        tools:text="128 ms" />
+
+</androidx.appcompat.widget.LinearLayoutCompat>

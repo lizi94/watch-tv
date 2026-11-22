@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 下载进度弹窗（电视版）。
+     同一个对话框承载两种状态，靠代码换文案与按钮含义，不另建布局：
+       · 下载中：取消下载（次要）/ 转到后台（主要）
+       · 已完成：关闭（次要）/ 立即安装（主要）
+     进度条用 Material 的 LinearProgressIndicator，颜色取主题 colorPrimary（= ag_primary），
+     底槽用 ag_btn_bg —— 都是现有令牌，没有新建 style。 -->
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="@dimen/ag_space_7">
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/title"
+        style="@style/Ag.Text.Headline"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        tools:text="正在下载 6.5.2" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/source"
+        style="@style/Ag.Text.Caption"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/ag_space_2"
+        tools:text="来源 gh.dpik.top" />
+
+    <com.google.android.material.progressindicator.LinearProgressIndicator
+        android:id="@+id/progress"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/ag_space_5"
+        android:max="100"
+        app:indicatorColor="?attr/colorPrimary"
+        app:trackColor="@color/ag_btn_bg"
+        app:trackCornerRadius="4dp"
+        app:trackStopIndicatorSize="0dp"
+        app:trackThickness="8dp" />
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/ag_space_3"
+        android:orientation="horizontal">
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/size"
+            style="@style/Ag.Text.Body"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:singleLine="true"
+            tools:text="45.2 MB / 94.6 MB" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/percent"
+            style="@style/Ag.Text.Primary"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:singleLine="true"
+            tools:text="48%" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/speed"
+        style="@style/Ag.Text.Caption"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/ag_space_1"
+        tools:text="1.8 MB/s · 剩余约 28 秒" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/hint"
+        style="@style/Ag.Text.Body.Sub"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/ag_space_3"
+        android:text="@string/update_background_hint" />
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/ag_space_7"
+        android:orientation="horizontal">
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/cancel"
+            style="@style/Ag.Button.Secondary"
+            android:layout_width="0dp"
+            android:layout_height="@dimen/ag_button_h"
+            android:layout_marginEnd="@dimen/ag_space_5"
+            android:layout_weight="1"
+            android:singleLine="true"
+            android:text="@string/update_cancel_download" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/positive"
+            style="@style/Ag.Button.Primary"
+            android:layout_width="0dp"
+            android:layout_height="@dimen/ag_button_h"
+            android:layout_weight="1"
+            android:singleLine="true"
+            android:text="@string/update_to_background" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+</androidx.appcompat.widget.LinearLayoutCompat>

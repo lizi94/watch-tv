@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 下载源选择弹窗内容（手机版）。标题由 builder().setTitle() 提供。
+     列表用 CustomRecyclerView + app:maxHeight 限高（与 dialog_array_pick 同一上限思路）；
+     「重新测速」用现成的 Widget.Material3.Button.TextButton（dialog_confirm 已在用），
+     不新造按钮样式。
+     ⚠ 不能把「重新测速」做成 builder 的按钮：Material 的按钮点击必定关闭弹窗，
+        而重测必须留在原地看结果。 -->
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/summary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:paddingBottom="8dp"
+        android:textColor="@color/white_60"
+        android:textSize="13sp"
+        tools:text="已测速 8 个节点 · 点击即选定" />
+
+    <com.fongmi.android.tv.ui.custom.CustomRecyclerView
+        android:id="@+id/recycler"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:overScrollMode="never"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+        app:maxHeight="320dp"
+        tools:itemCount="4"
+        tools:listitem="@layout/adapter_mirror" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/retest"
+        style="@style/Widget.Material3.Button.TextButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:layout_marginTop="4dp"
+        android:layout_marginEnd="12dp"
+        android:minWidth="0dp"
+        android:text="@string/update_retest" />
+
+</androidx.appcompat.widget.LinearLayoutCompat>

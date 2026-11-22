@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 发现新版本弹窗（电视版）。
+     ⛔ 布局属性一律写在这里，不要挪进 style（style 里的 layout_* 会静默失效，见 styles.xml 顶部铁律）。
+     全部文字样式复用 Ag.Text.*，按钮复用 Ag.Button.*，不新增任何 style / 颜色。 -->
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="@dimen/ag_space_7">
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/title"
+        style="@style/Ag.Text.Headline"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/update_title" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/current"
+        style="@style/Ag.Text.Body.Sub"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/ag_space_5"
+        tools:text="当前版本 6.5.0" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/latest"
+        style="@style/Ag.Text.Primary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/ag_space_2"
+        tools:text="最新版本 6.5.2" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/size"
+        style="@style/Ag.Text.Caption"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/ag_space_2"
+        tools:text="安装包 94.6 MB" />
+
+    <!-- 日志入口：与设置页列表行同构（Ag.ListItem），遥控器能聚焦、能按 OK -->
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/log"
+        style="@style/Ag.ListItem"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/ag_space_5"
+        android:orientation="horizontal">
+
+        <com.google.android.material.textview.MaterialTextView
+            style="@style/Ag.Text.Body"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:singleLine="true"
+            android:text="@string/update_view_log" />
+
+        <com.google.android.material.textview.MaterialTextView
+            style="@style/Ag.Text.Label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/ag_space_3"
+            android:text="›" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/ag_space_7"
+        android:orientation="horizontal">
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/cancel"
+            style="@style/Ag.Button.Secondary"
+            android:layout_width="0dp"
+            android:layout_height="@dimen/ag_button_h"
+            android:layout_marginEnd="@dimen/ag_space_5"
+            android:layout_weight="1"
+            android:singleLine="true"
+            android:text="@string/update_later" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/positive"
+            style="@style/Ag.Button.Primary"
+            android:layout_width="0dp"
+            android:layout_height="@dimen/ag_button_h"
+            android:layout_weight="1"
+            android:singleLine="true"
+            android:text="@string/update_download_install" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+</androidx.appcompat.widget.LinearLayoutCompat>

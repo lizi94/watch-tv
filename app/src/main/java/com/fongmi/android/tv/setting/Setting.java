@@ -22,6 +22,18 @@ public class Setting {
         return Prefers.getString("doh");
     }
 
+    /**
+     * 在线更新用的下载源（存稳定 key，不存下标 —— 节点数组增删后下标会指错人）。
+     * 空串 = 自动（选最快节点）、{@code "direct"} = 直连、其余 = 节点 base 地址。
+     */
+    public static String getUpdateMirror() {
+        return Prefers.getString("updateMirror", "");
+    }
+
+    public static void putUpdateMirror(String mirror) {
+        Prefers.put("updateMirror", mirror == null ? "" : mirror);
+    }
+
     public static void putDoh(String doh) {
         Prefers.put("doh", doh);
     }
