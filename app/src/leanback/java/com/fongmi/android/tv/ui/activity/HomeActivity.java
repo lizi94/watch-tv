@@ -505,6 +505,14 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
      * 同一分类内调整条件时保留并覆盖。从详情页返回首页不清（老人调好的条件不该丢）。</p>
      */
     private HashMap<String, String> mFilterExtend = new HashMap<>();
+    /**
+     * 本次打开筛选面板期间，条件是否**真的被改过**（R162）。
+     *
+     * <p>决定关闭面板后焦点落哪：改过 ⇒ 内容区已重建、原焦点必然丢失，落内容区第一行；
+     * 只是打开看看又关掉 ⇒ 送回当前分类 chip，<b>不把老人从第 20 行拽回第一行</b>
+     * （全站一贯原则：没有真实变化不动焦点）。</p>
+     */
+    private boolean filterTouched;
     private HistoryPresenter mPresenter;
     private HomeChipPresenter mChipPresenter;
     private SiteViewModel mViewModel;
@@ -2682,6 +2690,7 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
         }
         // 防重复打开：弹窗已在显示时再按菜单键不做任何事
         if (getSupportFragmentManager().findFragmentByTag(HomeFilterDialog.TAG) != null) return;
+        filterTouched = false;   // 每次打开重新记账：只有这一轮真改过条件才把焦点送到内容区
         HomeFilterDialog.create().filters(filters).extend(mFilterExtend).category(type.getTypeName()).show(this);
     }
 
@@ -2690,18 +2699,25 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
         // 面板里选值「立即生效」（与手机端一致）：保存条件后用 **force** 重新请求当前分类。
         // ⛔ 必须 force：筛选不改分类，mShownChip 去重键会把请求拦掉。
         mFilterExtend = new HashMap<>(extend);
+        filterTouched = true;
         loadChip(mShownChip, true);
     }
 
     @Override
     public void onFilterClosed() {
-        // R162：筛选生效后内容区已整块换成筛选结果 ⇒ 焦点直接落到**内容区第一行**，可以立刻往下翻。
-        // 旧实现送回「当前分类」chip，老人还得再按一次「下」才看得到结果。
-        // 内容可能还在加载（只有进度行、没有可聚焦项）⇒ 隔一帧重试一次，仍失败才回落分类行。
+        // R162 分两种情形，不能一律拽焦点：
+        // · 条件真的改过 ⇒ 内容区已整块换成筛选结果、原焦点必然丢失 ⇒ 落**内容区第一行**，
+        //   老人可以立刻往下翻（旧实现送回分类行，还得再按一次「下」才看得到结果）。
+        // · 只是打开看看又关掉 ⇒ 内容没动过 ⇒ 送回**当前分类** chip，不把老人从第 20 行拽回第一行。
+        if (!filterTouched) {
+            focusCurrentChip();
+            return;
+        }
         if (focusContentFirst()) return;
+        // 内容还在加载（只有进度行、没有可聚焦项）⇒ 隔一帧重试一次，仍失败才回落当前分类
         mBinding.recycler.postDelayed(() -> {
             if (isFinishing() || isDestroyed() || mBinding == null) return;
-            if (!focusContentFirst()) focusChipRow();
+            if (!focusContentFirst()) focusCurrentChip();
         }, HOME_FOCUS_RESTORE_DELAY);
     }
 
