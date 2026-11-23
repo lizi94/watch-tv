@@ -28,8 +28,8 @@ android {
         //   勿再取 da41876：那是同一 versionCode=643 的链首，交互尚未恢复（R145 事故）。
         // R158：随标准版升 6.5.0，自启版升 6.5.1（两树恒差 1）。
         // R161：在线更新（GitHub Releases + 8 个下载加速节点），自启版随标准版升 6.5.3（两树恒差 1）。
-        versionCode 655
-        versionName "6.5.5"
+        versionCode 657
+        versionName "6.5.7"
         javaCompileOptions {
             annotationProcessorOptions {
                 arguments = ["room.schemaLocation": "$projectDir/schemas".toString(), "eventBusIndex": "com.fongmi.android.tv.event.EventIndex"]

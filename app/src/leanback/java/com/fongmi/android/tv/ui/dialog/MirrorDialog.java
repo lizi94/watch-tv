@@ -10,6 +10,8 @@ import com.fongmi.android.tv.ui.adapter.MirrorAdapter;
 import com.fongmi.android.tv.update.Mirror;
 import com.fongmi.android.tv.update.MirrorProbe;
 import com.fongmi.android.tv.update.UpdateCenter;
+import com.fongmi.android.tv.update.UpdateInfo;
+import com.fongmi.android.tv.update.UpdateState;
 import com.fongmi.android.tv.utils.Notify;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
@@ -74,21 +76,35 @@ public class MirrorDialog extends BaseAlertDialog implements MirrorAdapter.OnCli
         if (binding == null) return;
         binding.summary.setText(R.string.update_source_measuring);
         binding.retest.setEnabled(false);
-        MirrorProbe.probe(mirrors, () -> {
+        MirrorProbe.probe(mirrors, probeUrl(), () -> {
             // 回调可能晚于弹窗销毁（用户已经去下载了），此处必须防御，不能直接摸 binding
             if (!isAdded() || binding == null) return;
             adapter.notifyDataSetChanged();
             binding.retest.setEnabled(true);
-            binding.summary.setText(getString(R.string.update_source_ready, adapter.getMeasuredDelayCount()));
+            binding.summary.setText(getString(R.string.update_source_ready, adapter.getMeasuredDelayCount(), adapter.getProbeCount()));
         });
+    }
+
+    /**
+     * 探针目标 = 本次真正要下载的那个 APK 地址（R163）。
+     *
+     * <p>⛔ 别再改回 robots.txt 或节点根路径：镜像只代理 release 下载路径，其它路径会被
+     * 403 / 404 / 429 拒绝，测出来的状态与「能否下载」无关（2026-11-24 实测 8 个节点全灭）。
+     * 取不到 asset 时返回 null，由 {@link MirrorProbe} 退化为根路径模式（只判可达）。</p>
+     */
+    private String probeUrl() {
+        UpdateInfo info = UpdateState.getInfo();
+        return info == null || info.getAsset() == null ? null : info.getAsset().getUrl();
     }
 
     @Override
     public void onItemClick(Mirror item) {
         Mirror chosen = item;
         if (item.isAuto()) {
-            // 「自动」= 此刻延迟最小的那个；全部不通时回落直连
+            // 「自动」：先用测速成功的节点里最快的；
+            // 一个都没有时，选「连得上但被拒」里响应最快的那个（直连在国内基本不通，不再优先回落）。
             Mirror fastest = Mirror.fastest(mirrors);
+            if (fastest == null) fastest = Mirror.fastestAny(mirrors);
             chosen = fastest != null ? fastest : Mirror.direct(mirrors);
         }
         if (chosen == null) {

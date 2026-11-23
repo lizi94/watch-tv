@@ -419,9 +419,11 @@
 
     <!-- ============ 在线更新（R161）：主源 + 8 个加速节点 ============ -->
     <string name="update_mirror_auto">Auto (fastest)</string>
+    <string name="update_mirror_auto_none">No node available</string>
     <string name="update_mirror_direct">GitHub direct</string>
     <string name="update_delay_unknown">—</string>
     <string name="update_delay_timeout">Timeout</string>
+    <string name="update_delay_blocked">Unavailable</string>
     <string name="update_delay_ms">%d ms</string>
     <string name="update_check_failed_network">Check failed, please retry</string>
     <string name="update_check_failed_empty">No release found for this build</string>
@@ -441,7 +443,7 @@
     <string name="update_close">Close</string>
     <string name="update_source_title">Download source</string>
     <string name="update_source_measuring">Measuring…</string>
-    <string name="update_source_ready">%d nodes measured, tap to select</string>
+    <string name="update_source_ready">%1$d of %2$d available, tap to select</string>
     <string name="update_retest">Re-measure</string>
     <string name="update_downloading">Downloading %s</string>
     <string name="update_from_source">Source %s</string>

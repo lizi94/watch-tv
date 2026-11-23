@@ -24,8 +24,15 @@ public class Mirror {
 
     /** 还没测过。 */
     public static final int DELAY_UNKNOWN = -1;
-    /** 测速失败 / 超时。 */
+    /** 测速失败 / 超时（连不上、DNS 失败、超过超时时间）。 */
     public static final int DELAY_TIMEOUT = -2;
+    /**
+     * 节点有响应但拒绝了本次探测（403 / 404 / 429 等）。
+     *
+     * <p>与 {@link #DELAY_TIMEOUT} 必须分开：超时是「连不上」，不可用是「连得上但此刻不给包」。
+     * 只显示一个「超时」会让用户以为网络坏了，实际多为节点限流或该路径不被代理。</p>
+     */
+    public static final int DELAY_BLOCKED = -3;
 
     /**
      * 8 个精选加速节点（来源 github.akams.cn 的「贡献」类节点）。
@@ -48,6 +55,13 @@ public class Mirror {
     private final String base;
 
     private volatile int delay = DELAY_UNKNOWN;
+    /**
+     * 探测的原始往返耗时（ms）；连不上为 {@link Integer#MAX_VALUE}。
+     *
+     * <p>与 {@link #delay} 分开记：{@code delay} 是判定结果（可用 / 不可用 / 超时），
+     * 这个值无论成败都记，用于「全部不可用时挑响应最快的一个」。</p>
+     */
+    private volatile int cost = Integer.MAX_VALUE;
 
     /**
      * 全局共享的下载源列表（含测速结果）。
@@ -140,6 +154,18 @@ public class Mirror {
         this.delay = delay;
     }
 
+    public int getCost() {
+        return cost;
+    }
+
+    public void setCost(int cost) {
+        this.cost = cost;
+    }
+
+    public boolean isBlocked() {
+        return delay == DELAY_BLOCKED;
+    }
+
     public boolean isTimeout() {
         return delay == DELAY_TIMEOUT;
     }
@@ -160,13 +186,14 @@ public class Mirror {
     }
 
     /**
-     * 行尾延迟文案。颜色不在这里决定：电视版三档分级 + 手机版单色都是适配器里按
-     * 「快 / 中 / 慢 / 未知」算的（见两个源集各自的 {@code MirrorAdapter}），文案只负责给值：
-     * 未知 → {@code —}、超时 → {@code 超时}、正常 → {@code 123 ms}。
+     * 行尾延迟文案。颜色不在这里决定：电视版分级 + 手机版明暗都是适配器里按状态算的
+     * （见两个源集各自的 {@code MirrorAdapter}），文案只负责给值：
+     * 未知 → {@code —}、超时 → {@code 超时}、不可用 → {@code 不可用}、正常 → {@code 123 ms}。
      */
     public String getDelayText() {
         if (delay == DELAY_UNKNOWN) return ResUtil.getString(R.string.update_delay_unknown);
         if (delay == DELAY_TIMEOUT) return ResUtil.getString(R.string.update_delay_timeout);
+        if (delay == DELAY_BLOCKED) return ResUtil.getString(R.string.update_delay_blocked);
         return ResUtil.getString(R.string.update_delay_ms, delay);
     }
 
@@ -190,6 +217,23 @@ public class Mirror {
         for (Mirror mirror : list) {
             if (!mirror.isProbeable() || mirror.delay <= 0) continue;
             if (best == null || mirror.delay < best.delay) best = mirror;
+        }
+        return best;
+    }
+
+    /**
+     * 「自动」的兜底：有响应（含 4xx/5xx）的节点里响应最快的一个。
+     *
+     * <p>为什么需要它：{@link #fastest(List)} 只认测速成功的节点，一旦全部「不可用」就返回 null，
+     * 旧调用方随即回落<b>直连</b> —— 而直连在国内基本不通，等于必然下载失败。
+     * 现在先试「连得上但被拒」里最快的那一个（限流往往是偶发的），一个都没响应才回落直连。</p>
+     */
+    public static Mirror fastestAny(List<Mirror> list) {
+        Mirror best = null;
+        for (Mirror mirror : list) {
+            if (!mirror.isProbeable()) continue;
+            if (mirror.cost == Integer.MAX_VALUE) continue;
+            if (best == null || mirror.cost < best.cost) best = mirror;
         }
         return best;
     }
