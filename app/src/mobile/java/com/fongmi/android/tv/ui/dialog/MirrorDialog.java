@@ -9,6 +9,10 @@ import com.fongmi.android.tv.ui.adapter.MirrorAdapter;
 import com.fongmi.android.tv.update.Mirror;
 import com.fongmi.android.tv.update.MirrorProbe;
 import com.fongmi.android.tv.update.UpdateCenter;
+import com.fongmi.android.tv.update.UpdateInfo;
+import com.fongmi.android.tv.update.UpdateState;
+import com.fongmi.android.tv.update.UpdateInfo;
+import com.fongmi.android.tv.update.UpdateState;
 import com.fongmi.android.tv.utils.Notify;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
@@ -64,19 +68,27 @@ public class MirrorDialog extends BaseAlertDialog implements MirrorAdapter.OnCli
         if (binding == null) return;
         binding.summary.setText(R.string.update_source_measuring);
         binding.retest.setEnabled(false);
-        MirrorProbe.probe(mirrors, () -> {
+        MirrorProbe.probe(mirrors, probeUrl(), () -> {
             if (!isAdded() || binding == null) return;
             adapter.notifyDataSetChanged();
             binding.retest.setEnabled(true);
-            binding.summary.setText(getString(R.string.update_source_ready, adapter.getMeasuredDelayCount()));
+            binding.summary.setText(getString(R.string.update_source_ready, adapter.getMeasuredDelayCount(), adapter.getProbeCount()));
         });
+    }
+
+    /** 探针目标 = 本次真正要下载的那个 APK 地址（R163，理由见电视版同名方法）。 */
+    private String probeUrl() {
+        UpdateInfo info = UpdateState.getInfo();
+        return info == null || info.getAsset() == null ? null : info.getAsset().getUrl();
     }
 
     @Override
     public void onItemClick(Mirror item) {
         Mirror chosen = item;
         if (item.isAuto()) {
+            // 先用测速成功的节点里最快的；一个都没有时选「连得上但被拒」里响应最快的
             Mirror fastest = Mirror.fastest(mirrors);
+            if (fastest == null) fastest = Mirror.fastestAny(mirrors);
             chosen = fastest != null ? fastest : Mirror.direct(mirrors);
         }
         if (chosen == null) {

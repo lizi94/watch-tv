@@ -2776,22 +2776,25 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
      * 同一套「行没绑上就滚过去再落焦」的处理。</p>
      */
     private void focusContentRow() {
+        // ⛔ R163：原实现直接拿 chipIndex + 1 当「内容区第一行」，但这一行在有观看历史时是
+        //   「最近观看」的标题行（HeaderPresenter，不可聚焦）⇒ firstFocusableIn 返回 null ⇒
+        //   焦点纹丝不动，而调用方（返回键 ④ 分支）已经 resetBackTaps() ⇒
+        //   **在分类行按返回键完全失灵，且连按三次也退不出**。
+        //   现在自顶向下扫「分类行以下」的所有行，取第一个真正可聚焦的（跳过标题行 / 空态卡）。
+        if (focusContentFirst()) return;
         int chipIndex = mAdapter.indexOf(mChipRow);
         if (chipIndex < 0) return;
         int contentIndex = chipIndex + 1;
         if (contentIndex >= mAdapter.size()) return;
-        Object item = mAdapter.get(contentIndex);
-        View row = findAttachedRow(item);
-        if (row == null) {
-            mBinding.recycler.scrollToPosition(contentIndex);
-            mBinding.recycler.post(() -> {
-                View target = firstFocusableIn(findAttachedRow(item));
-                if (target != null) target.requestFocus();
-            });
-            return;
-        }
-        View target = firstFocusableIn(row);
-        if (target != null) target.requestFocus();
+        // 屏上确实没有可聚焦行（例如空态卡占满）⇒ 先把 chips 下方滚进来，再扫一次
+        mBinding.recycler.scrollToPosition(contentIndex);
+        mBinding.recycler.post(() -> {
+            if (isFinishing() || isDestroyed() || mBinding == null) return;
+            if (focusContentFirst()) return;
+            if (contentIndex >= mAdapter.size()) return;
+            View target = firstFocusableIn(findAttachedRow(mAdapter.get(contentIndex)));
+            if (target != null) target.requestFocus();
+        });
     }
 
     /** 滚回列表顶部并把焦点落到第 0 行（功能区）第一个可聚焦项。R158 D3 断点 B-2 的落点。 */

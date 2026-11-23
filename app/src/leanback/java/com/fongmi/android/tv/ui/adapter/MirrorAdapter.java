@@ -60,6 +60,14 @@ public class MirrorAdapter extends RecyclerView.Adapter<MirrorAdapter.ViewHolder
         return count;
     }
 
+    /** 可探测节点的总数（「自动 / 直连」不计），与 {@link #getMeasuredDelayCount()} 组成「x/y」。 */
+    public int getProbeCount() {
+        int count = 0;
+        for (Mirror mirror : items) if (mirror.isProbeable()) count++;
+        return count;
+    }
+
+
     @Override
     public int getItemCount() {
         return items.size();
@@ -88,22 +96,25 @@ public class MirrorAdapter extends RecyclerView.Adapter<MirrorAdapter.ViewHolder
     private String delayText(Mirror item) {
         if (item.isAuto()) {
             Mirror fastest = Mirror.fastest(items);
-            return fastest == null ? ResUtil.getString(R.string.update_delay_unknown) : fastest.getName();
+            return fastest == null ? ResUtil.getString(R.string.update_mirror_auto_none) : fastest.getName();
         }
         return item.getDelayText();
     }
 
     /**
-     * 延迟三档配色，色值全部取自现有 ag_* 令牌：
-     * 快 = 主色、中 = 警告橙、慢 = 危险红、未知/超时 = 提示灰。
+     * 延迟配色，色值全部取自现有 ag_* 令牌：
+     * 快 = 主色（≤800ms）、中 = 警告橙（≤2000ms）、慢 = 危险红、不可用 = 警告橙、未知/超时 = 提示灰。
      */
     private int delayColor(Mirror item) {
         if (item.isAuto()) return ResUtil.getColor(R.color.ag_primary);
         if (item.isDirect()) return ResUtil.getColor(R.color.ag_text_hint);
         int delay = item.getDelay();
         if (delay == Mirror.DELAY_UNKNOWN || delay == Mirror.DELAY_TIMEOUT) return ResUtil.getColor(R.color.ag_text_hint);
-        if (delay <= 300) return ResUtil.getColor(R.color.ag_primary);
-        if (delay <= 800) return ResUtil.getColor(R.color.ag_warn_text);
+        // R163：连得上但被拒（403/404/429）单独一档，不能和「超时」挤成同一个灰字
+        if (delay == Mirror.DELAY_BLOCKED) return ResUtil.getColor(R.color.ag_warn_text);
+        // R163 阈值：实测国内访问这些节点 700~2700ms，原来的 300/800 会让可用节点全部显示橙红
+        if (delay <= 800) return ResUtil.getColor(R.color.ag_primary);
+        if (delay <= 2000) return ResUtil.getColor(R.color.ag_warn_text);
         return ResUtil.getColor(R.color.ag_danger);
     }
 

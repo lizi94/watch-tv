@@ -52,6 +52,14 @@ public class MirrorAdapter extends RecyclerView.Adapter<MirrorAdapter.ViewHolder
         return count;
     }
 
+    /** 可探测节点的总数（「自动 / 直连」不计），与 {@link #getMeasuredDelayCount()} 组成「x/y」。 */
+    public int getProbeCount() {
+        int count = 0;
+        for (Mirror mirror : items) if (mirror.isProbeable()) count++;
+        return count;
+    }
+
+
     @Override
     public int getItemCount() {
         return items.size();
@@ -77,7 +85,7 @@ public class MirrorAdapter extends RecyclerView.Adapter<MirrorAdapter.ViewHolder
     private String delayText(Mirror item) {
         if (item.isAuto()) {
             Mirror fastest = Mirror.fastest(items);
-            return fastest == null ? ResUtil.getString(R.string.update_delay_unknown) : fastest.getName();
+            return fastest == null ? ResUtil.getString(R.string.update_mirror_auto_none) : fastest.getName();
         }
         return item.getDelayText();
     }
@@ -91,7 +99,7 @@ public class MirrorAdapter extends RecyclerView.Adapter<MirrorAdapter.ViewHolder
     private int delayColor(Mirror item) {
         if (item.isAuto() || item.isDirect()) return ResUtil.getColor(R.color.white_60);
         int delay = item.getDelay();
-        if (delay == Mirror.DELAY_UNKNOWN || delay == Mirror.DELAY_TIMEOUT) return ResUtil.getColor(R.color.white_30);
+        if (delay == Mirror.DELAY_UNKNOWN || delay == Mirror.DELAY_TIMEOUT || delay == Mirror.DELAY_BLOCKED) return ResUtil.getColor(R.color.white_30);
         return ResUtil.getColor(R.color.white_60);
     }
 
