@@ -24,8 +24,8 @@ android {
         // 拆位：major = code/100，minor = (code%100)/10，patch = code%10 ⇒ 650 = 6.5.0。
         // R158：键盘 6 列 + 焦点态两态化 + 文案精简繁转简 + 主页键/返回键断点，升 6.5.0。
         // R161：在线更新（GitHub Releases + 8 个下载加速节点），标准版升 6.5.2。
-        versionCode 652
-        versionName "6.5.2"
+        versionCode 654
+        versionName "6.5.4"
         javaCompileOptions {
             annotationProcessorOptions {
                 arguments = ["room.schemaLocation": "$projectDir/schemas".toString(), "eventBusIndex": "com.fongmi.android.tv.event.EventIndex"]

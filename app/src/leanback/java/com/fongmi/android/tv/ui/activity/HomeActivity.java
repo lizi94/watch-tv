@@ -8,6 +8,7 @@ import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.view.ViewTreeObserver;
 
 import androidx.annotation.NonNull;
@@ -714,6 +715,9 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
                 //   第二个根因：那两种情况下首行不再是功能区行（是空态卡或 chips 行）⇒ position 永远
                 //   不为 0 ⇒ 标题栏被永久隐藏。标题栏现在**恒显示**，不随选中行变化。
                 if (mPresenter.isDelete()) setHistoryDelete(false);
+                // R162：焦点进入分类行时，把行内「选中位置」对齐当前分类
+                //（否则 HorizontalGridView 默认从第 0 项开始 ⇒ 上翻永远落回「推荐」）
+                if (mChipRow != null && position == mAdapter.indexOf(mChipRow)) syncChipRowSelection();
             }
         });
         // 内容区滚动到底时自动加载分类下一页（CustomScroller 用通用 LayoutManager API 判定触底：
@@ -1824,6 +1828,56 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
         mChipSelected = category;
         mChipPresenter.setSelected(category);
         if (mChipAdapter.size() > 0) mChipAdapter.notifyArrayItemRangeChanged(0, mChipAdapter.size());
+        syncChipRowSelection();
+    }
+
+    /**
+     * 把分类行内部的「选中位置」对齐当前分类（R162）。
+     *
+     * <p><b>为什么需要</b>：chips 行是 HorizontalGridView，焦点进入行内时按 grid 自己的 focus position
+     * 决定落在哪一项，默认是 0 ⇒ 老人从内容区往上翻，焦点永远回到「推荐」。而 chip 是「移到即加载」，
+     * 落错项还会把内容切回推荐 —— 不只是焦点跑偏，内容也被换掉。
+     * 每次切换分类后同步一次，行内落点就与当前分类一致。</p>
+     *
+     * <p>行不在屏上时什么都不做：等它被滚进来时，行选中监听会再调一次（见 initEvent）。</p>
+     */
+    private void syncChipRowSelection() {
+        if (mChipRow == null || mChipItems == null) return;
+        int index = mChipItems.indexOf(mChipSelected);
+        if (index < 0) return;
+        View row = findAttachedRow(mChipRow);
+        if (!(row instanceof HorizontalGridView)) return;
+        HorizontalGridView grid = (HorizontalGridView) row;
+        if (grid.getSelectedPosition() != index) grid.setSelectedPosition(index);
+    }
+
+    /**
+     * 菜单键作用域（R162）：焦点是否停在「分类行以下」的内容行。
+     *
+     * <p>行序：功能区(0) → 分类行(1) → 历史标题 / 历史行 → 内容行。只有 adapter position 严格大于
+     * 分类行才算「以下」；分类行本身、功能区、标题栏都返回 false（调用方据此吞键静默）。</p>
+     */
+    private boolean isFilterScopeFocused() {
+        if (mChipRow == null || mBinding == null) return false;
+        int chipIndex = mAdapter.indexOf(mChipRow);
+        if (chipIndex < 0) return false;
+        View focused = getCurrentFocus();
+        if (focused == null) return false;
+        View row = rowOf(focused);
+        if (row == null) return false;
+        return mBinding.recycler.getChildAdapterPosition(row) > chipIndex;
+    }
+
+    /** 取焦点视图所在的**行**（recycler 的直接子视图）；不在 recycler 内返回 null。 */
+    private View rowOf(View view) {
+        if (view == null || mBinding == null) return null;
+        View child = view;
+        while (child != null) {
+            ViewParent parent = child.getParent();
+            if (parent == mBinding.recycler) return child;
+            child = parent instanceof View ? (View) parent : null;
+        }
+        return null;
     }
 
     private void addVideo(Result result) {
@@ -2531,9 +2585,36 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
 
     @Override
     public void onFilterClosed() {
-        // 筛选生效已经重建过内容区（原焦点所在的封面行被移除）⇒ 关闭弹窗后焦点会失去落点。
-        // 显式送回「当前分类」的 chip 上：位置明确、不跳顶，也顺带让老人看到高亮确认。
-        focusCurrentChip();
+        // R162：筛选生效后内容区已整块换成筛选结果 ⇒ 焦点直接落到**内容区第一行**，可以立刻往下翻。
+        // 旧实现送回「当前分类」chip，老人还得再按一次「下」才看得到结果。
+        // 内容可能还在加载（只有进度行、没有可聚焦项）⇒ 隔一帧重试一次，仍失败才回落分类行。
+        if (focusContentFirst()) return;
+        mBinding.recycler.postDelayed(() -> {
+            if (isFinishing() || isDestroyed() || mBinding == null) return;
+            if (!focusContentFirst()) focusChipRow();
+        }, HOME_FOCUS_RESTORE_DELAY);
+    }
+
+    /**
+     * 把焦点送到分类行以下的第一行（自顶向下取第一个可聚焦的行）。
+     *
+     * @return true = 已落焦；false = 内容区此刻没有可聚焦的行（调用方回落分类行）
+     */
+    private boolean focusContentFirst() {
+        if (mChipRow == null || mBinding == null) return false;
+        int chipIndex = mAdapter.indexOf(mChipRow);
+        if (chipIndex < 0) return false;
+        for (int i = 0; i < mBinding.recycler.getChildCount(); i++) {
+            View child = mBinding.recycler.getChildAt(i);
+            if (child == null) continue;
+            if (mBinding.recycler.getChildAdapterPosition(child) <= chipIndex) continue;
+            View target = firstFocusableIn(child);
+            if (target != null) {
+                target.requestFocus();
+                return true;
+            }
+        }
+        return false;
     }
 
     /** 把焦点送到 chips 行上「当前分类」那一项（与 {@link #focusChipRow()} 的区别：不是第一个，而是当前项）。 */
@@ -2570,7 +2651,14 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
         // 2026-10-17：菜单键 = 打开「筛选」弹窗（复刻手机端首页的筛选能力）。
         // · 只在当前是**真实分类**且该分类带 filters 时才弹；推荐页 / 无 filters 的分类只提示一句。
         // · KeyUtil.isMenuKey 判的是 ACTION_UP ⇒ 长按不会连发。
+        // ⛔ R162 加**作用域**限制：只有焦点停在「分类行以下」的内容行才响应。
+        //   此前是无条件拦截，焦点停在标题栏 / 功能行 / 分类行上按一下也会弹面板（或在「推荐」上
+        //   弹一句「该分类无筛选」），老人以为按坏了。现在其余区域一律**吞键静默**：不弹窗、不提示，
+        //   也不透传给系统（部分电视 ROM 会把菜单键解释成自己的设置面板）。
         if (KeyUtil.isMenuKey(event)) {
+            // 面板已开着：吞掉，不叠第二个
+            if (getSupportFragmentManager().findFragmentByTag(HomeFilterDialog.TAG) != null) return true;
+            if (!isFilterScopeFocused()) return true;
             showFilterDialog();
             return true;
         }

@@ -1,36 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 筛选值胶囊 · 两形态背景（只给首页筛选弹窗用，不动全站 chip 的 selector，避免误伤）。
-     R158 D4：由四形态收敛为两形态，与首页分类 chip（selector_home_chip）同构 —— 焦点与选中共用同一形态，
-     改一处必须两边同步（selector_home_chip.xml）。收敛原因见 PLAN-R158 §3.2。
-        · 焦点 或 选中 → 主色实底 + 白字（不再区分「停在哪」与「已生效」，蓝块语义退化为「这一项可操作」）
-        · 普通        → 浅灰底 + 发丝描边 + 深色字
-     圆角 100dp 胶囊、描边向内不占尺寸（聚焦前后高度不变）。 -->
+<!-- 筛选值胶囊 · 两形态背景（首页筛选弹窗专享：每个可选值 + 右上角「重置」按钮共用这一份）。
+     ⛔ R162：普通态由「浅灰底 ag_btn_bg + 发丝描边」改为**直接引用分类行的 shape_home_chip**
+     （白底 ag_card + 主色 ag_stroke_normal 描边）。此前两份注释都写「与分类行同构」，实际
+     底色、描边颜色、描边粗细三项全不同，弹窗里的胶囊和首页分类 chip 看着是两个体系。
+     焦点 / 选中态仍是主色实底无描边（两边本来就一致），保持不变。
+     ⛔ 改这里必须同步 selector_home_chip：只要一侧改了另一侧没改，就会再次分叉。 -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- 焦点：主色实底（与选中同形，无描边） -->
-    <item android:state_focused="true">
-        <shape android:shape="rectangle">
-            <solid android:color="@color/ag_primary" />
-            <corners android:radius="@dimen/ag_radius_full" />
-        </shape>
-    </item>
+    <item android:state_focused="true" android:drawable="@drawable/shape_home_chip_focus" />
 
     <!-- 选中：主色实底（与焦点同形，无描边） -->
-    <item android:state_selected="true">
-        <shape android:shape="rectangle">
-            <solid android:color="@color/ag_primary" />
-            <corners android:radius="@dimen/ag_radius_full" />
-        </shape>
-    </item>
+    <item android:state_selected="true" android:drawable="@drawable/shape_home_chip_focus" />
 
-    <!-- 普通 -->
-    <item>
-        <shape android:shape="rectangle">
-            <solid android:color="@color/ag_btn_bg" />
-            <corners android:radius="@dimen/ag_radius_full" />
-            <stroke
-                android:width="@dimen/ag_stroke_hairline"
-                android:color="@color/ag_stroke" />
-        </shape>
-    </item>
+    <!-- 普通：白底 + 主色描边（与分类行同一份 drawable，不再各写一套） -->
+    <item android:drawable="@drawable/shape_home_chip" />
 </selector>
