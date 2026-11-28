@@ -249,6 +249,8 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
 
     /** 内容区重建后补落焦的延时：等新内容布局完成再判断「焦点是不是真的丢了」。 */
     private static final long HOME_FOCUS_RESTORE_DELAY = 400L;
+    /** 筛选后等内容的兜底：1.5s 还没回来就先滚到列表并安排落焦（网络慢/失败时不至于卡在分类行）。 */
+    private static final long FILTER_REVEAL_TIMEOUT = 1500L;
 
     /**
      * 自动备份的最小间隔（R101 / 复审 R11）。
@@ -513,6 +515,14 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
      * （全站一贯原则：没有真实变化不动焦点）。</p>
      */
     private boolean filterTouched;
+    /**
+     * 筛选条件改过、正等内容到达后「揭示列表」（R164）。
+     *
+     * <p>为什么要有它：筛选一改，内容区立刻被清空重建、请求还在路上；此时无论往哪落焦
+     * 都没有可聚焦的内容行。与其猜一个固定延时，不如记下这个标志，在
+     * {@code onContentResult} 里内容真正到位的那一刻再滚动 + 落焦。</p>
+     */
+    private boolean pendingReveal;
     private HistoryPresenter mPresenter;
     private HomeChipPresenter mChipPresenter;
     private SiteViewModel mViewModel;
@@ -784,6 +794,24 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
                 if (mChipRow != null && position == mAdapter.indexOf(mChipRow)) syncChipRowSelection();
             }
         });
+        // R164：分类行的落焦不再交给框架默认行为 —— 从内容区「上翻」或从功能区「下翻」进入
+        // 分类行时，显式落到「当前分类」。否则框架会落第一个子项（推荐），而 chip 是
+        // 「移到即加载」⇒ 内容会被整块换回推荐、筛选条件也被清空（这就是「上翻一次就回推荐」）。
+        mBinding.recycler.setOnKeyInterceptListener(event -> {
+            if (mChipRow == null || mChipItems == null || mChipItems.isEmpty()) return false;
+            if (!KeyUtil.isActionDown(event)) return false;
+            boolean up = KeyUtil.isUpKey(event);
+            boolean down = KeyUtil.isDownKey(event);
+            if (!up && !down) return false;
+            int chipIndex = mAdapter.indexOf(mChipRow);
+            if (chipIndex < 0) return false;
+            int focusRow = focusRowIndex();
+            if (focusRow < 0) return false;
+            // 上翻只在「分类行以下」拦；下翻只在「分类行以上」（功能区）拦；
+            // 分类行内部的左右移动不经过这里。
+            if (up ? focusRow <= chipIndex : focusRow >= chipIndex) return false;
+            return focusChipAt(mShownChip);
+        });
         // 内容区滚动到底时自动加载分类下一页（CustomScroller 用通用 LayoutManager API 判定触底：
         // leanback VerticalGridView 的内部 GridLayoutManager 并非 androidx 的 LinearLayoutManager，
         // 之前用 instanceof LinearLayoutManager 判定恒为 false，导致分类永远无法翻页）
@@ -902,6 +930,11 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
             // R141：分类页 1 且非空 → 记入首屏缓存，供下次切回该分类时秒显
             if (first && mShownChip instanceof Class type) mChipCache.put(type.getTypeId(), result);
             addVideo(mResult = result);
+            // R164：筛选后的内容到位 ⇒ 立刻揭示（滚动 + 落焦），不再等固定延时
+            if (pendingReveal) {
+                pendingReveal = false;
+                mBinding.recycler.post(this::revealContentFirst);
+            }
         }
         Cache.clear().put(result);
         // 推荐内容（homeContent）会携带站源分类 class 列表，用它重建 chips（分类/翻页内容不带 types）。
@@ -1871,8 +1904,14 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
         if (isFinishing() || isDestroyed() || mBinding == null) return;
         if (getSupportFragmentManager().findFragmentByTag(HomeFilterDialog.TAG) instanceof DialogFragment dialog) dialog.dismiss();
         if (mPresenter.isDelete()) setHistoryDelete(false);
-        mBinding.recycler.scrollToPosition(0);
-        if (mChipRow != null) focusChipRow();
+        // R164：复位后直接落「内容区第一行」（用户定案）—— 按主页键回来就是要接着看；
+        // 落分类行等于要老人再按一次「下」，而且屏幕上先看到的是分类行，不是列表。
+        if (!revealContentFirst()) {
+            mBinding.recycler.postDelayed(() -> {
+                if (isFinishing() || isDestroyed() || mBinding == null) return;
+                if (getCurrentFocus() == null) focusChipRow();
+            }, HOME_FOCUS_RESTORE_DELAY);
+        }
         resetBackTaps();
     }
 
@@ -1902,6 +1941,106 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
         mScroller.reset(); // 推荐（homeContent）无分页接口，一次性全量；重置翻页状态供下次分类使用
         if (focusInContent) mBinding.recycler.postDelayed(this::refocusChipRowIfLost, HOME_FOCUS_RESTORE_DELAY);
         mViewModel.homeContent();
+    }
+
+
+    /**
+     * 分类行落焦到「当前分类」（R164）。
+     *
+     * <p>⛔ 为什么不能只靠 {@code setSelectedPosition}：它只改**选中位置/对齐**，不改变
+     * 「行视图 requestFocus 落到哪个子项」这条路径 —— 焦点进入分类行时仍会落第一个子项（推荐）。
+     * 而 chip 是「移到即加载」，落错项不只是焦点错，内容也会被整块换回推荐、筛选条件被清空。
+     * 这里把「选中位置 + 行内滚动 + 显式 requestFocus」三件一起做，并从按键拦截里调用，
+     * 不再依赖 Leanback 的默认落点。</p>
+     *
+     * <p>行不在屏上时先滚进来，再在两帧内找 ViewHolder 落焦（低配机布局慢，一帧常常不够）。</p>
+     */
+    private boolean focusChipAt(Object item) {
+        if (mChipRow == null || mChipItems == null) return false;
+        int index = mChipItems.indexOf(item);
+        if (index < 0) index = 0;                       // 换源后旧分类不在列表：退到第一项
+        View row = findAttachedRow(mChipRow);
+        if (row instanceof HorizontalGridView) {
+            HorizontalGridView grid = (HorizontalGridView) row;
+            if (grid.getSelectedPosition() != index) grid.setSelectedPosition(index);
+            grid.scrollToPosition(index);
+            focusChipHolder(grid, index, 0);
+            return true;
+        }
+        int chipIndex = mAdapter.indexOf(mChipRow);
+        if (chipIndex < 0) return false;
+        mBinding.recycler.scrollToPosition(chipIndex);
+        mBinding.recycler.post(() -> focusInRow(mChipRow, item, 0));
+        return true;
+    }
+
+    /** 在行内按 adapter position 找 ViewHolder 并落焦；两帧内还找不到就放弃。 */
+    private void focusChipHolder(HorizontalGridView grid, int index, int attempt) {
+        RecyclerView.ViewHolder holder = grid.findViewHolderForAdapterPosition(index);
+        if (holder != null) {
+            holder.itemView.requestFocus();
+            return;
+        }
+        if (attempt < 2) grid.post(() -> focusChipHolder(grid, index, attempt + 1));
+    }
+
+    /**
+     * 揭示内容区第一行：先滚动、再落焦（R164）。
+     *
+     * <p>⛔ 原实现只扫「已在屏上」的行：筛选刚触发时内容已被清空重建、请求还没回来，
+     * 必然扫不到 ⇒ 返回 false ⇒ 调用方回落分类行 ⇒ 用户看到的是分类行而不是列表。
+     * 现在先 {@code scrollToPosition(内容首行)}，再在两帧内扫一次，覆盖「内容刚到、还没 attach」。</p>
+     *
+     * @return true = 这一帧就落焦成功；false = 已安排滚动与重试（不代表失败）
+     */
+    private boolean revealContentFirst() {
+        if (mChipRow == null || mBinding == null) return false;
+        int chipIndex = mAdapter.indexOf(mChipRow);
+        if (chipIndex < 0) return false;
+        if (focusContentFirst()) return true;
+        if (chipIndex + 1 < mAdapter.size()) mBinding.recycler.scrollToPosition(chipIndex + 1);
+        mBinding.recycler.post(() -> {
+            if (isFinishing() || isDestroyed() || mBinding == null) return;
+            if (!focusContentFirst()) mBinding.recycler.post(this::focusContentFirst);
+        });
+        return false;
+    }
+
+    /** 焦点当前所在行的 adapter position；不在列表内返回 -1。 */
+    private int focusRowIndex() {
+        if (mBinding == null) return -1;
+        View focused = getCurrentFocus();
+        if (focused == null) return -1;
+        View row = rowOf(focused);
+        return row == null ? -1 : mBinding.recycler.getChildAdapterPosition(row);
+    }
+
+    /** 把某一行滚进视口后在行内找目标项（按 tag）落焦；行未 attach 时最多重试两帧。 */
+    private void focusInRow(Object rowItem, Object within, int attempt) {
+        if (isFinishing() || isDestroyed() || mBinding == null) return;
+        View row = findAttachedRow(rowItem);
+        if (row == null) {
+            if (attempt < 2) {
+                int index = mAdapter.indexOf(rowItem);
+                if (index >= 0) mBinding.recycler.scrollToPosition(index);
+                mBinding.recycler.post(() -> focusInRow(rowItem, within, attempt + 1));
+            }
+            return;
+        }
+        View target = within == null ? null : findTagged(row, within);
+        if (target == null) target = firstFocusableIn(row);
+        if (target != null) target.requestFocus();
+    }
+
+    /** 在行视图的直接子项里找 tag 等于 item 的那个（chip 的 tag 在 bind 时写入）。 */
+    private View findTagged(View row, Object item) {
+        if (!(row instanceof ViewGroup)) return null;
+        ViewGroup group = (ViewGroup) row;
+        for (int i = 0; i < group.getChildCount(); i++) {
+            View child = group.getChildAt(i);
+            if (child != null && item != null && item.equals(child.getTag())) return child;
+        }
+        return null;
     }
 
     /** 焦点当前是否落在首页列表（recycler）内。 */
@@ -2700,25 +2839,32 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
         // ⛔ 必须 force：筛选不改分类，mShownChip 去重键会把请求拦掉。
         mFilterExtend = new HashMap<>(extend);
         filterTouched = true;
+        pendingReveal = true;   // R164：等内容到位再揭示列表，不在关闭时盲落焦
         loadChip(mShownChip, true);
+        // 弹窗还开着也先把视野下移到列表：关闭时第一眼就是筛选结果，而不是分类行
+        int chipIndex = mChipRow == null ? -1 : mAdapter.indexOf(mChipRow);
+        if (chipIndex >= 0) mBinding.recycler.post(() -> mBinding.recycler.scrollToPosition(chipIndex + 1));
     }
 
     @Override
     public void onFilterClosed() {
-        // R162 分两种情形，不能一律拽焦点：
-        // · 条件真的改过 ⇒ 内容区已整块换成筛选结果、原焦点必然丢失 ⇒ 落**内容区第一行**，
-        //   老人可以立刻往下翻（旧实现送回分类行，还得再按一次「下」才看得到结果）。
-        // · 只是打开看看又关掉 ⇒ 内容没动过 ⇒ 送回**当前分类** chip，不把老人从第 20 行拽回第一行。
+        // R164 两种情形：
+        // · 只是打开看看又关掉 ⇒ 内容没动过 ⇒ 送回当前分类 chip，不把老人从第 20 行拽走；
+        // · 改过条件 ⇒ 内容已整块重建、请求还在路上 ⇒ **不强行落焦**（此刻没有可聚焦的内容行），
+        //   由 onContentResult 在内容到位时揭示；这里只挂 1.5s 兜底，超时仍没等到就先滚到列表。
         if (!filterTouched) {
             focusCurrentChip();
             return;
         }
-        if (focusContentFirst()) return;
-        // 内容还在加载（只有进度行、没有可聚焦项）⇒ 隔一帧重试一次，仍失败才回落当前分类
         mBinding.recycler.postDelayed(() -> {
-            if (isFinishing() || isDestroyed() || mBinding == null) return;
-            if (!focusContentFirst()) focusCurrentChip();
-        }, HOME_FOCUS_RESTORE_DELAY);
+            if (!pendingReveal || isFinishing() || isDestroyed() || mBinding == null) return;
+            pendingReveal = false;
+            revealContentFirst();
+            mBinding.recycler.postDelayed(() -> {
+                if (isFinishing() || isDestroyed() || mBinding == null) return;
+                if (getCurrentFocus() == null) focusCurrentChip();
+            }, HOME_FOCUS_RESTORE_DELAY);
+        }, FILTER_REVEAL_TIMEOUT);
     }
 
     /**
@@ -2955,25 +3101,9 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
      * 同一套「行没绑上就滚过去再落焦」的处理。</p>
      */
     private void focusContentRow() {
-        // ⛔ R163：原实现直接拿 chipIndex + 1 当「内容区第一行」，但这一行在有观看历史时是
-        //   「最近观看」的标题行（HeaderPresenter，不可聚焦）⇒ firstFocusableIn 返回 null ⇒
-        //   焦点纹丝不动，而调用方（返回键 ④ 分支）已经 resetBackTaps() ⇒
-        //   **在分类行按返回键完全失灵，且连按三次也退不出**。
-        //   现在自顶向下扫「分类行以下」的所有行，取第一个真正可聚焦的（跳过标题行 / 空态卡）。
-        if (focusContentFirst()) return;
-        int chipIndex = mAdapter.indexOf(mChipRow);
-        if (chipIndex < 0) return;
-        int contentIndex = chipIndex + 1;
-        if (contentIndex >= mAdapter.size()) return;
-        // 屏上确实没有可聚焦行（例如空态卡占满）⇒ 先把 chips 下方滚进来，再扫一次
-        mBinding.recycler.scrollToPosition(contentIndex);
-        mBinding.recycler.post(() -> {
-            if (isFinishing() || isDestroyed() || mBinding == null) return;
-            if (focusContentFirst()) return;
-            if (contentIndex >= mAdapter.size()) return;
-            View target = firstFocusableIn(findAttachedRow(mAdapter.get(contentIndex)));
-            if (target != null) target.requestFocus();
-        });
+        // R164：与「筛选后揭示」「主页键复位」共用同一套实现（先滚动、再落焦），
+        // 不再各写一把。R163 修的「跳过不可聚焦的标题行」逻辑在 focusContentFirst 里。
+        revealContentFirst();
     }
 
     /** 滚回列表顶部并把焦点落到第 0 行（功能区）第一个可聚焦项。R158 D3 断点 B-2 的落点。 */
