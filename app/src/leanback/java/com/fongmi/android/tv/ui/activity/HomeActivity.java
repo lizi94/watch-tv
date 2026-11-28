@@ -794,24 +794,6 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
                 if (mChipRow != null && position == mAdapter.indexOf(mChipRow)) syncChipRowSelection();
             }
         });
-        // R164：分类行的落焦不再交给框架默认行为 —— 从内容区「上翻」或从功能区「下翻」进入
-        // 分类行时，显式落到「当前分类」。否则框架会落第一个子项（推荐），而 chip 是
-        // 「移到即加载」⇒ 内容会被整块换回推荐、筛选条件也被清空（这就是「上翻一次就回推荐」）。
-        mBinding.recycler.setOnKeyInterceptListener(event -> {
-            if (mChipRow == null || mChipItems == null || mChipItems.isEmpty()) return false;
-            if (!KeyUtil.isActionDown(event)) return false;
-            boolean up = KeyUtil.isUpKey(event);
-            boolean down = KeyUtil.isDownKey(event);
-            if (!up && !down) return false;
-            int chipIndex = mAdapter.indexOf(mChipRow);
-            if (chipIndex < 0) return false;
-            int focusRow = focusRowIndex();
-            if (focusRow < 0) return false;
-            // 上翻只在「分类行以下」拦；下翻只在「分类行以上」（功能区）拦；
-            // 分类行内部的左右移动不经过这里。
-            if (up ? focusRow <= chipIndex : focusRow >= chipIndex) return false;
-            return focusChipAt(mShownChip);
-        });
         // 内容区滚动到底时自动加载分类下一页（CustomScroller 用通用 LayoutManager API 判定触底：
         // leanback VerticalGridView 的内部 GridLayoutManager 并非 androidx 的 LinearLayoutManager，
         // 之前用 instanceof LinearLayoutManager 判定恒为 false，导致分类永远无法翻页）
@@ -1828,7 +1810,11 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
 
     /** 焦点是否正停在第 0 行「功能区」里（含「行视图本身获得焦点」这种情形）。 */
     private boolean isFocusInFuncRow() {
-        if (mFuncRow == null) return false;
+        if (mFuncRow == null || mBinding == null) return false;
+        // R165：判据放宽到「选中行 == 功能区」。原来只看焦点视图是否在该行内：首帧 / 列表重建 /
+        // 焦点暂缺时 getCurrentFocus() 为 null ⇒ 恒 false ⇒ 返回键每次都走「落功能区 + 清零」
+        // ⇒ 连续按很多次也退不出去、而且没有任何提示。
+        if (mBinding.recycler.getSelectedPosition() == 0) return true;
         View focused = getCurrentFocus();
         if (focused == null) return false;
         View row = findAttachedRow(mFuncRow);
@@ -2087,6 +2073,34 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
         if (!(row instanceof HorizontalGridView)) return;
         HorizontalGridView grid = (HorizontalGridView) row;
         if (grid.getSelectedPosition() != index) grid.setSelectedPosition(index);
+    }
+
+
+    /**
+     * 方向键落焦收口（R165）：上翻 / 下翻进入分类行时，落「当前分类」。
+     *
+     * <p>为什么放在 Activity 这一层：R164 把它挂在 {@code VerticalGridView.setOnKeyInterceptListener}
+     * 上，而按键分发是「父容器把事件直接交给焦点子项」—— 焦点在海报 / chip 上时那个回调可能
+     * 根本不执行，于是上翻仍落第一个子项（推荐）。{@code Activity.dispatchKeyEvent} 一定能先拿到
+     * 事件（菜单键就是因为放在这里才稳定生效）。</p>
+     *
+     * <p>命中条件：上翻且焦点行在分类行以下、下翻且焦点行在分类行以上（功能区）。
+     * 分类行内部的左右移动、分类行按上回功能区都不拦。</p>
+     *
+     * @return true = 已落焦并吞掉这次按键；false = 交回框架（绝不会「吞了键但焦点没动」）
+     */
+    private boolean interceptChipNavigation(KeyEvent event) {
+        if (!KeyUtil.isActionDown(event)) return false;
+        boolean up = KeyUtil.isUpKey(event);
+        boolean down = KeyUtil.isDownKey(event);
+        if (!up && !down) return false;
+        if (mChipRow == null || mChipItems == null || mChipItems.isEmpty()) return false;
+        int chipIndex = mAdapter.indexOf(mChipRow);
+        if (chipIndex < 0) return false;
+        int focusRow = focusRowIndex();
+        if (focusRow < 0) return false;
+        if (up ? focusRow <= chipIndex : focusRow >= chipIndex) return false;
+        return focusChipAt(mShownChip);
     }
 
     /**
@@ -2934,6 +2948,8 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
             showFilterDialog();
             return true;
         }
+        // R165：方向键落焦收口（详见 interceptChipNavigation 的说明）
+        if (interceptChipNavigation(event)) return true;
         if (KeyUtil.isActionDown(event) && KeyUtil.isDownKey(event) && getCurrentFocus() == mBinding.title) {
             // ⚠ 2026-10-17 起这是**保留的兜底分支**：标题已不再可聚焦（见 setFocus 的说明），
             // 正常情况下 getCurrentFocus() 不会是 title，此分支不会命中；保留它是为了万一
@@ -3021,7 +3037,7 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
 
     @Override
     protected void onBackInvoked() {
-        // ⓪⓪⓪ R101（v5 定稿）：**本应用已是系统默认桌面** ⇒ 首页的返回键什么都不做。
+        // ⓪⓪⓪ R101（v5 定稿，R165 扩了一条）：**本应用已是系统默认桌面** ⇒ 首页的返回键只做导航，不退出。
         //
         // 为什么这是对的，而不是「砍功能」：
         //   ① 桌面的根没有「后面」。原生 Android TV 桌面、小米桌面、EMUI 桌面在主页按返回键
@@ -3034,10 +3050,12 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
         //      **零代码**：DesktopResolver 在「自己是默认桌面」时集合为空 ⇒ isDesktop() 恒 false
         //      ⇒ HomeGuardService 空转，既不需要 suppress()，也不需要改它一行。
         //
-        // 为什么保留下面两个分支：**它们不是退出，是「别卡住我」**。
+        // 为什么保留下面三个分支：**它们都不是退出，是「别卡住我」或「回到上一级」**。
         //   · 启动画面（无数据源 / 无网时一直转圈）按返回必须能进内容态，否则老人只能干等；
-        //    · 历史删除模式按返回必须能退出该模式，否则整页都不能用。
-        // 除这两种情况外：不计数、不弹框、不 finish、不置 isUserExited、不给任何提示
+        //   · 历史删除模式按返回必须能退出该模式，否则整页都不能用；
+        //   · 焦点不在功能区时按返回 = 回到最上面那一级（R165 新增，用户定案）：
+        //     桌面没有「上一级」，但「回顶部」仍是有用的导航，且绝不能因此退出。
+        // 除这三种情况外：不计数、不弹框、不 finish、不置 isUserExited、不给任何提示
         //（用户定案：默认桌面形态下不留指路提示 —— 一般由家人设置好再交给老人）。
         if (LauncherInfo.isSelfHome(this)) {
             resetBackTaps();
@@ -3046,6 +3064,10 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
                 showContent();
             } else if (mPresenter.isDelete()) {
                 setHistoryDelete(false);
+            } else if (!isFocusInFuncRow()) {
+                // R165：默认桌面也允许返回键做「回到最上面一级」的导航（用户定案：不退出、不计数、不提示）。
+                // 焦点已在功能区时保持无动作 —— 与原生电视桌面在主页按返回的体感一致。
+                scrollToTopAndFocus();
             }
             return;
         }
@@ -3076,20 +3098,15 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
             setHistoryDelete(false);
             return;
         }
-        // ④ 焦点在分类 chips 行：回内容区（第一个封面行），并清空退出连按计数 —— 这是「从分类行退出」，
-        //    不是「退出应用」，不该被算作一次返回。R158 D3 断点 B-1：原先这里只看
-        //    recycler.getSelectedPosition()，但焦点停在 chip 行时该值不变，既不回内容区、又白吃一次计数。
-        View chipRow = mChipRow == null ? null : findAttachedRow(mChipRow);
-        if (chipRow != null && isDescendantOf(getCurrentFocus(), chipRow)) {
+        // ④ 焦点不在功能区：返回 = 回到最上面那一级（R165 定案：**一律落功能区**）。
+        //    这是导航、不是退出意图 ⇒ 清零连按、不提示。
+        //    ⛔ 原来的「焦点在分类行 → 回内容区」分支已删除（与「返回一律落功能区」冲突）。
+        if (!isFocusInFuncRow()) {
             resetBackTaps();
-            focusContentRow();
+            scrollToTopAndFocus();
             return;
         }
-        // ⑤ 焦点不在第一行：滚到顶并落焦首行（保留导航能力），本次按键仍计入退出连按
-        if (mBinding.recycler.getSelectedPosition() != 0) scrollToTopAndFocus();
-
-        // ⑥ 只在「本轮第一次」提示一次：系统 Toast 撑不住连续 show（会被队列节流甚至丢弃），
-        //    分级提示既看不见又白耗一次 inflate，所以三次里只提示这一下。
+        // ⑤ 已在功能区：本次计一次（taps 已自增）；只在第一次提示一句
         if (taps == 1) Notify.center(R.string.elder_exit_count);
     }
 
@@ -3100,12 +3117,6 @@ public class HomeActivity extends BaseActivity implements VodPresenter.OnClickLi
      * 直接 {@code scrollToPosition} + 下一帧 {@link #firstFocusableIn} 落焦，复用与 {@link #focusChipRow()}
      * 同一套「行没绑上就滚过去再落焦」的处理。</p>
      */
-    private void focusContentRow() {
-        // R164：与「筛选后揭示」「主页键复位」共用同一套实现（先滚动、再落焦），
-        // 不再各写一把。R163 修的「跳过不可聚焦的标题行」逻辑在 focusContentFirst 里。
-        revealContentFirst();
-    }
-
     /** 滚回列表顶部并把焦点落到第 0 行（功能区）第一个可聚焦项。R158 D3 断点 B-2 的落点。 */
     private void scrollToTopAndFocus() {
         mBinding.recycler.scrollToPosition(0);
